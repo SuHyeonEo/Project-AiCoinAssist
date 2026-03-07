@@ -5,3 +5,7 @@ spring:
 logging:
   level:
     root: info
+
+external:
+  binance:
+    base-url: https://api.binance.com
