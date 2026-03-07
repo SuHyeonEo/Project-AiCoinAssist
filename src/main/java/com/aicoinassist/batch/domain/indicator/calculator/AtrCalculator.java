@@ -12,6 +12,8 @@ import java.util.List;
 @Component
 public class AtrCalculator {
 
+    private static final int SCALE = 8;
+
     public AtrResult calculate(List<Candle> candles, int period) {
         if (candles == null || candles.size() < period + 1) {
             throw new IllegalArgumentException("ATR 계산을 위한 캔들 데이터가 부족합니다.");
@@ -31,11 +33,15 @@ public class AtrCalculator {
             trueRanges.add(tr);
         }
 
-        List<BigDecimal> recentTr = trueRanges.subList(trueRanges.size() - period, trueRanges.size());
+        BigDecimal atr = trueRanges.subList(0, period).stream()
+                                   .reduce(BigDecimal.ZERO, BigDecimal::add)
+                                   .divide(BigDecimal.valueOf(period), SCALE, RoundingMode.HALF_UP);
 
-        BigDecimal atr = recentTr.stream()
-                                 .reduce(BigDecimal.ZERO, BigDecimal::add)
-                                 .divide(BigDecimal.valueOf(period), 8, RoundingMode.HALF_UP);
+        for (int i = period; i < trueRanges.size(); i++) {
+            atr = atr.multiply(BigDecimal.valueOf(period - 1))
+                     .add(trueRanges.get(i))
+                     .divide(BigDecimal.valueOf(period), SCALE, RoundingMode.HALF_UP);
+        }
 
         return new AtrResult(period, atr);
     }

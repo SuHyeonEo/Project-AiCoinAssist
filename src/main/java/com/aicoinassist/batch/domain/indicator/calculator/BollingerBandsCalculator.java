@@ -5,11 +5,16 @@ import com.aicoinassist.batch.domain.market.dto.Candle;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.List;
 
 @Component
 public class BollingerBandsCalculator {
+
+    private static final int SCALE = 8;
+    private static final MathContext MATH_CONTEXT = new MathContext(16, RoundingMode.HALF_UP);
+    private static final BigDecimal STANDARD_DEVIATION_MULTIPLIER = BigDecimal.valueOf(2);
 
     public BollingerBandsResult calculate(List<Candle> candles, int period) {
         if (candles == null || candles.size() < period) {
@@ -22,18 +27,20 @@ public class BollingerBandsCalculator {
 
         BigDecimal mean = closes.stream()
                                 .reduce(BigDecimal.ZERO, BigDecimal::add)
-                                .divide(BigDecimal.valueOf(period), 8, RoundingMode.HALF_UP);
+                                .divide(BigDecimal.valueOf(period), SCALE, RoundingMode.HALF_UP);
 
-        double variance = closes.stream()
-                                .mapToDouble(value -> Math.pow(value.subtract(mean).doubleValue(), 2))
-                                .average()
-                                .orElse(0.0);
+        BigDecimal variance = closes.stream()
+                                    .map(value -> value.subtract(mean, MATH_CONTEXT))
+                                    .map(diff -> diff.multiply(diff, MATH_CONTEXT))
+                                    .reduce(BigDecimal.ZERO, BigDecimal::add)
+                                    .divide(BigDecimal.valueOf(period), SCALE, RoundingMode.HALF_UP);
 
-        double stdDev = Math.sqrt(variance);
+        BigDecimal stdDev = variance.sqrt(MATH_CONTEXT).setScale(SCALE, RoundingMode.HALF_UP);
 
-        BigDecimal stdDevValue = BigDecimal.valueOf(stdDev);
-        BigDecimal upper = mean.add(stdDevValue.multiply(BigDecimal.valueOf(2)));
-        BigDecimal lower = mean.subtract(stdDevValue.multiply(BigDecimal.valueOf(2)));
+        BigDecimal upper = mean.add(stdDev.multiply(STANDARD_DEVIATION_MULTIPLIER, MATH_CONTEXT))
+                               .setScale(SCALE, RoundingMode.HALF_UP);
+        BigDecimal lower = mean.subtract(stdDev.multiply(STANDARD_DEVIATION_MULTIPLIER, MATH_CONTEXT))
+                               .setScale(SCALE, RoundingMode.HALF_UP);
 
         return new BollingerBandsResult(period, upper, mean, lower);
     }

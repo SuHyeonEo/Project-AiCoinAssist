@@ -11,36 +11,52 @@ import java.util.List;
 @Component
 public class RsiCalculator {
 
+    private static final int SCALE = 8;
+
     public RsiResult calculate(List<Candle> candles, int period) {
         if (candles == null || candles.size() < period + 1) {
             throw new IllegalArgumentException("RSI 계산을 위한 캔들 데이터가 부족합니다.");
         }
 
-        BigDecimal gainSum = BigDecimal.ZERO;
-        BigDecimal lossSum = BigDecimal.ZERO;
+        List<Candle> recentCandles = candles;
+        BigDecimal avgGain = BigDecimal.ZERO;
+        BigDecimal avgLoss = BigDecimal.ZERO;
 
-        List<Candle> recentCandles = candles.subList(candles.size() - (period + 1), candles.size());
-
-        for (int i = 1; i < recentCandles.size(); i++) {
+        for (int i = 1; i <= period; i++) {
             BigDecimal diff = recentCandles.get(i).close().subtract(recentCandles.get(i - 1).close());
 
             if (diff.compareTo(BigDecimal.ZERO) > 0) {
-                gainSum = gainSum.add(diff);
+                avgGain = avgGain.add(diff);
             } else {
-                lossSum = lossSum.add(diff.abs());
+                avgLoss = avgLoss.add(diff.abs());
             }
         }
 
-        BigDecimal avgGain = gainSum.divide(BigDecimal.valueOf(period), 8, RoundingMode.HALF_UP);
-        BigDecimal avgLoss = lossSum.divide(BigDecimal.valueOf(period), 8, RoundingMode.HALF_UP);
+        avgGain = avgGain.divide(BigDecimal.valueOf(period), SCALE, RoundingMode.HALF_UP);
+        avgLoss = avgLoss.divide(BigDecimal.valueOf(period), SCALE, RoundingMode.HALF_UP);
+
+        for (int i = period + 1; i < recentCandles.size(); i++) {
+            BigDecimal diff = recentCandles.get(i).close().subtract(recentCandles.get(i - 1).close());
+
+            BigDecimal gain = diff.compareTo(BigDecimal.ZERO) > 0 ? diff : BigDecimal.ZERO;
+            BigDecimal loss = diff.compareTo(BigDecimal.ZERO) < 0 ? diff.abs() : BigDecimal.ZERO;
+
+            avgGain = avgGain.multiply(BigDecimal.valueOf(period - 1))
+                             .add(gain)
+                             .divide(BigDecimal.valueOf(period), SCALE, RoundingMode.HALF_UP);
+
+            avgLoss = avgLoss.multiply(BigDecimal.valueOf(period - 1))
+                             .add(loss)
+                             .divide(BigDecimal.valueOf(period), SCALE, RoundingMode.HALF_UP);
+        }
 
         if (avgLoss.compareTo(BigDecimal.ZERO) == 0) {
             return new RsiResult(period, BigDecimal.valueOf(100));
         }
 
-        BigDecimal rs = avgGain.divide(avgLoss, 8, RoundingMode.HALF_UP);
+        BigDecimal rs = avgGain.divide(avgLoss, SCALE, RoundingMode.HALF_UP);
         BigDecimal rsi = BigDecimal.valueOf(100)
-                                   .subtract(BigDecimal.valueOf(100).divide(BigDecimal.ONE.add(rs), 8, RoundingMode.HALF_UP));
+                                   .subtract(BigDecimal.valueOf(100).divide(BigDecimal.ONE.add(rs), SCALE, RoundingMode.HALF_UP));
 
         return new RsiResult(period, rsi);
     }
