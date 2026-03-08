@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
+import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
@@ -12,21 +13,24 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class AnalysisReportAssembler {
 
     public AnalysisReportPayload assemble(
             MarketIndicatorSnapshotEntity snapshot,
-            AnalysisReportType reportType
+            AnalysisReportType reportType,
+            List<AnalysisComparisonFact> comparisonFacts
     ) {
         String trendBias = determineTrendBias(snapshot);
-        String summary = buildSummary(snapshot, trendBias, reportType);
-        String marketContext = buildMarketContext(snapshot, trendBias);
+        String summary = buildSummary(snapshot, trendBias, reportType, comparisonFacts);
+        String marketContext = buildMarketContext(snapshot, trendBias, comparisonFacts);
 
         return new AnalysisReportPayload(
                 summary,
                 marketContext,
+                comparisonFacts,
                 supportLevels(snapshot),
                 resistanceLevels(snapshot),
                 riskFactors(snapshot),
@@ -34,8 +38,13 @@ public class AnalysisReportAssembler {
         );
     }
 
-    private String buildSummary(MarketIndicatorSnapshotEntity snapshot, String trendBias, AnalysisReportType reportType) {
-        return reportType.name() + " view: "
+    private String buildSummary(
+            MarketIndicatorSnapshotEntity snapshot,
+            String trendBias,
+            AnalysisReportType reportType,
+            List<AnalysisComparisonFact> comparisonFacts
+    ) {
+        String summary = reportType.name() + " view: "
                 + snapshot.getSymbol()
                 + " is in a "
                 + trendBias
@@ -46,16 +55,33 @@ public class AnalysisReportAssembler {
                 + ", and MACD histogram at "
                 + snapshot.getMacdHistogram().stripTrailingZeros().toPlainString()
                 + ".";
+
+        if (comparisonFacts.isEmpty()) {
+            return summary;
+        }
+
+        AnalysisComparisonFact primaryFact = comparisonFacts.get(0);
+        return summary + " Versus "
+                + primaryFact.reference().name()
+                + ", price changed "
+                + signed(primaryFact.priceChangeRate())
+                + "% and RSI14 moved "
+                + signed(primaryFact.rsiDelta())
+                + ".";
     }
 
-    private String buildMarketContext(MarketIndicatorSnapshotEntity snapshot, String trendBias) {
+    private String buildMarketContext(
+            MarketIndicatorSnapshotEntity snapshot,
+            String trendBias,
+            List<AnalysisComparisonFact> comparisonFacts
+    ) {
         String maContext = comparePriceToMovingAverage(snapshot.getCurrentPrice(), snapshot.getMa20(), "MA20")
                 + ", "
                 + comparePriceToMovingAverage(snapshot.getCurrentPrice(), snapshot.getMa60(), "MA60")
                 + ", "
                 + comparePriceToMovingAverage(snapshot.getCurrentPrice(), snapshot.getMa120(), "MA120");
 
-        return "Trend bias is "
+        String context = "Trend bias is "
                 + trendBias
                 + ". Price is "
                 + describeBandPosition(snapshot)
@@ -63,6 +89,22 @@ public class AnalysisReportAssembler {
                 + atrRatio(snapshot).stripTrailingZeros().toPlainString()
                 + "% of current price. "
                 + maContext
+                + ".";
+
+        if (comparisonFacts.isEmpty()) {
+            return context;
+        }
+
+        return context + " Comparison facts: "
+                + comparisonFacts.stream()
+                                 .map(fact -> fact.reference().name()
+                                         + " price "
+                                         + signed(fact.priceChangeRate())
+                                         + "%, RSI Δ "
+                                         + signed(fact.rsiDelta())
+                                         + ", MACD hist Δ "
+                                         + signed(fact.macdHistogramDelta()))
+                                 .collect(Collectors.joining("; "))
                 + ".";
     }
 
@@ -193,5 +235,13 @@ public class AnalysisReportAssembler {
         return snapshot.getAtr14()
                        .multiply(new BigDecimal("100"))
                        .divide(snapshot.getCurrentPrice(), 2, RoundingMode.HALF_UP);
+    }
+
+    private String signed(BigDecimal value) {
+        String plainValue = value.stripTrailingZeros().toPlainString();
+        if (value.compareTo(BigDecimal.ZERO) > 0) {
+            return "+" + plainValue;
+        }
+        return plainValue;
     }
 }

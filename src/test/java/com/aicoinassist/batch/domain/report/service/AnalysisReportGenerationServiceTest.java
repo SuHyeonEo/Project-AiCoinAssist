@@ -2,10 +2,12 @@ package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
+import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +32,9 @@ class AnalysisReportGenerationServiceTest {
     private MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
 
     @Mock
+    private AnalysisComparisonService analysisComparisonService;
+
+    @Mock
     private AnalysisReportAssembler analysisReportAssembler;
 
     @Mock
@@ -39,14 +44,27 @@ class AnalysisReportGenerationServiceTest {
     void generateAndSaveBuildsDraftFromLatestMappedSnapshot() {
         AnalysisReportGenerationService service = new AnalysisReportGenerationService(
                 marketIndicatorSnapshotRepository,
+                analysisComparisonService,
                 analysisReportAssembler,
                 analysisReportPersistenceService
         );
 
         MarketIndicatorSnapshotEntity snapshot = snapshot("4h");
+        List<AnalysisComparisonFact> comparisonFacts = List.of(
+                new AnalysisComparisonFact(
+                        AnalysisComparisonReference.D1,
+                        Instant.parse("2026-03-08T00:59:59Z"),
+                        new BigDecimal("86000"),
+                        new BigDecimal("1.7442"),
+                        new BigDecimal("7"),
+                        new BigDecimal("10"),
+                        new BigDecimal("15.3846")
+                )
+        );
         AnalysisReportPayload payload = new AnalysisReportPayload(
                 "summary",
                 "context",
+                comparisonFacts,
                 List.of(),
                 List.of(),
                 List.of(),
@@ -65,7 +83,8 @@ class AnalysisReportGenerationServiceTest {
 
         when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueOrderBySnapshotTimeDescIdDesc("BTCUSDT", "4h"))
                 .thenReturn(Optional.of(snapshot));
-        when(analysisReportAssembler.assemble(snapshot, AnalysisReportType.MID_TERM)).thenReturn(payload);
+        when(analysisComparisonService.buildFacts(snapshot, AnalysisReportType.MID_TERM)).thenReturn(comparisonFacts);
+        when(analysisReportAssembler.assemble(snapshot, AnalysisReportType.MID_TERM, comparisonFacts)).thenReturn(payload);
         when(analysisReportPersistenceService.save(org.mockito.ArgumentMatchers.any(AnalysisReportDraft.class)))
                 .thenReturn(savedEntity);
 
@@ -95,6 +114,7 @@ class AnalysisReportGenerationServiceTest {
     void generateAndSaveFailsWhenNoSnapshotExistsForMappedInterval() {
         AnalysisReportGenerationService service = new AnalysisReportGenerationService(
                 marketIndicatorSnapshotRepository,
+                analysisComparisonService,
                 analysisReportAssembler,
                 analysisReportPersistenceService
         );

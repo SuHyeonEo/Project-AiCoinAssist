@@ -5,6 +5,7 @@ import java.util.List;
 public record AnalysisReportPayload(
         String summary,
         String marketContext,
+        List<AnalysisComparisonFact> comparisonFacts,
         List<AnalysisPriceLevel> supportLevels,
         List<AnalysisPriceLevel> resistanceLevels,
         List<AnalysisRiskFactor> riskFactors,

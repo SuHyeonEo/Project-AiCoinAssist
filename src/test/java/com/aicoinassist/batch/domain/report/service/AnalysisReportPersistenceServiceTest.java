@@ -5,10 +5,13 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
+import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -31,7 +34,9 @@ class AnalysisReportPersistenceServiceTest {
     @Mock
     private AnalysisReportRepository analysisReportRepository;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = JsonMapper.builder()
+                                                        .findAndAddModules()
+                                                        .build();
 
     @Test
     void saveRefreshesExistingReportWhenIdentityMatches() throws Exception {
@@ -119,6 +124,17 @@ class AnalysisReportPersistenceServiceTest {
         return new AnalysisReportPayload(
                 summary,
                 "BTC is holding above short-term support while momentum remains constructive.",
+                List.of(
+                        new AnalysisComparisonFact(
+                                AnalysisComparisonReference.PREV_BATCH,
+                                Instant.parse("2026-03-08T23:59:59Z"),
+                                new BigDecimal("87000.00"),
+                                new BigDecimal("0.5747"),
+                                new BigDecimal("2.00"),
+                                new BigDecimal("5.00"),
+                                new BigDecimal("7.1429")
+                        )
+                ),
                 List.of(new AnalysisPriceLevel("S1", new BigDecimal("84500.00"), "Recent pullback low")),
                 List.of(new AnalysisPriceLevel("R1", new BigDecimal("88500.00"), "Recent swing high")),
                 List.of(new AnalysisRiskFactor("Macro volatility", "USD strength can pressure crypto risk assets.")),
