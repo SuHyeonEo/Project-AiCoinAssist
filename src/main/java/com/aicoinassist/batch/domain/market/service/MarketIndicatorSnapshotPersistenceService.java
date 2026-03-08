@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+
 @Service
 @RequiredArgsConstructor
 public class MarketIndicatorSnapshotPersistenceService {
@@ -31,6 +33,12 @@ public class MarketIndicatorSnapshotPersistenceService {
                 )
                 .orElse(null);
 
+        String sourceDataVersion = buildSourceDataVersion(
+                latestCandle.closeTime(),
+                latestCandle.openTime(),
+                snapshot.priceSnapshot().sourceEventTime()
+        );
+
         if (existingEntity == null) {
             MarketIndicatorSnapshotEntity entity = MarketIndicatorSnapshotEntity.builder()
                                                                                 .symbol(snapshot.symbol())
@@ -38,6 +46,7 @@ public class MarketIndicatorSnapshotPersistenceService {
                                                                                 .snapshotTime(latestCandle.closeTime())
                                                                                 .latestCandleOpenTime(latestCandle.openTime())
                                                                                 .priceSourceEventTime(snapshot.priceSnapshot().sourceEventTime())
+                                                                                .sourceDataVersion(sourceDataVersion)
                                                                                 .currentPrice(snapshot.priceSnapshot().price())
                                                                                 .ma20(snapshot.ma20().value())
                                                                                 .ma60(snapshot.ma60().value())
@@ -58,6 +67,7 @@ public class MarketIndicatorSnapshotPersistenceService {
         existingEntity.refreshFromSnapshot(
                 latestCandle.openTime(),
                 snapshot.priceSnapshot().sourceEventTime(),
+                sourceDataVersion,
                 snapshot.priceSnapshot().price(),
                 snapshot.ma20().value(),
                 snapshot.ma60().value(),
@@ -73,5 +83,15 @@ public class MarketIndicatorSnapshotPersistenceService {
         );
 
         return existingEntity;
+    }
+
+    private String buildSourceDataVersion(
+            Instant snapshotTime,
+            Instant latestCandleOpenTime,
+            Instant priceSourceEventTime
+    ) {
+        return "snapshotTime=" + snapshotTime
+                + ";latestCandleOpenTime=" + latestCandleOpenTime
+                + ";priceSourceEventTime=" + priceSourceEventTime;
     }
 }
