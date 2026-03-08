@@ -37,16 +37,30 @@ public class AnalysisReportBatchScheduler {
                         storedTime
                 );
 
-                log.info(
-                        "analysis report batch completed - symbol: {}, snapshots: {}, reports: {}, engineVersion: {}",
-                        result.symbol(),
-                        result.snapshotCount(),
-                        result.reportCount(),
-                        analysisReportBatchProperties.engineVersion()
-                );
+                if (result.hasFailures()) {
+                    log.warn(
+                            "analysis report batch partially failed - symbol: {}, snapshotSuccess: {}, snapshotFailure: {}, reportSuccess: {}, reportFailure: {}, engineVersion: {}",
+                            result.symbol(),
+                            result.snapshotSuccessCount(),
+                            result.snapshotFailureCount(),
+                            result.reportSuccessCount(),
+                            result.reportFailureCount(),
+                            analysisReportBatchProperties.engineVersion()
+                    );
+                    log.warn("snapshot step results - symbol: {}, results: {}", result.symbol(), result.snapshotResults());
+                    log.warn("report step results - symbol: {}, results: {}", result.symbol(), result.reportResults());
+                } else {
+                    log.info(
+                            "analysis report batch completed - symbol: {}, snapshots: {}, reports: {}, engineVersion: {}",
+                            result.symbol(),
+                            result.snapshotSuccessCount(),
+                            result.reportSuccessCount(),
+                            analysisReportBatchProperties.engineVersion()
+                    );
+                }
             } catch (Exception exception) {
                 log.error(
-                        "analysis report batch failed - symbol: {}, engineVersion: {}",
+                        "analysis report batch crashed - symbol: {}, engineVersion: {}",
                         assetType.symbol(),
                         analysisReportBatchProperties.engineVersion(),
                         exception
