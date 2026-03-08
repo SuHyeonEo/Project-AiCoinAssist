@@ -76,7 +76,7 @@ class AnalysisComparisonServiceTest {
     }
 
     @Test
-    void buildFactsReturnsEmptyForUnsupportedComparisonWindow() {
+    void buildFactsReturnsEmptyWhenReferenceSnapshotsAreMissing() {
         AnalysisComparisonService service = new AnalysisComparisonService(marketIndicatorSnapshotRepository);
 
         List<AnalysisComparisonFact> facts = service.buildFacts(
@@ -85,6 +85,92 @@ class AnalysisComparisonServiceTest {
         );
 
         assertThat(facts).isEmpty();
+    }
+
+    @Test
+    void buildFactsCreatesMidTermComparisonFactsFromTimeWindows() {
+        AnalysisComparisonService service = new AnalysisComparisonService(marketIndicatorSnapshotRepository);
+
+        MarketIndicatorSnapshotEntity currentSnapshot = snapshot(
+                Instant.parse("2026-03-09T00:59:59Z"),
+                "4h",
+                "87500",
+                "62",
+                "20",
+                "1500"
+        );
+
+        when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
+                "BTCUSDT",
+                "4h",
+                Instant.parse("2026-03-02T00:59:59Z")
+        )).thenReturn(Optional.of(snapshot(Instant.parse("2026-03-02T00:59:59Z"), "4h", "80000", "48", "-5", "1100")));
+        when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
+                "BTCUSDT",
+                "4h",
+                Instant.parse("2026-02-23T00:59:59Z")
+        )).thenReturn(Optional.of(snapshot(Instant.parse("2026-02-22T20:59:59Z"), "4h", "78000", "45", "-10", "1000")));
+        when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
+                "BTCUSDT",
+                "4h",
+                Instant.parse("2026-02-07T00:59:59Z")
+        )).thenReturn(Optional.of(snapshot(Instant.parse("2026-02-06T20:59:59Z"), "4h", "74000", "43", "-20", "900")));
+
+        List<AnalysisComparisonFact> facts = service.buildFacts(currentSnapshot, AnalysisReportType.MID_TERM);
+
+        assertThat(facts).hasSize(3);
+        assertThat(facts).extracting(AnalysisComparisonFact::reference)
+                         .containsExactly(
+                                 AnalysisComparisonReference.D7,
+                                 AnalysisComparisonReference.D14,
+                                 AnalysisComparisonReference.D30
+                         );
+        assertThat(facts.get(0).priceChangeRate()).isEqualByComparingTo("9.3750");
+        assertThat(facts.get(1).rsiDelta()).isEqualByComparingTo("17");
+        assertThat(facts.get(2).macdHistogramDelta()).isEqualByComparingTo("40");
+    }
+
+    @Test
+    void buildFactsCreatesLongTermComparisonFactsFromTimeWindows() {
+        AnalysisComparisonService service = new AnalysisComparisonService(marketIndicatorSnapshotRepository);
+
+        MarketIndicatorSnapshotEntity currentSnapshot = snapshot(
+                Instant.parse("2026-03-09T00:59:59Z"),
+                "1d",
+                "87500",
+                "62",
+                "20",
+                "1500"
+        );
+
+        when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
+                "BTCUSDT",
+                "1d",
+                Instant.parse("2026-02-07T00:59:59Z")
+        )).thenReturn(Optional.of(snapshot(Instant.parse("2026-02-07T00:00:00Z"), "1d", "74000", "43", "-20", "900")));
+        when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
+                "BTCUSDT",
+                "1d",
+                Instant.parse("2025-12-09T00:59:59Z")
+        )).thenReturn(Optional.of(snapshot(Instant.parse("2025-12-09T00:00:00Z"), "1d", "68000", "40", "-30", "800")));
+        when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
+                "BTCUSDT",
+                "1d",
+                Instant.parse("2025-09-10T00:59:59Z")
+        )).thenReturn(Optional.of(snapshot(Instant.parse("2025-09-10T00:00:00Z"), "1d", "60000", "35", "-40", "700")));
+
+        List<AnalysisComparisonFact> facts = service.buildFacts(currentSnapshot, AnalysisReportType.LONG_TERM);
+
+        assertThat(facts).hasSize(3);
+        assertThat(facts).extracting(AnalysisComparisonFact::reference)
+                         .containsExactly(
+                                 AnalysisComparisonReference.D30,
+                                 AnalysisComparisonReference.D90,
+                                 AnalysisComparisonReference.D180
+                         );
+        assertThat(facts.get(0).priceChangeRate()).isEqualByComparingTo("18.2432");
+        assertThat(facts.get(1).rsiDelta()).isEqualByComparingTo("22");
+        assertThat(facts.get(2).atrChangeRate()).isEqualByComparingTo("114.2857");
     }
 
     private MarketIndicatorSnapshotEntity snapshot(
