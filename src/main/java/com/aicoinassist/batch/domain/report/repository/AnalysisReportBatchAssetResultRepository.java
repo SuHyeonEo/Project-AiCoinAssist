@@ -12,4 +12,6 @@ public interface AnalysisReportBatchAssetResultRepository extends JpaRepository<
             String runId,
             BatchExecutionStatus executionStatus
     );
+
+    List<AnalysisReportBatchAssetResultEntity> findAllByBatchRunRunIdOrderByIdAsc(String runId);
 }
