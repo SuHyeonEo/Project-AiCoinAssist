@@ -10,10 +10,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class AnalysisReportBatchAdminApiWebConfig implements WebMvcConfigurer {
 
     private final AnalysisReportBatchAdminApiAuthInterceptor authInterceptor;
+    private final AnalysisReportBatchAdminApiAuditInterceptor auditInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
+                .addPathPatterns("/internal/admin/**");
+        registry.addInterceptor(auditInterceptor)
                 .addPathPatterns("/internal/admin/**");
     }
 }
