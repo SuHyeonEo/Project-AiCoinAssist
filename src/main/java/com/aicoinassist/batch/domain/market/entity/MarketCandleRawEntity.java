@@ -104,4 +104,28 @@ public class MarketCandleRawEntity {
         this.validationDetails = validationDetails;
         this.rawPayload = rawPayload;
     }
+
+    public void refreshFromIngestion(
+            Instant closeTime,
+            BigDecimal openPrice,
+            BigDecimal highPrice,
+            BigDecimal lowPrice,
+            BigDecimal closePrice,
+            BigDecimal volume,
+            Instant collectedTime,
+            RawDataValidationStatus validationStatus,
+            String validationDetails,
+            String rawPayload
+    ) {
+        this.closeTime = closeTime;
+        this.openPrice = openPrice;
+        this.highPrice = highPrice;
+        this.lowPrice = lowPrice;
+        this.closePrice = closePrice;
+        this.volume = volume;
+        this.collectedTime = collectedTime;
+        this.validationStatus = validationStatus;
+        this.validationDetails = validationDetails;
+        this.rawPayload = rawPayload;
+    }
 }
