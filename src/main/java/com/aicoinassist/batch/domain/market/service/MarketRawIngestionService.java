@@ -9,10 +9,10 @@ import com.aicoinassist.batch.domain.market.repository.MarketCandleRawRepository
 import com.aicoinassist.batch.domain.market.repository.MarketPriceRawRepository;
 import com.aicoinassist.batch.domain.market.validator.RawDataValidationResult;
 import com.aicoinassist.batch.infrastructure.client.binance.BinanceApiClient;
+import com.aicoinassist.batch.infrastructure.client.binance.dto.BinanceAggregateTradeResponse;
 import com.aicoinassist.batch.infrastructure.client.binance.dto.BinanceKlineResponse;
-import com.aicoinassist.batch.infrastructure.client.binance.dto.BinanceTickerPriceResponse;
+import com.aicoinassist.batch.infrastructure.client.binance.validator.BinanceAggregateTradeResponseValidator;
 import com.aicoinassist.batch.infrastructure.client.binance.validator.BinanceKlineResponseValidator;
-import com.aicoinassist.batch.infrastructure.client.binance.validator.BinanceTickerPriceResponseValidator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,7 @@ public class MarketRawIngestionService {
     private static final int DEFAULT_CANDLE_LIMIT = 120;
 
     private final BinanceApiClient binanceApiClient;
-    private final BinanceTickerPriceResponseValidator tickerPriceResponseValidator;
+    private final BinanceAggregateTradeResponseValidator aggregateTradeResponseValidator;
     private final BinanceKlineResponseValidator klineResponseValidator;
     private final MarketPriceRawRepository marketPriceRawRepository;
     private final MarketCandleRawRepository marketCandleRawRepository;
@@ -52,21 +52,9 @@ public class MarketRawIngestionService {
     public MarketRawIngestionResult ingest(String symbol, CandleInterval interval, int candleLimit) {
         Instant collectedTime = Instant.now();
 
-        BinanceTickerPriceResponse tickerResponse = binanceApiClient.getTickerPrice(symbol);
-        RawDataValidationResult tickerValidation = tickerPriceResponseValidator.validate(symbol, tickerResponse);
-
-        marketPriceRawRepository.save(
-                MarketPriceRawEntity.builder()
-                                    .source(BINANCE_SOURCE)
-                                    .symbol(symbol)
-                                    .sourceEventTime(null)
-                                    .collectedTime(collectedTime)
-                                    .validationStatus(tickerValidation.status())
-                                    .validationDetails(tickerValidation.details())
-                                    .price(parseDecimal(tickerResponse == null ? null : tickerResponse.price()))
-                                    .rawPayload(serialize(tickerResponse))
-                                    .build()
-        );
+        BinanceAggregateTradeResponse aggregateTradeResponse = binanceApiClient.getLatestAggregateTrade(symbol);
+        RawDataValidationResult priceValidation = aggregateTradeResponseValidator.validate(aggregateTradeResponse);
+        persistOrRefreshPriceRaw(symbol, collectedTime, aggregateTradeResponse, priceValidation);
 
         List<BinanceKlineResponse> klineResponses = binanceApiClient.getKlines(symbol, interval.value(), candleLimit);
         RawDataValidationResult sequenceValidation = klineResponseValidator.validateSequence(klineResponses);
@@ -83,10 +71,68 @@ public class MarketRawIngestionService {
                 symbol,
                 interval,
                 collectedTime,
-                tickerValidation.status(),
+                priceValidation.status(),
                 klineResponses.size(),
                 invalidCandleCount
         );
+    }
+
+    private MarketPriceRawEntity persistOrRefreshPriceRaw(
+            String symbol,
+            Instant collectedTime,
+            BinanceAggregateTradeResponse response,
+            RawDataValidationResult validation
+    ) {
+        Instant sourceEventTime = toInstant(response == null ? null : response.tradeTime());
+        BigDecimal price = parseDecimal(response == null ? null : response.price());
+        String rawPayload = serialize(response);
+
+        if (sourceEventTime == null) {
+            return marketPriceRawRepository.save(
+                    MarketPriceRawEntity.builder()
+                                        .source(BINANCE_SOURCE)
+                                        .symbol(symbol)
+                                        .sourceEventTime(null)
+                                        .collectedTime(collectedTime)
+                                        .validationStatus(validation.status())
+                                        .validationDetails(validation.details())
+                                        .price(price)
+                                        .rawPayload(rawPayload)
+                                        .build()
+            );
+        }
+
+        MarketPriceRawEntity existingEntity = marketPriceRawRepository
+                .findTopBySourceAndSymbolAndSourceEventTimeOrderByCollectedTimeDescIdDesc(
+                        BINANCE_SOURCE,
+                        symbol,
+                        sourceEventTime
+                )
+                .orElse(null);
+
+        if (existingEntity == null) {
+            return marketPriceRawRepository.save(
+                    MarketPriceRawEntity.builder()
+                                        .source(BINANCE_SOURCE)
+                                        .symbol(symbol)
+                                        .sourceEventTime(sourceEventTime)
+                                        .collectedTime(collectedTime)
+                                        .validationStatus(validation.status())
+                                        .validationDetails(validation.details())
+                                        .price(price)
+                                        .rawPayload(rawPayload)
+                                        .build()
+            );
+        }
+
+        existingEntity.refreshFromIngestion(
+                collectedTime,
+                validation.status(),
+                validation.details(),
+                price,
+                rawPayload
+        );
+        return existingEntity;
     }
 
     private List<MarketCandleRawEntity> persistEmptyCandleSnapshot(
