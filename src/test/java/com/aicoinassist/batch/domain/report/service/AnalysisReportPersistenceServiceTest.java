@@ -1,15 +1,22 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
+import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
+import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
+import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,12 +31,14 @@ class AnalysisReportPersistenceServiceTest {
     @Mock
     private AnalysisReportRepository analysisReportRepository;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     @Test
-    void saveRefreshesExistingReportWhenIdentityMatches() {
-        AnalysisReportPersistenceService service = new AnalysisReportPersistenceService(analysisReportRepository);
+    void saveRefreshesExistingReportWhenIdentityMatches() throws Exception {
+        AnalysisReportPersistenceService service = new AnalysisReportPersistenceService(analysisReportRepository, objectMapper);
 
         AnalysisReportDraft draft = draft(
-                "{\"summary\":\"refreshed\"}",
+                payload("Refreshed summary"),
                 Instant.parse("2026-03-09T01:00:30Z")
         );
 
@@ -57,15 +66,15 @@ class AnalysisReportPersistenceServiceTest {
         verify(analysisReportRepository, never()).save(any(AnalysisReportEntity.class));
         assertThat(result).isSameAs(existingEntity);
         assertThat(existingEntity.getRawReferenceTime()).isEqualTo(Instant.parse("2026-03-09T00:59:30Z"));
-        assertThat(existingEntity.getReportPayload()).isEqualTo("{\"summary\":\"refreshed\"}");
+        assertThat(existingEntity.getReportPayload()).isEqualTo(objectMapper.writeValueAsString(payload("Refreshed summary")));
         assertThat(existingEntity.getStoredTime()).isEqualTo(Instant.parse("2026-03-09T01:00:30Z"));
     }
 
     @Test
-    void savePersistsNewReportWhenIdentityDoesNotExist() {
-        AnalysisReportPersistenceService service = new AnalysisReportPersistenceService(analysisReportRepository);
+    void savePersistsNewReportWhenIdentityDoesNotExist() throws Exception {
+        AnalysisReportPersistenceService service = new AnalysisReportPersistenceService(analysisReportRepository, objectMapper);
         AnalysisReportDraft draft = draft(
-                "{\"summary\":\"new\"}",
+                payload("New summary"),
                 Instant.parse("2026-03-09T01:00:30Z")
         );
 
@@ -89,11 +98,11 @@ class AnalysisReportPersistenceServiceTest {
                 "snapshotTime=2026-03-09T00:59:59Z;latestCandleOpenTime=2026-03-08T23:59:59Z;priceSourceEventTime=2026-03-09T00:59:30Z"
         );
         assertThat(result.getAnalysisEngineVersion()).isEqualTo("gpt-5.4");
-        assertThat(result.getReportPayload()).isEqualTo("{\"summary\":\"new\"}");
+        assertThat(result.getReportPayload()).isEqualTo(objectMapper.writeValueAsString(payload("New summary")));
         assertThat(result.getStoredTime()).isEqualTo(Instant.parse("2026-03-09T01:00:30Z"));
     }
 
-    private AnalysisReportDraft draft(String reportPayload, Instant storedTime) {
+    private AnalysisReportDraft draft(AnalysisReportPayload reportPayload, Instant storedTime) {
         return new AnalysisReportDraft(
                 "BTCUSDT",
                 AnalysisReportType.SHORT_TERM,
@@ -103,6 +112,17 @@ class AnalysisReportPersistenceServiceTest {
                 "gpt-5.4",
                 reportPayload,
                 storedTime
+        );
+    }
+
+    private AnalysisReportPayload payload(String summary) {
+        return new AnalysisReportPayload(
+                summary,
+                "BTC is holding above short-term support while momentum remains constructive.",
+                List.of(new AnalysisPriceLevel("S1", new BigDecimal("84500.00"), "Recent pullback low")),
+                List.of(new AnalysisPriceLevel("R1", new BigDecimal("88500.00"), "Recent swing high")),
+                List.of(new AnalysisRiskFactor("Macro volatility", "USD strength can pressure crypto risk assets.")),
+                List.of(new AnalysisScenario("Base case", "bullish", "Price consolidates above support and retests resistance."))
         );
     }
 }
