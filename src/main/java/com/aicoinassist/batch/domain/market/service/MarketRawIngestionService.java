@@ -19,9 +19,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -66,21 +72,8 @@ public class MarketRawIngestionService {
         RawDataValidationResult sequenceValidation = klineResponseValidator.validateSequence(klineResponses);
 
         List<MarketCandleRawEntity> candleEntities = klineResponses.isEmpty()
-                ? List.of(toEmptyMarketCandleRawEntity(symbol, interval, collectedTime, sequenceValidation))
-                : klineResponses.stream()
-                                .map(response -> toMarketCandleRawEntity(
-                                        symbol,
-                                        interval,
-                                        collectedTime,
-                                        response,
-                                        combineValidation(
-                                                klineResponseValidator.validateItem(response),
-                                                sequenceValidation
-                                        )
-                                ))
-                                .toList();
-
-        marketCandleRawRepository.saveAll(candleEntities);
+                ? persistEmptyCandleSnapshot(symbol, interval, collectedTime, sequenceValidation)
+                : persistOrRefreshCandles(symbol, interval, collectedTime, klineResponses, sequenceValidation);
 
         int invalidCandleCount = (int) candleEntities.stream()
                                                      .filter(entity -> entity.getValidationStatus() == RawDataValidationStatus.INVALID)
@@ -94,6 +87,63 @@ public class MarketRawIngestionService {
                 klineResponses.size(),
                 invalidCandleCount
         );
+    }
+
+    private List<MarketCandleRawEntity> persistEmptyCandleSnapshot(
+            String symbol,
+            CandleInterval interval,
+            Instant collectedTime,
+            RawDataValidationResult validation
+    ) {
+        List<MarketCandleRawEntity> emptyEntities =
+                List.of(toEmptyMarketCandleRawEntity(symbol, interval, collectedTime, validation));
+
+        marketCandleRawRepository.saveAll(emptyEntities);
+        return emptyEntities;
+    }
+
+    private List<MarketCandleRawEntity> persistOrRefreshCandles(
+            String symbol,
+            CandleInterval interval,
+            Instant collectedTime,
+            List<BinanceKlineResponse> klineResponses,
+            RawDataValidationResult sequenceValidation
+    ) {
+        Map<Instant, MarketCandleRawEntity> existingByOpenTime = loadExistingCandlesByOpenTime(symbol, interval, klineResponses);
+        List<MarketCandleRawEntity> candleEntities = new ArrayList<>(klineResponses.size());
+        List<MarketCandleRawEntity> newEntities = new ArrayList<>();
+
+        for (BinanceKlineResponse response : klineResponses) {
+            RawDataValidationResult validation = combineValidation(
+                    klineResponseValidator.validateItem(response),
+                    sequenceValidation
+            );
+
+            Instant openTime = toInstant(response == null ? null : response.openTime());
+            MarketCandleRawEntity existingEntity = existingByOpenTime.get(openTime);
+
+            if (existingEntity == null) {
+                MarketCandleRawEntity newEntity = toMarketCandleRawEntity(
+                        symbol,
+                        interval,
+                        collectedTime,
+                        response,
+                        validation
+                );
+                newEntities.add(newEntity);
+                candleEntities.add(newEntity);
+                continue;
+            }
+
+            refreshMarketCandleRawEntity(existingEntity, collectedTime, response, validation);
+            candleEntities.add(existingEntity);
+        }
+
+        if (!newEntities.isEmpty()) {
+            marketCandleRawRepository.saveAll(newEntities);
+        }
+
+        return candleEntities;
     }
 
     private MarketCandleRawEntity toMarketCandleRawEntity(
@@ -136,6 +186,68 @@ public class MarketRawIngestionService {
                                     .validationDetails(validation.details())
                                     .rawPayload(serialize(List.of()))
                                     .build();
+    }
+
+    private void refreshMarketCandleRawEntity(
+            MarketCandleRawEntity entity,
+            Instant collectedTime,
+            BinanceKlineResponse response,
+            RawDataValidationResult validation
+    ) {
+        entity.refreshFromIngestion(
+                toInstant(response == null ? null : response.closeTime()),
+                parseDecimal(response == null ? null : response.open()),
+                parseDecimal(response == null ? null : response.high()),
+                parseDecimal(response == null ? null : response.low()),
+                parseDecimal(response == null ? null : response.close()),
+                parseDecimal(response == null ? null : response.volume()),
+                collectedTime,
+                validation.status(),
+                validation.details(),
+                serialize(response == null ? null : response.rawValues())
+        );
+    }
+
+    private Map<Instant, MarketCandleRawEntity> loadExistingCandlesByOpenTime(
+            String symbol,
+            CandleInterval interval,
+            List<BinanceKlineResponse> klineResponses
+    ) {
+        List<Instant> openTimes = klineResponses.stream()
+                                                .map(response -> toInstant(response == null ? null : response.openTime()))
+                                                .filter(Objects::nonNull)
+                                                .distinct()
+                                                .toList();
+
+        if (openTimes.isEmpty()) {
+            return Map.of();
+        }
+
+        return marketCandleRawRepository.findAllBySourceAndSymbolAndIntervalValueAndOpenTimeIn(
+                                       BINANCE_SOURCE,
+                                       symbol,
+                                       interval.value(),
+                                       openTimes
+                               )
+                               .stream()
+                               .filter(entity -> entity.getOpenTime() != null)
+                               .collect(Collectors.toMap(
+                                       MarketCandleRawEntity::getOpenTime,
+                                       Function.identity(),
+                                       this::selectMoreRecentEntity
+                               ));
+    }
+
+    private MarketCandleRawEntity selectMoreRecentEntity(
+            MarketCandleRawEntity left,
+            MarketCandleRawEntity right
+    ) {
+        return Comparator
+                .comparing(MarketCandleRawEntity::getCollectedTime, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(MarketCandleRawEntity::getId, Comparator.nullsLast(Comparator.naturalOrder()))
+                .compare(left, right) >= 0
+                ? left
+                : right;
     }
 
     private RawDataValidationResult combineValidation(
