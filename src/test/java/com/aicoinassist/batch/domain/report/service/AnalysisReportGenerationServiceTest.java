@@ -3,6 +3,7 @@ package com.aicoinassist.batch.domain.report.service;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
@@ -65,6 +66,11 @@ class AnalysisReportGenerationServiceTest {
                 "summary",
                 "context",
                 comparisonFacts,
+                List.of(new AnalysisComparisonHighlight(
+                        AnalysisComparisonReference.D1,
+                        "D1 shows price +1.7442% versus the reference point.",
+                        "D1 keeps RSI Δ +7 and MACD hist Δ +10."
+                )),
                 List.of(),
                 List.of(),
                 List.of(),

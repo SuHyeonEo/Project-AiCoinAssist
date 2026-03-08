@@ -2,10 +2,12 @@ package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +15,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -23,14 +26,16 @@ public class AnalysisReportAssembler {
             AnalysisReportType reportType,
             List<AnalysisComparisonFact> comparisonFacts
     ) {
+        List<AnalysisComparisonHighlight> comparisonHighlights = comparisonHighlights(reportType, comparisonFacts);
         String trendBias = determineTrendBias(snapshot);
-        String summary = buildSummary(snapshot, trendBias, reportType, comparisonFacts);
-        String marketContext = buildMarketContext(snapshot, trendBias, comparisonFacts);
+        String summary = buildSummary(snapshot, trendBias, reportType, comparisonFacts, comparisonHighlights);
+        String marketContext = buildMarketContext(snapshot, trendBias, comparisonFacts, comparisonHighlights);
 
         return new AnalysisReportPayload(
                 summary,
                 marketContext,
                 comparisonFacts,
+                comparisonHighlights,
                 supportLevels(snapshot),
                 resistanceLevels(snapshot),
                 riskFactors(snapshot),
@@ -42,7 +47,8 @@ public class AnalysisReportAssembler {
             MarketIndicatorSnapshotEntity snapshot,
             String trendBias,
             AnalysisReportType reportType,
-            List<AnalysisComparisonFact> comparisonFacts
+            List<AnalysisComparisonFact> comparisonFacts,
+            List<AnalysisComparisonHighlight> comparisonHighlights
     ) {
         String summary = reportType.name() + " view: "
                 + snapshot.getSymbol()
@@ -60,6 +66,10 @@ public class AnalysisReportAssembler {
             return summary;
         }
 
+        if (!comparisonHighlights.isEmpty()) {
+            return summary + " " + comparisonHighlights.get(0).headline();
+        }
+
         AnalysisComparisonFact primaryFact = comparisonFacts.get(0);
         return summary + " Versus "
                 + primaryFact.reference().name()
@@ -73,7 +83,8 @@ public class AnalysisReportAssembler {
     private String buildMarketContext(
             MarketIndicatorSnapshotEntity snapshot,
             String trendBias,
-            List<AnalysisComparisonFact> comparisonFacts
+            List<AnalysisComparisonFact> comparisonFacts,
+            List<AnalysisComparisonHighlight> comparisonHighlights
     ) {
         String maContext = comparePriceToMovingAverage(snapshot.getCurrentPrice(), snapshot.getMa20(), "MA20")
                 + ", "
@@ -95,17 +106,18 @@ public class AnalysisReportAssembler {
             return context;
         }
 
+        String highlightsText = comparisonHighlights.isEmpty()
+                ? ""
+                : " Highlights: " + comparisonHighlights.stream()
+                                                        .map(AnalysisComparisonHighlight::detail)
+                                                        .collect(Collectors.joining(" "));
+
         return context + " Comparison facts: "
                 + comparisonFacts.stream()
-                                 .map(fact -> fact.reference().name()
-                                         + " price "
-                                         + signed(fact.priceChangeRate())
-                                         + "%, RSI Δ "
-                                         + signed(fact.rsiDelta())
-                                         + ", MACD hist Δ "
-                                         + signed(fact.macdHistogramDelta()))
+                                 .map(this::comparisonFactSummary)
                                  .collect(Collectors.joining("; "))
-                + ".";
+                + "."
+                + highlightsText;
     }
 
     private List<AnalysisPriceLevel> supportLevels(MarketIndicatorSnapshotEntity snapshot) {
@@ -243,5 +255,89 @@ public class AnalysisReportAssembler {
             return "+" + plainValue;
         }
         return plainValue;
+    }
+
+    private List<AnalysisComparisonHighlight> comparisonHighlights(
+            AnalysisReportType reportType,
+            List<AnalysisComparisonFact> comparisonFacts
+    ) {
+        Map<AnalysisComparisonReference, AnalysisComparisonFact> factByReference = comparisonFacts.stream()
+                                                                                                  .collect(Collectors.toMap(
+                                                                                                          AnalysisComparisonFact::reference,
+                                                                                                          fact -> fact,
+                                                                                                          (left, right) -> left
+                                                                                                  ));
+
+        return highlightPriority(reportType).stream()
+                                            .map(factByReference::get)
+                                            .filter(java.util.Objects::nonNull)
+                                            .map(this::toHighlight)
+                                            .toList();
+    }
+
+    private List<AnalysisComparisonReference> highlightPriority(AnalysisReportType reportType) {
+        return switch (reportType) {
+            case SHORT_TERM -> List.of(
+                    AnalysisComparisonReference.PREV_BATCH,
+                    AnalysisComparisonReference.D1,
+                    AnalysisComparisonReference.D3
+            );
+            case MID_TERM -> List.of(
+                    AnalysisComparisonReference.PREV_MID_REPORT,
+                    AnalysisComparisonReference.D7,
+                    AnalysisComparisonReference.D30
+            );
+            case LONG_TERM -> List.of(
+                    AnalysisComparisonReference.Y52_HIGH,
+                    AnalysisComparisonReference.Y52_LOW,
+                    AnalysisComparisonReference.PREV_LONG_REPORT,
+                    AnalysisComparisonReference.D180
+            );
+        };
+    }
+
+    private AnalysisComparisonHighlight toHighlight(AnalysisComparisonFact fact) {
+        return switch (fact.reference()) {
+            case PREV_BATCH -> new AnalysisComparisonHighlight(
+                    fact.reference(),
+                    "Since the previous batch, price changed " + signed(fact.priceChangeRate()) + "% and RSI14 moved " + signed(fact.rsiDelta()) + ".",
+                    "PREV_BATCH confirms the latest impulse with MACD histogram Δ " + signed(fact.macdHistogramDelta()) + "."
+            );
+            case D1, D3, D7, D14, D30, D90, D180 -> new AnalysisComparisonHighlight(
+                    fact.reference(),
+                    fact.reference().name() + " shows price " + signed(fact.priceChangeRate()) + "% versus the reference point.",
+                    fact.reference().name() + " keeps RSI Δ " + signed(fact.rsiDelta()) + " and MACD hist Δ " + signed(fact.macdHistogramDelta()) + "."
+            );
+            case PREV_MID_REPORT, PREV_LONG_REPORT -> new AnalysisComparisonHighlight(
+                    fact.reference(),
+                    "Versus " + fact.reference().name() + ", price changed " + signed(fact.priceChangeRate()) + "%.",
+                    fact.reference().name() + " comparison shows RSI Δ " + signed(fact.rsiDelta()) + " and ATR change " + signed(fact.atrChangeRate()) + "%."
+            );
+            case Y52_HIGH -> new AnalysisComparisonHighlight(
+                    fact.reference(),
+                    "Price is " + distanceFromExtremum(fact.priceChangeRate(), "below") + " the 52-week high.",
+                    "Y52_HIGH keeps long-term upside distance at " + signed(fact.priceChangeRate()) + "% from the cycle peak."
+            );
+            case Y52_LOW -> new AnalysisComparisonHighlight(
+                    fact.reference(),
+                    "Price is " + distanceFromExtremum(fact.priceChangeRate(), "above") + " the 52-week low.",
+                    "Y52_LOW shows the market remains " + signed(fact.priceChangeRate()) + "% above the cycle floor."
+            );
+        };
+    }
+
+    private String comparisonFactSummary(AnalysisComparisonFact fact) {
+        return fact.reference().name()
+                + " price "
+                + signed(fact.priceChangeRate())
+                + "%, RSI Δ "
+                + signed(fact.rsiDelta())
+                + ", MACD hist Δ "
+                + signed(fact.macdHistogramDelta());
+    }
+
+    private String distanceFromExtremum(BigDecimal priceChangeRate, String relation) {
+        BigDecimal absoluteValue = priceChangeRate.abs();
+        return absoluteValue.stripTrailingZeros().toPlainString() + "% " + relation;
     }
 }

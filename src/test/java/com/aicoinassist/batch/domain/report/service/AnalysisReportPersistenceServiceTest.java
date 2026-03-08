@@ -6,6 +6,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
@@ -133,6 +134,13 @@ class AnalysisReportPersistenceServiceTest {
                                 new BigDecimal("2.00"),
                                 new BigDecimal("5.00"),
                                 new BigDecimal("7.1429")
+                        )
+                ),
+                List.of(
+                        new AnalysisComparisonHighlight(
+                                AnalysisComparisonReference.PREV_BATCH,
+                                "Since the previous batch, price changed +0.5747% and RSI14 moved +2.",
+                                "PREV_BATCH confirms the latest impulse with MACD histogram Δ +5."
                         )
                 ),
                 List.of(new AnalysisPriceLevel("S1", new BigDecimal("84500.00"), "Recent pullback low")),
