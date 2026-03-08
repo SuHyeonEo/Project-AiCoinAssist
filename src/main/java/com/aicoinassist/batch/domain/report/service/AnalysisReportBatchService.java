@@ -1,9 +1,10 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
+import com.aicoinassist.batch.domain.market.enumtype.AssetType;
 import com.aicoinassist.batch.domain.market.service.MarketIndicatorSnapshotPersistenceService;
+import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchProperties;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchResult;
-import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,21 +16,27 @@ public class AnalysisReportBatchService {
 
     private final MarketIndicatorSnapshotPersistenceService marketIndicatorSnapshotPersistenceService;
     private final AnalysisReportGenerationService analysisReportGenerationService;
+    private final AnalysisReportBatchProperties analysisReportBatchProperties;
 
-    public AnalysisReportBatchResult generateForSymbol(
-            String symbol,
-            String analysisEngineVersion,
+    public AnalysisReportBatchResult generateForAsset(
+            AssetType assetType,
             Instant storedTime
     ) {
+        String symbol = assetType.symbol();
         int snapshotCount = 0;
-        for (CandleInterval interval : CandleInterval.values()) {
+        for (CandleInterval interval : analysisReportBatchProperties.snapshotIntervals()) {
             marketIndicatorSnapshotPersistenceService.createAndSave(symbol, interval);
             snapshotCount++;
         }
 
         int reportCount = 0;
-        for (AnalysisReportType reportType : AnalysisReportType.values()) {
-            analysisReportGenerationService.generateAndSave(symbol, reportType, analysisEngineVersion, storedTime);
+        for (var reportType : analysisReportBatchProperties.reportTypes()) {
+            analysisReportGenerationService.generateAndSave(
+                    symbol,
+                    reportType,
+                    analysisReportBatchProperties.engineVersion(),
+                    storedTime
+            );
             reportCount++;
         }
 
