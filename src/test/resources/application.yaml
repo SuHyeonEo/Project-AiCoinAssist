@@ -21,6 +21,15 @@ spring:
       enabled: false
 
 batch:
+  analysis-report:
+    engine-version: test-report-assembler
+    asset-types:
+      - BTC
+    report-types:
+      - SHORT_TERM
+      - MID_TERM
+      - LONG_TERM
+    fixed-delay-ms: 300000
   scheduler:
     market-raw-ingestion:
       enabled: false

@@ -24,6 +24,22 @@ logging:
   level:
     root: info
 
+batch:
+  analysis-report:
+    engine-version: report-assembler-v1
+    asset-types:
+      - BTC
+      - ETH
+      - XRP
+    report-types:
+      - SHORT_TERM
+      - MID_TERM
+      - LONG_TERM
+    fixed-delay-ms: 300000
+  scheduler:
+    analysis-report-generation:
+      enabled: true
+
 external:
   binance:
     base-url: https://api.binance.com
