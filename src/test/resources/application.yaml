@@ -24,6 +24,8 @@ batch:
   scheduler:
     market-raw-ingestion:
       enabled: false
+    analysis-report-generation:
+      enabled: false
 
 logging:
   level:
