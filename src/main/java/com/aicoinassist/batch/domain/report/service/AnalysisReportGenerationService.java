@@ -3,6 +3,7 @@ package com.aicoinassist.batch.domain.report.service;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
+import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
@@ -11,12 +12,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class AnalysisReportGenerationService {
 
     private final MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
+    private final AnalysisComparisonService analysisComparisonService;
     private final AnalysisReportAssembler analysisReportAssembler;
     private final AnalysisReportPersistenceService analysisReportPersistenceService;
 
@@ -33,7 +36,8 @@ public class AnalysisReportGenerationService {
                         "No market indicator snapshot found for symbol=%s interval=%s".formatted(symbol, interval.value())
                 ));
 
-        AnalysisReportPayload payload = analysisReportAssembler.assemble(snapshot, reportType);
+        List<AnalysisComparisonFact> comparisonFacts = analysisComparisonService.buildFacts(snapshot, reportType);
+        AnalysisReportPayload payload = analysisReportAssembler.assemble(snapshot, reportType, comparisonFacts);
         AnalysisReportDraft draft = new AnalysisReportDraft(
                 snapshot.getSymbol(),
                 reportType,
