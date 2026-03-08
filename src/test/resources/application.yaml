@@ -21,6 +21,10 @@ spring:
       enabled: false
 
 batch:
+  admin-api:
+    enabled: true
+    token: test-admin-token
+    header-name: X-Admin-Token
   analysis-report:
     engine-version: test-report-assembler
     asset-types:
