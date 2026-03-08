@@ -16,4 +16,10 @@ public interface AnalysisReportRepository extends JpaRepository<AnalysisReportEn
             String sourceDataVersion,
             String analysisEngineVersion
     );
+
+    Optional<AnalysisReportEntity> findTopBySymbolAndReportTypeAndAnalysisBasisTimeLessThanOrderByAnalysisBasisTimeDescIdDesc(
+            String symbol,
+            AnalysisReportType reportType,
+            Instant analysisBasisTime
+    );
 }

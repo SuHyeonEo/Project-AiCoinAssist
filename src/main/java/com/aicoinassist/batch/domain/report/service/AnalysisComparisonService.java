@@ -2,9 +2,11 @@ package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
+import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
+import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +25,7 @@ public class AnalysisComparisonService {
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
     private final MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
+    private final AnalysisReportRepository analysisReportRepository;
 
     public List<AnalysisComparisonFact> buildFacts(
             MarketIndicatorSnapshotEntity currentSnapshot,
@@ -61,25 +64,43 @@ public class AnalysisComparisonService {
     }
 
     private List<AnalysisComparisonFact> midTermFacts(MarketIndicatorSnapshotEntity currentSnapshot) {
-        return buildTimeWindowFacts(
+        List<AnalysisComparisonFact> facts = new ArrayList<>(buildTimeWindowFacts(
                 currentSnapshot,
                 List.of(
                         new TimeWindowReference(AnalysisComparisonReference.D7, 7),
                         new TimeWindowReference(AnalysisComparisonReference.D14, 14),
                         new TimeWindowReference(AnalysisComparisonReference.D30, 30)
                 )
+        ));
+
+        addPreviousReportIfPresent(
+                facts,
+                AnalysisReportType.MID_TERM,
+                AnalysisComparisonReference.PREV_MID_REPORT,
+                currentSnapshot
         );
+
+        return facts;
     }
 
     private List<AnalysisComparisonFact> longTermFacts(MarketIndicatorSnapshotEntity currentSnapshot) {
-        return buildTimeWindowFacts(
+        List<AnalysisComparisonFact> facts = new ArrayList<>(buildTimeWindowFacts(
                 currentSnapshot,
                 List.of(
                         new TimeWindowReference(AnalysisComparisonReference.D30, 30),
                         new TimeWindowReference(AnalysisComparisonReference.D90, 90),
                         new TimeWindowReference(AnalysisComparisonReference.D180, 180)
                 )
+        ));
+
+        addPreviousReportIfPresent(
+                facts,
+                AnalysisReportType.LONG_TERM,
+                AnalysisComparisonReference.PREV_LONG_REPORT,
+                currentSnapshot
         );
+
+        return facts;
     }
 
     private List<AnalysisComparisonFact> buildTimeWindowFacts(
@@ -123,6 +144,33 @@ public class AnalysisComparisonService {
             AnalysisComparisonReference reference,
             long days
     ) {
+    }
+
+    private void addPreviousReportIfPresent(
+            List<AnalysisComparisonFact> facts,
+            AnalysisReportType reportType,
+            AnalysisComparisonReference reference,
+            MarketIndicatorSnapshotEntity currentSnapshot
+    ) {
+        analysisReportRepository.findTopBySymbolAndReportTypeAndAnalysisBasisTimeLessThanOrderByAnalysisBasisTimeDescIdDesc(
+                                        currentSnapshot.getSymbol(),
+                                        reportType,
+                                        currentSnapshot.getSnapshotTime()
+                                )
+                                .flatMap(previousReport -> loadSnapshotForReport(previousReport, currentSnapshot.getIntervalValue()))
+                                .map(referenceSnapshot -> createFact(reference, referenceSnapshot, currentSnapshot))
+                                .ifPresent(facts::add);
+    }
+
+    private Optional<MarketIndicatorSnapshotEntity> loadSnapshotForReport(
+            AnalysisReportEntity previousReport,
+            String intervalValue
+    ) {
+        return marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeOrderByIdDesc(
+                previousReport.getSymbol(),
+                intervalValue,
+                previousReport.getAnalysisBasisTime()
+        );
     }
 
     private AnalysisComparisonFact createFact(
