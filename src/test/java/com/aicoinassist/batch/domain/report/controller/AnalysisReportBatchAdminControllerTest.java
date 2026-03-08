@@ -7,6 +7,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchRunResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchRunSummaryView;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportSnapshotStepResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportStepResult;
+import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchAdminApiAuditInterceptor;
 import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchAdminApiAuthInterceptor;
 import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchAdminApiProperties;
 import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchAdminApiWebConfig;
@@ -17,6 +18,7 @@ import com.aicoinassist.batch.domain.report.service.AnalysisReportBatchRerunServ
 import com.aicoinassist.batch.domain.report.service.AnalysisReportBatchRunReadService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -34,10 +36,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = AnalysisReportBatchAdminController.class)
+@EnableConfigurationProperties(AnalysisReportBatchAdminApiProperties.class)
 @Import({
         AnalysisReportBatchAdminExceptionHandler.class,
         AnalysisReportBatchAdminApiWebConfig.class,
-        AnalysisReportBatchAdminApiAuthInterceptor.class
+        AnalysisReportBatchAdminApiAuthInterceptor.class,
+        AnalysisReportBatchAdminApiAuditInterceptor.class
 })
 @TestPropertySource(properties = {
         "batch.admin-api.enabled=true",
