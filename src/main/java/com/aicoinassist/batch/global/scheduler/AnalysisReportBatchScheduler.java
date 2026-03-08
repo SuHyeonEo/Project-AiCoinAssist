@@ -2,21 +2,16 @@ package com.aicoinassist.batch.global.scheduler;
 
 import com.aicoinassist.batch.domain.market.enumtype.AssetType;
 import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchProperties;
-import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchRunResult;
-import com.aicoinassist.batch.domain.report.service.AnalysisReportBatchRunPersistenceService;
-import com.aicoinassist.batch.domain.report.service.AnalysisReportBatchService;
+import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionTriggerType;
+import com.aicoinassist.batch.domain.report.service.AnalysisReportBatchExecutionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @Component
@@ -29,102 +24,67 @@ import java.util.UUID;
 )
 public class AnalysisReportBatchScheduler {
 
-    private final AnalysisReportBatchService analysisReportBatchService;
-    private final AnalysisReportBatchRunPersistenceService analysisReportBatchRunPersistenceService;
+    private final AnalysisReportBatchExecutionService analysisReportBatchExecutionService;
     private final AnalysisReportBatchProperties analysisReportBatchProperties;
-    private final Clock clock;
 
     @Scheduled(fixedDelayString = "${batch.analysis-report.fixed-delay-ms:300000}")
     public void run() {
-        String runId = UUID.randomUUID().toString();
-        Instant runStartedAt = Instant.now(clock);
-        Instant storedTime = runStartedAt;
-        List<AnalysisReportBatchResult> assetResults = new ArrayList<>();
-
-        for (AssetType assetType : analysisReportBatchProperties.assetTypes()) {
-            Instant assetStartedAt = Instant.now(clock);
-            try {
-                AnalysisReportBatchResult result = analysisReportBatchService.generateForAsset(
-                        assetType,
-                        runId,
-                        storedTime
+        AnalysisReportBatchRunResult runResult = analysisReportBatchExecutionService.execute(
+                analysisReportBatchProperties.assetTypes(),
+                analysisReportBatchProperties.engineVersion(),
+                BatchExecutionTriggerType.SCHEDULED,
+                null
+        );
+        for (var result : runResult.assetResults()) {
+            if (result.hasFailures()) {
+                log.warn(
+                        "analysis report batch partially failed - runId: {}, symbol: {}, durationMs: {}, snapshotSuccess: {}, snapshotFailure: {}, reportSuccess: {}, reportFailure: {}, engineVersion: {}, triggerType: {}",
+                        result.runId(),
+                        result.symbol(),
+                        result.durationMillis(),
+                        result.snapshotSuccessCount(),
+                        result.snapshotFailureCount(),
+                        result.reportSuccessCount(),
+                        result.reportFailureCount(),
+                        analysisReportBatchProperties.engineVersion(),
+                        runResult.triggerType()
                 );
-                assetResults.add(result);
-
-                if (result.hasFailures()) {
-                    log.warn(
-                            "analysis report batch partially failed - runId: {}, symbol: {}, durationMs: {}, snapshotSuccess: {}, snapshotFailure: {}, reportSuccess: {}, reportFailure: {}, engineVersion: {}",
+                log.warn("snapshot step results - runId: {}, symbol: {}, results: {}", result.runId(), result.symbol(), result.snapshotResults());
+                log.warn("report step results - runId: {}, symbol: {}, results: {}", result.runId(), result.symbol(), result.reportResults());
+                if (result.crashed()) {
+                    log.error(
+                            "analysis report batch crashed - runId: {}, symbol: {}, durationMs: {}, engineVersion: {}, triggerType: {}, error: {}",
                             result.runId(),
                             result.symbol(),
                             result.durationMillis(),
-                            result.snapshotSuccessCount(),
-                            result.snapshotFailureCount(),
-                            result.reportSuccessCount(),
-                            result.reportFailureCount(),
-                            analysisReportBatchProperties.engineVersion()
-                    );
-                    log.warn("snapshot step results - runId: {}, symbol: {}, results: {}", result.runId(), result.symbol(), result.snapshotResults());
-                    log.warn("report step results - runId: {}, symbol: {}, results: {}", result.runId(), result.symbol(), result.reportResults());
-                } else {
-                    log.info(
-                            "analysis report batch completed - runId: {}, symbol: {}, durationMs: {}, snapshots: {}, reports: {}, engineVersion: {}",
-                            result.runId(),
-                            result.symbol(),
-                            result.durationMillis(),
-                            result.snapshotSuccessCount(),
-                            result.reportSuccessCount(),
-                            analysisReportBatchProperties.engineVersion()
+                            analysisReportBatchProperties.engineVersion(),
+                            runResult.triggerType(),
+                            result.crashErrorMessage()
                     );
                 }
-            } catch (Exception exception) {
-                AnalysisReportBatchResult crashedResult = AnalysisReportBatchResult.crashed(
-                        runId,
-                        assetType.symbol(),
-                        assetStartedAt,
-                        Instant.now(clock),
-                        crashMessage(exception)
-                );
-                assetResults.add(crashedResult);
-                log.error(
-                        "analysis report batch crashed - runId: {}, symbol: {}, durationMs: {}, engineVersion: {}, error: {}",
-                        crashedResult.runId(),
-                        crashedResult.symbol(),
-                        crashedResult.durationMillis(),
+            } else {
+                log.info(
+                        "analysis report batch completed - runId: {}, symbol: {}, durationMs: {}, snapshots: {}, reports: {}, engineVersion: {}, triggerType: {}",
+                        result.runId(),
+                        result.symbol(),
+                        result.durationMillis(),
+                        result.snapshotSuccessCount(),
+                        result.reportSuccessCount(),
                         analysisReportBatchProperties.engineVersion(),
-                        crashedResult.crashErrorMessage(),
-                        exception
+                        runResult.triggerType()
                 );
             }
         }
-
-        Instant runFinishedAt = Instant.now(clock);
-        AnalysisReportBatchRunResult runResult = new AnalysisReportBatchRunResult(
-                runId,
-                runStartedAt,
-                runFinishedAt,
-                runFinishedAt.toEpochMilli() - runStartedAt.toEpochMilli(),
-                List.copyOf(assetResults)
-        );
-        analysisReportBatchRunPersistenceService.save(
-                runResult,
-                analysisReportBatchProperties.engineVersion(),
-                runFinishedAt
-        );
         log.info(
-                "analysis report batch run finished - runId: {}, status: {}, durationMs: {}, assetSuccess: {}, assetFailure: {}, engineVersion: {}",
+                "analysis report batch run finished - runId: {}, triggerType: {}, rerunSourceRunId: {}, status: {}, durationMs: {}, assetSuccess: {}, assetFailure: {}, engineVersion: {}",
                 runResult.runId(),
+                runResult.triggerType(),
+                runResult.rerunSourceRunId(),
                 runResult.status(),
                 runResult.durationMillis(),
                 runResult.assetSuccessCount(),
                 runResult.assetFailureCount(),
                 analysisReportBatchProperties.engineVersion()
         );
-    }
-
-    private static String crashMessage(Exception exception) {
-        if (exception.getMessage() != null && !exception.getMessage().isBlank()) {
-            return exception.getMessage();
-        }
-        return exception.getClass().getSimpleName();
     }
 }

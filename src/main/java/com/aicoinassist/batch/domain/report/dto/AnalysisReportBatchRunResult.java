@@ -1,12 +1,15 @@
 package com.aicoinassist.batch.domain.report.dto;
 
 import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionStatus;
+import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionTriggerType;
 
 import java.time.Instant;
 import java.util.List;
 
 public record AnalysisReportBatchRunResult(
         String runId,
+        BatchExecutionTriggerType triggerType,
+        String rerunSourceRunId,
         Instant startedAt,
         Instant finishedAt,
         long durationMillis,

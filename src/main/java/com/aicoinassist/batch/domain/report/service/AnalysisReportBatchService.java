@@ -27,6 +27,7 @@ public class AnalysisReportBatchService {
     public AnalysisReportBatchResult generateForAsset(
             AssetType assetType,
             String runId,
+            String engineVersion,
             Instant storedTime
     ) {
         Instant startedAt = Instant.now(clock);
@@ -47,7 +48,7 @@ public class AnalysisReportBatchService {
                 analysisReportGenerationService.generateAndSave(
                         symbol,
                         reportType,
-                        analysisReportBatchProperties.engineVersion(),
+                        engineVersion,
                         storedTime
                 );
                 reportResults.add(new AnalysisReportStepResult(reportType, true, null));
