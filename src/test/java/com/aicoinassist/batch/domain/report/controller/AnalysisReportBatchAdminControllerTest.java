@@ -17,7 +17,6 @@ import com.aicoinassist.batch.domain.report.service.AnalysisReportBatchRerunServ
 import com.aicoinassist.batch.domain.report.service.AnalysisReportBatchRunReadService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -35,7 +34,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = AnalysisReportBatchAdminController.class)
-@EnableConfigurationProperties(AnalysisReportBatchAdminApiProperties.class)
 @Import({
         AnalysisReportBatchAdminExceptionHandler.class,
         AnalysisReportBatchAdminApiWebConfig.class,
