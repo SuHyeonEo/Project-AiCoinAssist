@@ -8,6 +8,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisReportStepResult;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportBatchAssetResultEntity;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportBatchRunEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
+import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionTriggerType;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportBatchAssetResultRepository;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportBatchRunRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,6 +50,8 @@ class AnalysisReportBatchRunPersistenceServiceTest {
 
         AnalysisReportBatchRunResult runResult = new AnalysisReportBatchRunResult(
                 "run-001",
+                BatchExecutionTriggerType.MANUAL_RERUN,
+                "run-000",
                 Instant.parse("2026-03-09T01:00:00Z"),
                 Instant.parse("2026-03-09T01:00:20Z"),
                 20000L,
@@ -85,6 +88,8 @@ class AnalysisReportBatchRunPersistenceServiceTest {
         ArgumentCaptor<List<AnalysisReportBatchAssetResultEntity>> assetCaptor = ArgumentCaptor.forClass(List.class);
 
         assertThat(savedRun.getRunId()).isEqualTo("run-001");
+        assertThat(savedRun.getTriggerType()).isEqualTo(BatchExecutionTriggerType.MANUAL_RERUN);
+        assertThat(savedRun.getRerunSourceRunId()).isEqualTo("run-000");
         assertThat(savedRun.getEngineVersion()).isEqualTo("report-assembler-v1");
         assertThat(savedRun.getAssetSuccessCount()).isEqualTo(1);
         assertThat(savedRun.getAssetFailureCount()).isEqualTo(1);

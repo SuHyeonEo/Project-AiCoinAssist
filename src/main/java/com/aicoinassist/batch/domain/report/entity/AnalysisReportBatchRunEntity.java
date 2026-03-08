@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.report.entity;
 
 import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionStatus;
+import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionTriggerType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -53,6 +54,13 @@ public class AnalysisReportBatchRunEntity {
     @Column(nullable = false, length = 30)
     private BatchExecutionStatus executionStatus;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private BatchExecutionTriggerType triggerType;
+
+    @Column(length = 100)
+    private String rerunSourceRunId;
+
     @Column(nullable = false, length = 100)
     private String engineVersion;
 
@@ -78,6 +86,8 @@ public class AnalysisReportBatchRunEntity {
     public AnalysisReportBatchRunEntity(
             String runId,
             BatchExecutionStatus executionStatus,
+            BatchExecutionTriggerType triggerType,
+            String rerunSourceRunId,
             String engineVersion,
             Instant startedAt,
             Instant finishedAt,
@@ -88,6 +98,8 @@ public class AnalysisReportBatchRunEntity {
     ) {
         this.runId = runId;
         this.executionStatus = executionStatus;
+        this.triggerType = triggerType;
+        this.rerunSourceRunId = rerunSourceRunId;
         this.engineVersion = engineVersion;
         this.startedAt = startedAt;
         this.finishedAt = finishedAt;

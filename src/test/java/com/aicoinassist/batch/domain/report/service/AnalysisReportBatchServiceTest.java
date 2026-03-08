@@ -55,7 +55,7 @@ class AnalysisReportBatchServiceTest {
 
         Instant storedTime = Instant.parse("2026-03-09T01:00:30Z");
 
-        AnalysisReportBatchResult result = service.generateForAsset(AssetType.BTC, "run-001", storedTime);
+        AnalysisReportBatchResult result = service.generateForAsset(AssetType.BTC, "run-001", "report-assembler-v1", storedTime);
 
         InOrder inOrder = inOrder(
                 marketIndicatorSnapshotPersistenceService,
@@ -93,7 +93,12 @@ class AnalysisReportBatchServiceTest {
                 FIXED_CLOCK
         );
 
-        AnalysisReportBatchResult result = service.generateForAsset(AssetType.ETH, "run-002", Instant.parse("2026-03-09T01:00:30Z"));
+        AnalysisReportBatchResult result = service.generateForAsset(
+                AssetType.ETH,
+                "run-002",
+                "report-assembler-v2",
+                Instant.parse("2026-03-09T01:00:30Z")
+        );
 
         InOrder inOrder = inOrder(
                 marketIndicatorSnapshotPersistenceService,
@@ -160,6 +165,7 @@ class AnalysisReportBatchServiceTest {
         AnalysisReportBatchResult result = service.generateForAsset(
                 AssetType.XRP,
                 "run-003",
+                "report-assembler-v3",
                 Instant.parse("2026-03-09T01:00:30Z")
         );
 

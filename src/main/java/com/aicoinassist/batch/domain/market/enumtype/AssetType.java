@@ -14,4 +14,13 @@ public enum AssetType {
     public String symbol() {
         return symbol;
     }
+
+    public static AssetType fromSymbol(String symbol) {
+        for (AssetType assetType : values()) {
+            if (assetType.symbol.equals(symbol)) {
+                return assetType;
+            }
+        }
+        throw new IllegalArgumentException("Unsupported asset symbol: " + symbol);
+    }
 }

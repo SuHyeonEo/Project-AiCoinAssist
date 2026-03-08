@@ -32,6 +32,8 @@ public class AnalysisReportBatchRunPersistenceService {
                 AnalysisReportBatchRunEntity.builder()
                                             .runId(runResult.runId())
                                             .executionStatus(runResult.status())
+                                            .triggerType(runResult.triggerType())
+                                            .rerunSourceRunId(runResult.rerunSourceRunId())
                                             .engineVersion(engineVersion)
                                             .startedAt(runResult.startedAt())
                                             .finishedAt(runResult.finishedAt())
