@@ -10,6 +10,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisReportStepResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,11 +22,14 @@ public class AnalysisReportBatchService {
     private final MarketIndicatorSnapshotPersistenceService marketIndicatorSnapshotPersistenceService;
     private final AnalysisReportGenerationService analysisReportGenerationService;
     private final AnalysisReportBatchProperties analysisReportBatchProperties;
+    private final Clock clock;
 
     public AnalysisReportBatchResult generateForAsset(
             AssetType assetType,
+            String runId,
             Instant storedTime
     ) {
+        Instant startedAt = Instant.now(clock);
         String symbol = assetType.symbol();
         List<AnalysisReportSnapshotStepResult> snapshotResults = new ArrayList<>();
         for (CandleInterval interval : analysisReportBatchProperties.snapshotIntervals()) {
@@ -52,6 +56,15 @@ public class AnalysisReportBatchService {
             }
         }
 
-        return new AnalysisReportBatchResult(symbol, snapshotResults, reportResults);
+        Instant finishedAt = Instant.now(clock);
+        return new AnalysisReportBatchResult(
+                runId,
+                symbol,
+                startedAt,
+                finishedAt,
+                finishedAt.toEpochMilli() - startedAt.toEpochMilli(),
+                snapshotResults,
+                reportResults
+        );
     }
 }

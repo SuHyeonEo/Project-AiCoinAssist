@@ -1,9 +1,14 @@
 package com.aicoinassist.batch.domain.report.dto;
 
+import java.time.Instant;
 import java.util.List;
 
 public record AnalysisReportBatchResult(
+        String runId,
         String symbol,
+        Instant startedAt,
+        Instant finishedAt,
+        long durationMillis,
         List<AnalysisReportSnapshotStepResult> snapshotResults,
         List<AnalysisReportStepResult> reportResults
 ) {
