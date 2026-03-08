@@ -16,6 +16,7 @@ import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AnalysisReportBatchServiceTest {
@@ -27,7 +28,7 @@ class AnalysisReportBatchServiceTest {
     private AnalysisReportGenerationService analysisReportGenerationService;
 
     @Test
-    void generateForSymbolCreatesSnapshotsBeforeReportsForAllHorizons() {
+    void generateForAssetCreatesSnapshotsBeforeReportsForAllHorizons() {
         AnalysisReportBatchProperties properties = new AnalysisReportBatchProperties(
                 "report-assembler-v1",
                 java.util.List.of(AssetType.BTC),
@@ -60,8 +61,9 @@ class AnalysisReportBatchServiceTest {
         inOrder.verify(analysisReportGenerationService).generateAndSave("BTCUSDT", AnalysisReportType.LONG_TERM, "report-assembler-v1", storedTime);
 
         assertThat(result.symbol()).isEqualTo("BTCUSDT");
-        assertThat(result.snapshotCount()).isEqualTo(3);
-        assertThat(result.reportCount()).isEqualTo(3);
+        assertThat(result.snapshotSuccessCount()).isEqualTo(3);
+        assertThat(result.reportSuccessCount()).isEqualTo(3);
+        assertThat(result.hasFailures()).isFalse();
     }
 
     @Test
@@ -100,7 +102,62 @@ class AnalysisReportBatchServiceTest {
         );
 
         assertThat(result.symbol()).isEqualTo("ETHUSDT");
-        assertThat(result.snapshotCount()).isEqualTo(2);
-        assertThat(result.reportCount()).isEqualTo(2);
+        assertThat(result.snapshotSuccessCount()).isEqualTo(2);
+        assertThat(result.reportSuccessCount()).isEqualTo(2);
+    }
+
+    @Test
+    void generateForAssetCapturesPartialFailuresByStep() {
+        AnalysisReportBatchProperties properties = new AnalysisReportBatchProperties(
+                "report-assembler-v3",
+                java.util.List.of(AssetType.XRP),
+                java.util.List.of(
+                        AnalysisReportType.SHORT_TERM,
+                        AnalysisReportType.MID_TERM
+                ),
+                300000L
+        );
+        AnalysisReportBatchService service = new AnalysisReportBatchService(
+                marketIndicatorSnapshotPersistenceService,
+                analysisReportGenerationService,
+                properties
+        );
+
+        when(marketIndicatorSnapshotPersistenceService.createAndSave("XRPUSDT", CandleInterval.ONE_HOUR))
+                .thenReturn(null);
+        when(marketIndicatorSnapshotPersistenceService.createAndSave("XRPUSDT", CandleInterval.FOUR_HOUR))
+                .thenThrow(new IllegalStateException("4h snapshot failed"));
+        when(analysisReportGenerationService.generateAndSave(
+                        "XRPUSDT",
+                        AnalysisReportType.SHORT_TERM,
+                        "report-assembler-v3",
+                        Instant.parse("2026-03-09T01:00:30Z")
+                ))
+                .thenReturn(null);
+        when(analysisReportGenerationService.generateAndSave(
+                        "XRPUSDT",
+                        AnalysisReportType.MID_TERM,
+                        "report-assembler-v3",
+                        Instant.parse("2026-03-09T01:00:30Z")
+                ))
+                .thenThrow(new IllegalStateException("mid report failed"));
+
+        AnalysisReportBatchResult result = service.generateForAsset(
+                AssetType.XRP,
+                Instant.parse("2026-03-09T01:00:30Z")
+        );
+
+        assertThat(result.symbol()).isEqualTo("XRPUSDT");
+        assertThat(result.snapshotResults()).hasSize(2);
+        assertThat(result.reportResults()).hasSize(2);
+        assertThat(result.hasFailures()).isTrue();
+        assertThat(result.snapshotResults()).extracting("success").containsExactly(true, false);
+        assertThat(result.reportResults()).extracting("success").containsExactly(true, false);
+        assertThat(result.snapshotSuccessCount()).isEqualTo(1);
+        assertThat(result.snapshotFailureCount()).isEqualTo(1);
+        assertThat(result.reportSuccessCount()).isEqualTo(1);
+        assertThat(result.reportFailureCount()).isEqualTo(1);
+        assertThat(result.snapshotResults().get(1).errorMessage()).contains("4h snapshot failed");
+        assertThat(result.reportResults().get(1).errorMessage()).contains("mid report failed");
     }
 }
