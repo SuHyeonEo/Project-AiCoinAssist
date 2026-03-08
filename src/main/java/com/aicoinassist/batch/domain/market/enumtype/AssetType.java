@@ -1,7 +1,17 @@
 package com.aicoinassist.batch.domain.market.enumtype;
 
 public enum AssetType {
-    BTC,
-    ETH,
-    XRP
+    BTC("BTCUSDT"),
+    ETH("ETHUSDT"),
+    XRP("XRPUSDT");
+
+    private final String symbol;
+
+    AssetType(String symbol) {
+        this.symbol = symbol;
+    }
+
+    public String symbol() {
+        return symbol;
+    }
 }
