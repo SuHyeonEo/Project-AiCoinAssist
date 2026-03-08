@@ -4,6 +4,7 @@ import com.aicoinassist.batch.domain.market.enumtype.AssetType;
 import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchProperties;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchRunResult;
+import com.aicoinassist.batch.domain.report.service.AnalysisReportBatchRunPersistenceService;
 import com.aicoinassist.batch.domain.report.service.AnalysisReportBatchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ import java.util.UUID;
 public class AnalysisReportBatchScheduler {
 
     private final AnalysisReportBatchService analysisReportBatchService;
+    private final AnalysisReportBatchRunPersistenceService analysisReportBatchRunPersistenceService;
     private final AnalysisReportBatchProperties analysisReportBatchProperties;
     private final Clock clock;
 
@@ -40,6 +42,7 @@ public class AnalysisReportBatchScheduler {
         List<AnalysisReportBatchResult> assetResults = new ArrayList<>();
 
         for (AssetType assetType : analysisReportBatchProperties.assetTypes()) {
+            Instant assetStartedAt = Instant.now(clock);
             try {
                 AnalysisReportBatchResult result = analysisReportBatchService.generateForAsset(
                         assetType,
@@ -74,11 +77,21 @@ public class AnalysisReportBatchScheduler {
                     );
                 }
             } catch (Exception exception) {
-                log.error(
-                        "analysis report batch crashed - runId: {}, symbol: {}, engineVersion: {}",
+                AnalysisReportBatchResult crashedResult = AnalysisReportBatchResult.crashed(
                         runId,
                         assetType.symbol(),
+                        assetStartedAt,
+                        Instant.now(clock),
+                        crashMessage(exception)
+                );
+                assetResults.add(crashedResult);
+                log.error(
+                        "analysis report batch crashed - runId: {}, symbol: {}, durationMs: {}, engineVersion: {}, error: {}",
+                        crashedResult.runId(),
+                        crashedResult.symbol(),
+                        crashedResult.durationMillis(),
                         analysisReportBatchProperties.engineVersion(),
+                        crashedResult.crashErrorMessage(),
                         exception
                 );
             }
@@ -92,13 +105,26 @@ public class AnalysisReportBatchScheduler {
                 runFinishedAt.toEpochMilli() - runStartedAt.toEpochMilli(),
                 List.copyOf(assetResults)
         );
+        analysisReportBatchRunPersistenceService.save(
+                runResult,
+                analysisReportBatchProperties.engineVersion(),
+                runFinishedAt
+        );
         log.info(
-                "analysis report batch run finished - runId: {}, durationMs: {}, assetSuccess: {}, assetFailure: {}, engineVersion: {}",
+                "analysis report batch run finished - runId: {}, status: {}, durationMs: {}, assetSuccess: {}, assetFailure: {}, engineVersion: {}",
                 runResult.runId(),
+                runResult.status(),
                 runResult.durationMillis(),
                 runResult.assetSuccessCount(),
                 runResult.assetFailureCount(),
                 analysisReportBatchProperties.engineVersion()
         );
+    }
+
+    private static String crashMessage(Exception exception) {
+        if (exception.getMessage() != null && !exception.getMessage().isBlank()) {
+            return exception.getMessage();
+        }
+        return exception.getClass().getSimpleName();
     }
 }

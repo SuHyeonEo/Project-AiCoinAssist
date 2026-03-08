@@ -64,7 +64,8 @@ public class AnalysisReportBatchService {
                 finishedAt,
                 finishedAt.toEpochMilli() - startedAt.toEpochMilli(),
                 snapshotResults,
-                reportResults
+                reportResults,
+                null
         );
     }
 }
