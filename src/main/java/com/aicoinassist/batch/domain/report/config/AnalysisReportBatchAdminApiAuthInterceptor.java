@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -29,12 +28,9 @@ public class AnalysisReportBatchAdminApiAuthInterceptor implements HandlerInterc
 
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType("application/problem+json");
-        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
-        problemDetail.setTitle("Unauthorized admin API access");
-        problemDetail.setDetail("Valid admin API token is required.");
         response.getWriter().write("""
-                {"type":"about:blank","title":"%s","status":401,"detail":"%s"}
-                """.formatted(problemDetail.getTitle(), problemDetail.getDetail()).trim());
+                {"type":"about:blank","title":"Unauthorized admin API access","status":401,"detail":"Valid admin API token is required."}
+                """.trim());
         return false;
     }
 }

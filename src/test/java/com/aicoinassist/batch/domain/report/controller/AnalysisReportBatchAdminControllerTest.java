@@ -18,10 +18,11 @@ import com.aicoinassist.batch.domain.report.service.AnalysisReportBatchRunReadSe
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.TestPropertySource;
 
 import java.time.Instant;
 import java.util.List;
@@ -38,6 +39,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         AnalysisReportBatchAdminApiWebConfig.class,
         AnalysisReportBatchAdminApiAuthInterceptor.class
 })
+@TestPropertySource(properties = {
+        "batch.admin-api.enabled=true",
+        "batch.admin-api.token=test-admin-token",
+        "batch.admin-api.header-name=X-Admin-Token"
+})
 class AnalysisReportBatchAdminControllerTest {
 
     private static final String ADMIN_HEADER = "X-Admin-Token";
@@ -46,21 +52,14 @@ class AnalysisReportBatchAdminControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private AnalysisReportBatchRunReadService analysisReportBatchRunReadService;
 
-    @MockBean
+    @MockitoBean
     private AnalysisReportBatchRerunService analysisReportBatchRerunService;
-
-    @MockBean
-    private AnalysisReportBatchAdminApiProperties analysisReportBatchAdminApiProperties;
 
     @Test
     void listRecentRunsRejectsRequestWithoutAdminToken() throws Exception {
-        when(analysisReportBatchAdminApiProperties.enabled()).thenReturn(true);
-        when(analysisReportBatchAdminApiProperties.headerName()).thenReturn(ADMIN_HEADER);
-        when(analysisReportBatchAdminApiProperties.token()).thenReturn(ADMIN_TOKEN);
-
         mockMvc.perform(get("/internal/admin/report-batch-runs")
                         .param("limit", "10")
                         .accept(MediaType.APPLICATION_JSON))
@@ -70,9 +69,6 @@ class AnalysisReportBatchAdminControllerTest {
 
     @Test
     void listRecentRunsReturnsSummaryList() throws Exception {
-        when(analysisReportBatchAdminApiProperties.enabled()).thenReturn(true);
-        when(analysisReportBatchAdminApiProperties.headerName()).thenReturn(ADMIN_HEADER);
-        when(analysisReportBatchAdminApiProperties.token()).thenReturn(ADMIN_TOKEN);
         when(analysisReportBatchRunReadService.listRecentRuns(10)).thenReturn(List.of(
                 new AnalysisReportBatchRunSummaryView(
                         "run-001",
@@ -101,9 +97,6 @@ class AnalysisReportBatchAdminControllerTest {
 
     @Test
     void getRunDetailReturnsFullDetail() throws Exception {
-        when(analysisReportBatchAdminApiProperties.enabled()).thenReturn(true);
-        when(analysisReportBatchAdminApiProperties.headerName()).thenReturn(ADMIN_HEADER);
-        when(analysisReportBatchAdminApiProperties.token()).thenReturn(ADMIN_TOKEN);
         when(analysisReportBatchRunReadService.getRunDetail("run-001")).thenReturn(
                 new AnalysisReportBatchRunDetailView(
                         "run-001",
@@ -149,9 +142,6 @@ class AnalysisReportBatchAdminControllerTest {
 
     @Test
     void rerunFailedAssetsReturnsNewRunResult() throws Exception {
-        when(analysisReportBatchAdminApiProperties.enabled()).thenReturn(true);
-        when(analysisReportBatchAdminApiProperties.headerName()).thenReturn(ADMIN_HEADER);
-        when(analysisReportBatchAdminApiProperties.token()).thenReturn(ADMIN_TOKEN);
         when(analysisReportBatchRerunService.rerunFailedAssets("run-001")).thenReturn(
                 new AnalysisReportBatchRunResult(
                         "run-002",
@@ -186,9 +176,6 @@ class AnalysisReportBatchAdminControllerTest {
 
     @Test
     void getRunDetailReturnsNotFoundWhenRunIdIsUnknown() throws Exception {
-        when(analysisReportBatchAdminApiProperties.enabled()).thenReturn(true);
-        when(analysisReportBatchAdminApiProperties.headerName()).thenReturn(ADMIN_HEADER);
-        when(analysisReportBatchAdminApiProperties.token()).thenReturn(ADMIN_TOKEN);
         when(analysisReportBatchRunReadService.getRunDetail("missing-run"))
                 .thenThrow(new IllegalArgumentException("Batch run not found: missing-run"));
 
@@ -201,9 +188,6 @@ class AnalysisReportBatchAdminControllerTest {
 
     @Test
     void rerunFailedAssetsReturnsConflictWhenNothingCanBeRerun() throws Exception {
-        when(analysisReportBatchAdminApiProperties.enabled()).thenReturn(true);
-        when(analysisReportBatchAdminApiProperties.headerName()).thenReturn(ADMIN_HEADER);
-        when(analysisReportBatchAdminApiProperties.token()).thenReturn(ADMIN_TOKEN);
         when(analysisReportBatchRerunService.rerunFailedAssets("run-001"))
                 .thenThrow(new IllegalStateException("No failed asset results found for runId: run-001"));
 

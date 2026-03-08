@@ -21,4 +21,9 @@ public record AnalysisReportBatchAdminApiProperties(
     public boolean hasHeaderNameWhenEnabled() {
         return !enabled || (headerName != null && !headerName.isBlank());
     }
+
+    @AssertTrue(message = "token must not use an insecure placeholder value when admin API protection is enabled.")
+    public boolean hasSecureTokenWhenEnabled() {
+        return !enabled || !"change-me".equals(token);
+    }
 }

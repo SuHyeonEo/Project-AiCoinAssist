@@ -39,4 +39,18 @@ class AnalysisReportBatchAdminApiPropertiesTest {
         assertThat(violations).hasSize(1);
         assertThat(violations.iterator().next().getMessage()).contains("token must be provided");
     }
+
+    @Test
+    void rejectsPlaceholderTokenWhenProtectionIsEnabled() {
+        AnalysisReportBatchAdminApiProperties properties = new AnalysisReportBatchAdminApiProperties(
+                true,
+                "change-me",
+                "X-Admin-Token"
+        );
+
+        Set<ConstraintViolation<AnalysisReportBatchAdminApiProperties>> violations = validator.validate(properties);
+
+        assertThat(violations).hasSize(1);
+        assertThat(violations.iterator().next().getMessage()).contains("must not use an insecure placeholder");
+    }
 }

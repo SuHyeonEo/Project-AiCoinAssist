@@ -27,7 +27,7 @@ logging:
 batch:
   admin-api:
     enabled: true
-    token: change-me
+    token: ${ADMIN_API_TOKEN:}
     header-name: X-Admin-Token
   analysis-report:
     engine-version: report-assembler-v1
