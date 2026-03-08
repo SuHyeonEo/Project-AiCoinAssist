@@ -7,6 +7,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchRunResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchRunSummaryView;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportSnapshotStepResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportStepResult;
+import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchAdminApiAuthInterceptor;
+import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchAdminApiProperties;
+import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchAdminApiWebConfig;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionStatus;
 import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionTriggerType;
@@ -16,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -29,7 +33,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = AnalysisReportBatchAdminController.class)
+@Import({
+        AnalysisReportBatchAdminExceptionHandler.class,
+        AnalysisReportBatchAdminApiWebConfig.class,
+        AnalysisReportBatchAdminApiAuthInterceptor.class
+})
 class AnalysisReportBatchAdminControllerTest {
+
+    private static final String ADMIN_HEADER = "X-Admin-Token";
+    private static final String ADMIN_TOKEN = "test-admin-token";
 
     @Autowired
     private MockMvc mockMvc;
@@ -40,8 +52,27 @@ class AnalysisReportBatchAdminControllerTest {
     @MockBean
     private AnalysisReportBatchRerunService analysisReportBatchRerunService;
 
+    @MockBean
+    private AnalysisReportBatchAdminApiProperties analysisReportBatchAdminApiProperties;
+
+    @Test
+    void listRecentRunsRejectsRequestWithoutAdminToken() throws Exception {
+        when(analysisReportBatchAdminApiProperties.enabled()).thenReturn(true);
+        when(analysisReportBatchAdminApiProperties.headerName()).thenReturn(ADMIN_HEADER);
+        when(analysisReportBatchAdminApiProperties.token()).thenReturn(ADMIN_TOKEN);
+
+        mockMvc.perform(get("/internal/admin/report-batch-runs")
+                        .param("limit", "10")
+                        .accept(MediaType.APPLICATION_JSON))
+               .andExpect(status().isUnauthorized())
+               .andExpect(jsonPath("$.title").value("Unauthorized admin API access"));
+    }
+
     @Test
     void listRecentRunsReturnsSummaryList() throws Exception {
+        when(analysisReportBatchAdminApiProperties.enabled()).thenReturn(true);
+        when(analysisReportBatchAdminApiProperties.headerName()).thenReturn(ADMIN_HEADER);
+        when(analysisReportBatchAdminApiProperties.token()).thenReturn(ADMIN_TOKEN);
         when(analysisReportBatchRunReadService.listRecentRuns(10)).thenReturn(List.of(
                 new AnalysisReportBatchRunSummaryView(
                         "run-001",
@@ -59,6 +90,7 @@ class AnalysisReportBatchAdminControllerTest {
         ));
 
         mockMvc.perform(get("/internal/admin/report-batch-runs")
+                        .header(ADMIN_HEADER, ADMIN_TOKEN)
                         .param("limit", "10")
                         .accept(MediaType.APPLICATION_JSON))
                .andExpect(status().isOk())
@@ -69,6 +101,9 @@ class AnalysisReportBatchAdminControllerTest {
 
     @Test
     void getRunDetailReturnsFullDetail() throws Exception {
+        when(analysisReportBatchAdminApiProperties.enabled()).thenReturn(true);
+        when(analysisReportBatchAdminApiProperties.headerName()).thenReturn(ADMIN_HEADER);
+        when(analysisReportBatchAdminApiProperties.token()).thenReturn(ADMIN_TOKEN);
         when(analysisReportBatchRunReadService.getRunDetail("run-001")).thenReturn(
                 new AnalysisReportBatchRunDetailView(
                         "run-001",
@@ -104,6 +139,7 @@ class AnalysisReportBatchAdminControllerTest {
         );
 
         mockMvc.perform(get("/internal/admin/report-batch-runs/run-001")
+                        .header(ADMIN_HEADER, ADMIN_TOKEN)
                         .accept(MediaType.APPLICATION_JSON))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.runId").value("run-001"))
@@ -113,6 +149,9 @@ class AnalysisReportBatchAdminControllerTest {
 
     @Test
     void rerunFailedAssetsReturnsNewRunResult() throws Exception {
+        when(analysisReportBatchAdminApiProperties.enabled()).thenReturn(true);
+        when(analysisReportBatchAdminApiProperties.headerName()).thenReturn(ADMIN_HEADER);
+        when(analysisReportBatchAdminApiProperties.token()).thenReturn(ADMIN_TOKEN);
         when(analysisReportBatchRerunService.rerunFailedAssets("run-001")).thenReturn(
                 new AnalysisReportBatchRunResult(
                         "run-002",
@@ -137,6 +176,7 @@ class AnalysisReportBatchAdminControllerTest {
         );
 
         mockMvc.perform(post("/internal/admin/report-batch-runs/run-001/rerun-failed")
+                        .header(ADMIN_HEADER, ADMIN_TOKEN)
                         .accept(MediaType.APPLICATION_JSON))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.runId").value("run-002"))
@@ -146,10 +186,14 @@ class AnalysisReportBatchAdminControllerTest {
 
     @Test
     void getRunDetailReturnsNotFoundWhenRunIdIsUnknown() throws Exception {
+        when(analysisReportBatchAdminApiProperties.enabled()).thenReturn(true);
+        when(analysisReportBatchAdminApiProperties.headerName()).thenReturn(ADMIN_HEADER);
+        when(analysisReportBatchAdminApiProperties.token()).thenReturn(ADMIN_TOKEN);
         when(analysisReportBatchRunReadService.getRunDetail("missing-run"))
                 .thenThrow(new IllegalArgumentException("Batch run not found: missing-run"));
 
         mockMvc.perform(get("/internal/admin/report-batch-runs/missing-run")
+                        .header(ADMIN_HEADER, ADMIN_TOKEN)
                         .accept(MediaType.APPLICATION_JSON))
                .andExpect(status().isNotFound())
                .andExpect(jsonPath("$.title").value("Batch run not found"));
@@ -157,10 +201,14 @@ class AnalysisReportBatchAdminControllerTest {
 
     @Test
     void rerunFailedAssetsReturnsConflictWhenNothingCanBeRerun() throws Exception {
+        when(analysisReportBatchAdminApiProperties.enabled()).thenReturn(true);
+        when(analysisReportBatchAdminApiProperties.headerName()).thenReturn(ADMIN_HEADER);
+        when(analysisReportBatchAdminApiProperties.token()).thenReturn(ADMIN_TOKEN);
         when(analysisReportBatchRerunService.rerunFailedAssets("run-001"))
                 .thenThrow(new IllegalStateException("No failed asset results found for runId: run-001"));
 
         mockMvc.perform(post("/internal/admin/report-batch-runs/run-001/rerun-failed")
+                        .header(ADMIN_HEADER, ADMIN_TOKEN)
                         .accept(MediaType.APPLICATION_JSON))
                .andExpect(status().isConflict())
                .andExpect(jsonPath("$.title").value("Batch rerun not available"));

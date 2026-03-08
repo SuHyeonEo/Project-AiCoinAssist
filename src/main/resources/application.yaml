@@ -25,6 +25,10 @@ logging:
     root: info
 
 batch:
+  admin-api:
+    enabled: true
+    token: change-me
+    header-name: X-Admin-Token
   analysis-report:
     engine-version: report-assembler-v1
     asset-types:
