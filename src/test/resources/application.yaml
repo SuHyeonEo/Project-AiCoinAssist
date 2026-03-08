@@ -30,6 +30,10 @@ batch:
       - MID_TERM
       - LONG_TERM
     fixed-delay-ms: 300000
+    manual-rerun:
+      enabled: false
+      source-run-id:
+      shutdown-after-run: true
   scheduler:
     market-raw-ingestion:
       enabled: false
