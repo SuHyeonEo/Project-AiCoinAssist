@@ -8,8 +8,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,7 +22,21 @@ import java.time.Instant;
 
 @Getter
 @Entity
-@Table(name = "market_price_raw")
+@Table(
+        name = "market_price_raw",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_market_price_raw_source_symbol_source_event_time",
+                        columnNames = {"source", "symbol", "source_event_time"}
+                )
+        },
+        indexes = {
+                @Index(
+                        name = "idx_market_price_raw_symbol_collected_time",
+                        columnList = "symbol, collected_time"
+                )
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MarketPriceRawEntity {
 
