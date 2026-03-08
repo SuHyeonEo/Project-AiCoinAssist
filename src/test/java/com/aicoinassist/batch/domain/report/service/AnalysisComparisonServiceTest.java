@@ -191,6 +191,18 @@ class AnalysisComparisonServiceTest {
                 "1d",
                 Instant.parse("2025-09-10T00:59:59Z")
         )).thenReturn(Optional.of(snapshot(Instant.parse("2025-09-10T00:00:00Z"), "1d", "60000", "35", "-40", "700")));
+        when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeGreaterThanEqualAndSnapshotTimeLessThanEqualOrderByCurrentPriceDescSnapshotTimeDescIdDesc(
+                "BTCUSDT",
+                "1d",
+                Instant.parse("2025-03-10T00:59:59Z"),
+                Instant.parse("2026-03-09T00:59:59Z")
+        )).thenReturn(Optional.of(snapshot(Instant.parse("2025-11-20T00:00:00Z"), "1d", "92000", "68", "30", "980")));
+        when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeGreaterThanEqualAndSnapshotTimeLessThanEqualOrderByCurrentPriceAscSnapshotTimeDescIdDesc(
+                "BTCUSDT",
+                "1d",
+                Instant.parse("2025-03-10T00:59:59Z"),
+                Instant.parse("2026-03-09T00:59:59Z")
+        )).thenReturn(Optional.of(snapshot(Instant.parse("2025-05-15T00:00:00Z"), "1d", "52000", "28", "-55", "760")));
         when(analysisReportRepository.findTopBySymbolAndReportTypeAndAnalysisBasisTimeLessThanOrderByAnalysisBasisTimeDescIdDesc(
                 "BTCUSDT",
                 AnalysisReportType.LONG_TERM,
@@ -207,19 +219,25 @@ class AnalysisComparisonServiceTest {
 
         List<AnalysisComparisonFact> facts = service.buildFacts(currentSnapshot, AnalysisReportType.LONG_TERM);
 
-        assertThat(facts).hasSize(4);
+        assertThat(facts).hasSize(6);
         assertThat(facts).extracting(AnalysisComparisonFact::reference)
                          .containsExactly(
                                  AnalysisComparisonReference.D30,
                                  AnalysisComparisonReference.D90,
                                  AnalysisComparisonReference.D180,
+                                 AnalysisComparisonReference.Y52_HIGH,
+                                 AnalysisComparisonReference.Y52_LOW,
                                  AnalysisComparisonReference.PREV_LONG_REPORT
                          );
         assertThat(facts.get(0).priceChangeRate()).isEqualByComparingTo("18.2432");
         assertThat(facts.get(1).rsiDelta()).isEqualByComparingTo("22");
         assertThat(facts.get(2).atrChangeRate()).isEqualByComparingTo("114.2857");
-        assertThat(facts.get(3).referenceTime()).isEqualTo(Instant.parse("2026-01-15T00:00:00Z"));
-        assertThat(facts.get(3).macdHistogramDelta()).isEqualByComparingTo("35");
+        assertThat(facts.get(3).referenceTime()).isEqualTo(Instant.parse("2025-11-20T00:00:00Z"));
+        assertThat(facts.get(3).priceChangeRate()).isEqualByComparingTo("-4.8913");
+        assertThat(facts.get(4).referenceTime()).isEqualTo(Instant.parse("2025-05-15T00:00:00Z"));
+        assertThat(facts.get(4).priceChangeRate()).isEqualByComparingTo("68.2692");
+        assertThat(facts.get(5).referenceTime()).isEqualTo(Instant.parse("2026-01-15T00:00:00Z"));
+        assertThat(facts.get(5).macdHistogramDelta()).isEqualByComparingTo("35");
     }
 
     @Test

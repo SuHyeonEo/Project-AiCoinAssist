@@ -9,6 +9,8 @@ public enum AnalysisComparisonReference {
     D30,
     D90,
     D180,
+    Y52_HIGH,
+    Y52_LOW,
     PREV_MID_REPORT,
     PREV_LONG_REPORT
 }

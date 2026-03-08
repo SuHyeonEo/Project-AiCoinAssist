@@ -93,6 +93,8 @@ public class AnalysisComparisonService {
                 )
         ));
 
+        addYear52ExtremumFacts(facts, currentSnapshot);
+
         addPreviousReportIfPresent(
                 facts,
                 AnalysisReportType.LONG_TERM,
@@ -101,6 +103,41 @@ public class AnalysisComparisonService {
         );
 
         return facts;
+    }
+
+    private void addYear52ExtremumFacts(
+            List<AnalysisComparisonFact> facts,
+            MarketIndicatorSnapshotEntity currentSnapshot
+    ) {
+        Instant snapshotTimeFrom = currentSnapshot.getSnapshotTime().minus(364, ChronoUnit.DAYS);
+        Instant snapshotTimeTo = currentSnapshot.getSnapshotTime();
+
+        addIfPresent(
+                facts,
+                facts.size(),
+                AnalysisComparisonReference.Y52_HIGH,
+                marketIndicatorSnapshotRepository
+                        .findTopBySymbolAndIntervalValueAndSnapshotTimeGreaterThanEqualAndSnapshotTimeLessThanEqualOrderByCurrentPriceDescSnapshotTimeDescIdDesc(
+                                currentSnapshot.getSymbol(),
+                                currentSnapshot.getIntervalValue(),
+                                snapshotTimeFrom,
+                                snapshotTimeTo
+                        ),
+                currentSnapshot
+        );
+        addIfPresent(
+                facts,
+                facts.size(),
+                AnalysisComparisonReference.Y52_LOW,
+                marketIndicatorSnapshotRepository
+                        .findTopBySymbolAndIntervalValueAndSnapshotTimeGreaterThanEqualAndSnapshotTimeLessThanEqualOrderByCurrentPriceAscSnapshotTimeDescIdDesc(
+                                currentSnapshot.getSymbol(),
+                                currentSnapshot.getIntervalValue(),
+                                snapshotTimeFrom,
+                                snapshotTimeTo
+                        ),
+                currentSnapshot
+        );
     }
 
     private List<AnalysisComparisonFact> buildTimeWindowFacts(
