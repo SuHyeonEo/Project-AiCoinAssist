@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.market.repository;
 
 import com.aicoinassist.batch.domain.market.entity.MarketCandleRawEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketPriceRawEntity;
 import com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,9 @@ class RawTableConstraintTest {
     @Autowired
     private MarketCandleRawRepository marketCandleRawRepository;
 
+    @Autowired
+    private MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
+
     @Test
     void marketPriceRawRejectsDuplicateSourceSymbolAndSourceEventTime() {
         Instant sourceEventTime = Instant.parse("2026-03-09T00:00:00Z");
@@ -40,6 +44,17 @@ class RawTableConstraintTest {
 
         assertThatThrownBy(() -> marketCandleRawRepository.saveAndFlush(
                 candleRaw(openTime, "11", "13", "10", "12", "110")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketIndicatorSnapshotRejectsDuplicateSymbolIntervalAndSnapshotTime() {
+        Instant snapshotTime = Instant.parse("2026-03-09T00:59:59Z");
+
+        marketIndicatorSnapshotRepository.saveAndFlush(indicatorSnapshot(snapshotTime, "87500.12"));
+
+        assertThatThrownBy(() -> marketIndicatorSnapshotRepository.saveAndFlush(
+                indicatorSnapshot(snapshotTime, "87510.12")
         )).isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -78,5 +93,28 @@ class RawTableConstraintTest {
                                     .validationStatus(RawDataValidationStatus.VALID)
                                     .rawPayload("[]")
                                     .build();
+    }
+
+    private MarketIndicatorSnapshotEntity indicatorSnapshot(
+            Instant snapshotTime,
+            String currentPrice
+    ) {
+        return MarketIndicatorSnapshotEntity.builder()
+                                            .symbol("BTCUSDT")
+                                            .intervalValue("1h")
+                                            .snapshotTime(snapshotTime)
+                                            .currentPrice(new BigDecimal(currentPrice))
+                                            .ma20(new BigDecimal("10"))
+                                            .ma60(new BigDecimal("11"))
+                                            .ma120(new BigDecimal("12"))
+                                            .rsi14(new BigDecimal("50"))
+                                            .macdLine(new BigDecimal("1"))
+                                            .macdSignalLine(new BigDecimal("0.5"))
+                                            .macdHistogram(new BigDecimal("0.5"))
+                                            .atr14(new BigDecimal("2"))
+                                            .bollingerUpperBand(new BigDecimal("15"))
+                                            .bollingerMiddleBand(new BigDecimal("10"))
+                                            .bollingerLowerBand(new BigDecimal("5"))
+                                            .build();
     }
 }

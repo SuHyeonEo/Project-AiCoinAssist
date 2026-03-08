@@ -1,6 +1,13 @@
 package com.aicoinassist.batch.domain.market.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,7 +18,21 @@ import java.time.Instant;
 
 @Getter
 @Entity
-@Table(name = "market_indicator_snapshot")
+@Table(
+        name = "market_indicator_snapshot",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_market_indicator_snapshot_symbol_interval_snapshot_time",
+                        columnNames = {"symbol", "interval_value", "snapshot_time"}
+                )
+        },
+        indexes = {
+                @Index(
+                        name = "idx_market_indicator_snapshot_symbol_interval_snapshot_time",
+                        columnList = "symbol, interval_value, snapshot_time"
+                )
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MarketIndicatorSnapshotEntity {
 
@@ -85,6 +106,34 @@ public class MarketIndicatorSnapshotEntity {
         this.symbol = symbol;
         this.intervalValue = intervalValue;
         this.snapshotTime = snapshotTime;
+        this.currentPrice = currentPrice;
+        this.ma20 = ma20;
+        this.ma60 = ma60;
+        this.ma120 = ma120;
+        this.rsi14 = rsi14;
+        this.macdLine = macdLine;
+        this.macdSignalLine = macdSignalLine;
+        this.macdHistogram = macdHistogram;
+        this.atr14 = atr14;
+        this.bollingerUpperBand = bollingerUpperBand;
+        this.bollingerMiddleBand = bollingerMiddleBand;
+        this.bollingerLowerBand = bollingerLowerBand;
+    }
+
+    public void refreshFromSnapshot(
+            BigDecimal currentPrice,
+            BigDecimal ma20,
+            BigDecimal ma60,
+            BigDecimal ma120,
+            BigDecimal rsi14,
+            BigDecimal macdLine,
+            BigDecimal macdSignalLine,
+            BigDecimal macdHistogram,
+            BigDecimal atr14,
+            BigDecimal bollingerUpperBand,
+            BigDecimal bollingerMiddleBand,
+            BigDecimal bollingerLowerBand
+    ) {
         this.currentPrice = currentPrice;
         this.ma20 = ma20;
         this.ma60 = ma60;
