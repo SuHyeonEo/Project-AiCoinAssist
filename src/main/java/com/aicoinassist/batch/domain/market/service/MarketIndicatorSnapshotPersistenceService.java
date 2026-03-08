@@ -21,25 +21,53 @@ public class MarketIndicatorSnapshotPersistenceService {
         MarketIndicatorSnapshot snapshot = marketIndicatorSnapshotService.create(symbol, interval);
 
         Candle latestCandle = snapshot.candles().get(snapshot.candles().size() - 1);
+        String intervalValue = interval.value();
 
-        MarketIndicatorSnapshotEntity entity = MarketIndicatorSnapshotEntity.builder()
-                                                                            .symbol(snapshot.symbol())
-                                                                            .intervalValue(interval.value())
-                                                                            .snapshotTime(latestCandle.closeTime())
-                                                                            .currentPrice(snapshot.priceSnapshot().price())
-                                                                            .ma20(snapshot.ma20().value())
-                                                                            .ma60(snapshot.ma60().value())
-                                                                            .ma120(snapshot.ma120().value())
-                                                                            .rsi14(snapshot.rsi14().value())
-                                                                            .macdLine(snapshot.macd().macdLine())
-                                                                            .macdSignalLine(snapshot.macd().signalLine())
-                                                                            .macdHistogram(snapshot.macd().histogram())
-                                                                            .atr14(snapshot.atr14().value())
-                                                                            .bollingerUpperBand(snapshot.bollingerBands20().upperBand())
-                                                                            .bollingerMiddleBand(snapshot.bollingerBands20().middleBand())
-                                                                            .bollingerLowerBand(snapshot.bollingerBands20().lowerBand())
-                                                                            .build();
+        MarketIndicatorSnapshotEntity existingEntity = marketIndicatorSnapshotRepository
+                .findTopBySymbolAndIntervalValueAndSnapshotTimeOrderByIdDesc(
+                        snapshot.symbol(),
+                        intervalValue,
+                        latestCandle.closeTime()
+                )
+                .orElse(null);
 
-        return marketIndicatorSnapshotRepository.save(entity);
+        if (existingEntity == null) {
+            MarketIndicatorSnapshotEntity entity = MarketIndicatorSnapshotEntity.builder()
+                                                                                .symbol(snapshot.symbol())
+                                                                                .intervalValue(intervalValue)
+                                                                                .snapshotTime(latestCandle.closeTime())
+                                                                                .currentPrice(snapshot.priceSnapshot().price())
+                                                                                .ma20(snapshot.ma20().value())
+                                                                                .ma60(snapshot.ma60().value())
+                                                                                .ma120(snapshot.ma120().value())
+                                                                                .rsi14(snapshot.rsi14().value())
+                                                                                .macdLine(snapshot.macd().macdLine())
+                                                                                .macdSignalLine(snapshot.macd().signalLine())
+                                                                                .macdHistogram(snapshot.macd().histogram())
+                                                                                .atr14(snapshot.atr14().value())
+                                                                                .bollingerUpperBand(snapshot.bollingerBands20().upperBand())
+                                                                                .bollingerMiddleBand(snapshot.bollingerBands20().middleBand())
+                                                                                .bollingerLowerBand(snapshot.bollingerBands20().lowerBand())
+                                                                                .build();
+
+            return marketIndicatorSnapshotRepository.save(entity);
+        }
+
+        existingEntity.refreshFromSnapshot(
+                snapshot.priceSnapshot().price(),
+                snapshot.ma20().value(),
+                snapshot.ma60().value(),
+                snapshot.ma120().value(),
+                snapshot.rsi14().value(),
+                snapshot.macd().macdLine(),
+                snapshot.macd().signalLine(),
+                snapshot.macd().histogram(),
+                snapshot.atr14().value(),
+                snapshot.bollingerBands20().upperBand(),
+                snapshot.bollingerBands20().middleBand(),
+                snapshot.bollingerBands20().lowerBand()
+        );
+
+        return existingEntity;
     }
 }
