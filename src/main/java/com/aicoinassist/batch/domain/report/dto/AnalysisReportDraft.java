@@ -11,7 +11,7 @@ public record AnalysisReportDraft(
         Instant rawReferenceTime,
         String sourceDataVersion,
         String analysisEngineVersion,
-        String reportPayload,
+        AnalysisReportPayload reportPayload,
         Instant storedTime
 ) {
 }

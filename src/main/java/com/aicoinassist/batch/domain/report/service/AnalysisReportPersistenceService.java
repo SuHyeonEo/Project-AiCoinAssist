@@ -1,8 +1,11 @@
 package com.aicoinassist.batch.domain.report.service;
 
+import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,9 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class AnalysisReportPersistenceService {
 
     private final AnalysisReportRepository analysisReportRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public AnalysisReportEntity save(AnalysisReportDraft draft) {
+        String serializedPayload = serializePayload(draft.reportPayload());
+
         AnalysisReportEntity existingEntity = analysisReportRepository
                 .findTopBySymbolAndReportTypeAndAnalysisBasisTimeAndSourceDataVersionAndAnalysisEngineVersionOrderByIdDesc(
                         draft.symbol(),
@@ -33,7 +39,7 @@ public class AnalysisReportPersistenceService {
                                                               .rawReferenceTime(draft.rawReferenceTime())
                                                               .sourceDataVersion(draft.sourceDataVersion())
                                                               .analysisEngineVersion(draft.analysisEngineVersion())
-                                                              .reportPayload(draft.reportPayload())
+                                                              .reportPayload(serializedPayload)
                                                               .storedTime(draft.storedTime())
                                                               .build();
 
@@ -42,10 +48,18 @@ public class AnalysisReportPersistenceService {
 
         existingEntity.refresh(
                 draft.rawReferenceTime(),
-                draft.reportPayload(),
+                serializedPayload,
                 draft.storedTime()
         );
 
         return existingEntity;
+    }
+
+    private String serializePayload(AnalysisReportPayload payload) {
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Failed to serialize analysis report payload.", exception);
+        }
     }
 }
