@@ -30,6 +30,10 @@ import java.time.Instant;
                 @Index(
                         name = "idx_market_indicator_snapshot_symbol_interval_snapshot_time",
                         columnList = "symbol, interval_value, snapshot_time"
+                ),
+                @Index(
+                        name = "idx_market_indicator_snapshot_price_source_event_time",
+                        columnList = "price_source_event_time"
                 )
         }
 )
@@ -48,6 +52,12 @@ public class MarketIndicatorSnapshotEntity {
 
     @Column(nullable = false)
     private Instant snapshotTime;
+
+    @Column(nullable = false)
+    private Instant latestCandleOpenTime;
+
+    @Column(nullable = false)
+    private Instant priceSourceEventTime;
 
     @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal currentPrice;
@@ -90,6 +100,8 @@ public class MarketIndicatorSnapshotEntity {
             String symbol,
             String intervalValue,
             Instant snapshotTime,
+            Instant latestCandleOpenTime,
+            Instant priceSourceEventTime,
             BigDecimal currentPrice,
             BigDecimal ma20,
             BigDecimal ma60,
@@ -106,6 +118,8 @@ public class MarketIndicatorSnapshotEntity {
         this.symbol = symbol;
         this.intervalValue = intervalValue;
         this.snapshotTime = snapshotTime;
+        this.latestCandleOpenTime = latestCandleOpenTime;
+        this.priceSourceEventTime = priceSourceEventTime;
         this.currentPrice = currentPrice;
         this.ma20 = ma20;
         this.ma60 = ma60;
@@ -121,6 +135,8 @@ public class MarketIndicatorSnapshotEntity {
     }
 
     public void refreshFromSnapshot(
+            Instant latestCandleOpenTime,
+            Instant priceSourceEventTime,
             BigDecimal currentPrice,
             BigDecimal ma20,
             BigDecimal ma60,
@@ -134,6 +150,8 @@ public class MarketIndicatorSnapshotEntity {
             BigDecimal bollingerMiddleBand,
             BigDecimal bollingerLowerBand
     ) {
+        this.latestCandleOpenTime = latestCandleOpenTime;
+        this.priceSourceEventTime = priceSourceEventTime;
         this.currentPrice = currentPrice;
         this.ma20 = ma20;
         this.ma60 = ma60;

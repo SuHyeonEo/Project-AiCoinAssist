@@ -103,6 +103,8 @@ class RawTableConstraintTest {
                                             .symbol("BTCUSDT")
                                             .intervalValue("1h")
                                             .snapshotTime(snapshotTime)
+                                            .latestCandleOpenTime(snapshotTime.minusSeconds(3600))
+                                            .priceSourceEventTime(snapshotTime.minusSeconds(30))
                                             .currentPrice(new BigDecimal(currentPrice))
                                             .ma20(new BigDecimal("10"))
                                             .ma60(new BigDecimal("11"))
