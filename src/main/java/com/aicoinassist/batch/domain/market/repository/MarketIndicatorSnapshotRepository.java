@@ -30,4 +30,18 @@ public interface MarketIndicatorSnapshotRepository extends JpaRepository<MarketI
             String intervalValue,
             Instant snapshotTime
     );
+
+    Optional<MarketIndicatorSnapshotEntity> findTopBySymbolAndIntervalValueAndSnapshotTimeGreaterThanEqualAndSnapshotTimeLessThanEqualOrderByCurrentPriceDescSnapshotTimeDescIdDesc(
+            String symbol,
+            String intervalValue,
+            Instant snapshotTimeFrom,
+            Instant snapshotTimeTo
+    );
+
+    Optional<MarketIndicatorSnapshotEntity> findTopBySymbolAndIntervalValueAndSnapshotTimeGreaterThanEqualAndSnapshotTimeLessThanEqualOrderByCurrentPriceAscSnapshotTimeDescIdDesc(
+            String symbol,
+            String intervalValue,
+            Instant snapshotTimeFrom,
+            Instant snapshotTimeTo
+    );
 }
