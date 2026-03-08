@@ -30,53 +30,29 @@ public class AnalysisComparisonService {
     ) {
         return switch (reportType) {
             case SHORT_TERM -> shortTermFacts(currentSnapshot);
-            case MID_TERM, LONG_TERM -> List.of();
+            case MID_TERM -> midTermFacts(currentSnapshot);
+            case LONG_TERM -> longTermFacts(currentSnapshot);
         };
     }
 
     private List<AnalysisComparisonFact> shortTermFacts(MarketIndicatorSnapshotEntity currentSnapshot) {
-        List<AnalysisComparisonFact> facts = new ArrayList<>();
-        String symbol = currentSnapshot.getSymbol();
-        String intervalValue = currentSnapshot.getIntervalValue();
-        Instant snapshotTime = currentSnapshot.getSnapshotTime();
+        List<AnalysisComparisonFact> facts = new ArrayList<>(buildTimeWindowFacts(
+                currentSnapshot,
+                List.of(
+                        new TimeWindowReference(AnalysisComparisonReference.D1, 1),
+                        new TimeWindowReference(AnalysisComparisonReference.D3, 3),
+                        new TimeWindowReference(AnalysisComparisonReference.D7, 7)
+                )
+        ));
 
         addIfPresent(
                 facts,
+                0,
                 AnalysisComparisonReference.PREV_BATCH,
                 marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeLessThanOrderBySnapshotTimeDescIdDesc(
-                        symbol,
-                        intervalValue,
-                        snapshotTime
-                ),
-                currentSnapshot
-        );
-        addIfPresent(
-                facts,
-                AnalysisComparisonReference.D1,
-                marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
-                        symbol,
-                        intervalValue,
-                        snapshotTime.minus(1, ChronoUnit.DAYS)
-                ),
-                currentSnapshot
-        );
-        addIfPresent(
-                facts,
-                AnalysisComparisonReference.D3,
-                marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
-                        symbol,
-                        intervalValue,
-                        snapshotTime.minus(3, ChronoUnit.DAYS)
-                ),
-                currentSnapshot
-        );
-        addIfPresent(
-                facts,
-                AnalysisComparisonReference.D7,
-                marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
-                        symbol,
-                        intervalValue,
-                        snapshotTime.minus(7, ChronoUnit.DAYS)
+                        currentSnapshot.getSymbol(),
+                        currentSnapshot.getIntervalValue(),
+                        currentSnapshot.getSnapshotTime()
                 ),
                 currentSnapshot
         );
@@ -84,14 +60,69 @@ public class AnalysisComparisonService {
         return facts;
     }
 
+    private List<AnalysisComparisonFact> midTermFacts(MarketIndicatorSnapshotEntity currentSnapshot) {
+        return buildTimeWindowFacts(
+                currentSnapshot,
+                List.of(
+                        new TimeWindowReference(AnalysisComparisonReference.D7, 7),
+                        new TimeWindowReference(AnalysisComparisonReference.D14, 14),
+                        new TimeWindowReference(AnalysisComparisonReference.D30, 30)
+                )
+        );
+    }
+
+    private List<AnalysisComparisonFact> longTermFacts(MarketIndicatorSnapshotEntity currentSnapshot) {
+        return buildTimeWindowFacts(
+                currentSnapshot,
+                List.of(
+                        new TimeWindowReference(AnalysisComparisonReference.D30, 30),
+                        new TimeWindowReference(AnalysisComparisonReference.D90, 90),
+                        new TimeWindowReference(AnalysisComparisonReference.D180, 180)
+                )
+        );
+    }
+
+    private List<AnalysisComparisonFact> buildTimeWindowFacts(
+            MarketIndicatorSnapshotEntity currentSnapshot,
+            List<TimeWindowReference> references
+    ) {
+        List<AnalysisComparisonFact> facts = new ArrayList<>();
+        String symbol = currentSnapshot.getSymbol();
+        String intervalValue = currentSnapshot.getIntervalValue();
+        Instant snapshotTime = currentSnapshot.getSnapshotTime();
+
+        for (TimeWindowReference reference : references) {
+            addIfPresent(
+                    facts,
+                    facts.size(),
+                    reference.reference(),
+                    marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
+                            symbol,
+                            intervalValue,
+                            snapshotTime.minus(reference.days(), ChronoUnit.DAYS)
+                    ),
+                    currentSnapshot
+            );
+        }
+
+        return facts;
+    }
+
     private void addIfPresent(
             List<AnalysisComparisonFact> facts,
+            int index,
             AnalysisComparisonReference reference,
             Optional<MarketIndicatorSnapshotEntity> referenceSnapshot,
             MarketIndicatorSnapshotEntity currentSnapshot
     ) {
         referenceSnapshot.map(snapshot -> createFact(reference, snapshot, currentSnapshot))
-                         .ifPresent(facts::add);
+                         .ifPresent(fact -> facts.add(index, fact));
+    }
+
+    private record TimeWindowReference(
+            AnalysisComparisonReference reference,
+            long days
+    ) {
     }
 
     private AnalysisComparisonFact createFact(
