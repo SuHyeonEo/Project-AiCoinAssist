@@ -74,4 +74,18 @@ public class MarketPriceRawEntity {
         this.price = price;
         this.rawPayload = rawPayload;
     }
+
+    public void refreshFromIngestion(
+            Instant collectedTime,
+            RawDataValidationStatus validationStatus,
+            String validationDetails,
+            BigDecimal price,
+            String rawPayload
+    ) {
+        this.collectedTime = collectedTime;
+        this.validationStatus = validationStatus;
+        this.validationDetails = validationDetails;
+        this.price = price;
+        this.rawPayload = rawPayload;
+    }
 }

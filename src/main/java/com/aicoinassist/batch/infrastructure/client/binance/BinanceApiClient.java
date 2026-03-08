@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.infrastructure.client.binance;
 
 import com.aicoinassist.batch.global.config.BinanceProperties;
+import com.aicoinassist.batch.infrastructure.client.binance.dto.BinanceAggregateTradeResponse;
 import com.aicoinassist.batch.infrastructure.client.binance.dto.BinanceKlineResponse;
 import com.aicoinassist.batch.infrastructure.client.binance.dto.BinanceTickerPriceResponse;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,22 @@ public class BinanceApiClient {
                          .uri(binanceProperties.baseUrl() + "/api/v3/ticker/price?symbol={symbol}", symbol)
                          .retrieve()
                          .body(BinanceTickerPriceResponse.class);
+    }
+
+    public BinanceAggregateTradeResponse getLatestAggregateTrade(String symbol) {
+        List<BinanceAggregateTradeResponse> response = restClient.get()
+                                                                .uri(
+                                                                        binanceProperties.baseUrl() + "/api/v3/aggTrades?symbol={symbol}&limit=1",
+                                                                        symbol
+                                                                )
+                                                                .retrieve()
+                                                                .body(new ParameterizedTypeReference<>() {});
+
+        if (response == null || response.isEmpty()) {
+            return null;
+        }
+
+        return response.get(0);
     }
 
     public List<BinanceKlineResponse> getKlines(String symbol, String interval, int limit) {
