@@ -3,8 +3,8 @@ package com.aicoinassist.batch.infrastructure.client.binance;
 import com.aicoinassist.batch.domain.market.dto.Candle;
 import com.aicoinassist.batch.domain.market.dto.MarketPriceSnapshot;
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
+import com.aicoinassist.batch.infrastructure.client.binance.dto.BinanceAggregateTradeResponse;
 import com.aicoinassist.batch.infrastructure.client.binance.dto.BinanceKlineResponse;
-import com.aicoinassist.batch.infrastructure.client.binance.dto.BinanceTickerPriceResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -19,11 +19,12 @@ public class BinanceMarketClient {
     private final BinanceApiClient binanceApiClient;
 
     public MarketPriceSnapshot getCurrentPrice(String symbol) {
-        BinanceTickerPriceResponse response = binanceApiClient.getTickerPrice(symbol);
+        BinanceAggregateTradeResponse response = binanceApiClient.getLatestAggregateTrade(symbol);
 
         return new MarketPriceSnapshot(
-                response.symbol(),
-                new BigDecimal(response.price())
+                symbol,
+                new BigDecimal(response.price()),
+                Instant.ofEpochMilli(response.tradeTime())
         );
     }
 

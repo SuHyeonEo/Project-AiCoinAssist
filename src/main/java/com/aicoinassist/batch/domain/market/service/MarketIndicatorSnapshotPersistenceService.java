@@ -36,6 +36,8 @@ public class MarketIndicatorSnapshotPersistenceService {
                                                                                 .symbol(snapshot.symbol())
                                                                                 .intervalValue(intervalValue)
                                                                                 .snapshotTime(latestCandle.closeTime())
+                                                                                .latestCandleOpenTime(latestCandle.openTime())
+                                                                                .priceSourceEventTime(snapshot.priceSnapshot().sourceEventTime())
                                                                                 .currentPrice(snapshot.priceSnapshot().price())
                                                                                 .ma20(snapshot.ma20().value())
                                                                                 .ma60(snapshot.ma60().value())
@@ -54,6 +56,8 @@ public class MarketIndicatorSnapshotPersistenceService {
         }
 
         existingEntity.refreshFromSnapshot(
+                latestCandle.openTime(),
+                snapshot.priceSnapshot().sourceEventTime(),
                 snapshot.priceSnapshot().price(),
                 snapshot.ma20().value(),
                 snapshot.ma60().value(),
