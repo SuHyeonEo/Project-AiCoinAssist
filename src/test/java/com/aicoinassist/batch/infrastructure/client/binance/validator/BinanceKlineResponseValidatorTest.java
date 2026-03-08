@@ -40,7 +40,7 @@ class BinanceKlineResponseValidatorTest {
 
     @Test
     void validateItemReturnsInvalidForBrokenHighLowRelationship() {
-        BinanceKlineResponse response = kline(1000L, 1999L, "10", "11", "12", "10.5", "100");
+        BinanceKlineResponse response = kline(1000L, 1999L, "10", "12", "11", "10.5", "100");
 
         RawDataValidationResult result = validator.validateItem(response);
 
