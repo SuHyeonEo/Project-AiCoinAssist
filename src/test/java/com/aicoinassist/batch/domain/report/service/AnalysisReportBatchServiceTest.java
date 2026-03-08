@@ -12,7 +12,9 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.inOrder;
@@ -20,6 +22,11 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AnalysisReportBatchServiceTest {
+
+    private static final Clock FIXED_CLOCK = Clock.fixed(
+            Instant.parse("2026-03-09T01:00:30Z"),
+            ZoneOffset.UTC
+    );
 
     @Mock
     private MarketIndicatorSnapshotPersistenceService marketIndicatorSnapshotPersistenceService;
@@ -42,12 +49,13 @@ class AnalysisReportBatchServiceTest {
         AnalysisReportBatchService service = new AnalysisReportBatchService(
                 marketIndicatorSnapshotPersistenceService,
                 analysisReportGenerationService,
-                properties
+                properties,
+                FIXED_CLOCK
         );
 
         Instant storedTime = Instant.parse("2026-03-09T01:00:30Z");
 
-        AnalysisReportBatchResult result = service.generateForAsset(AssetType.BTC, storedTime);
+        AnalysisReportBatchResult result = service.generateForAsset(AssetType.BTC, "run-001", storedTime);
 
         InOrder inOrder = inOrder(
                 marketIndicatorSnapshotPersistenceService,
@@ -60,7 +68,11 @@ class AnalysisReportBatchServiceTest {
         inOrder.verify(analysisReportGenerationService).generateAndSave("BTCUSDT", AnalysisReportType.MID_TERM, "report-assembler-v1", storedTime);
         inOrder.verify(analysisReportGenerationService).generateAndSave("BTCUSDT", AnalysisReportType.LONG_TERM, "report-assembler-v1", storedTime);
 
+        assertThat(result.runId()).isEqualTo("run-001");
         assertThat(result.symbol()).isEqualTo("BTCUSDT");
+        assertThat(result.startedAt()).isEqualTo(Instant.parse("2026-03-09T01:00:30Z"));
+        assertThat(result.finishedAt()).isEqualTo(Instant.parse("2026-03-09T01:00:30Z"));
+        assertThat(result.durationMillis()).isZero();
         assertThat(result.snapshotSuccessCount()).isEqualTo(3);
         assertThat(result.reportSuccessCount()).isEqualTo(3);
         assertThat(result.hasFailures()).isFalse();
@@ -77,10 +89,11 @@ class AnalysisReportBatchServiceTest {
         AnalysisReportBatchService service = new AnalysisReportBatchService(
                 marketIndicatorSnapshotPersistenceService,
                 analysisReportGenerationService,
-                properties
+                properties,
+                FIXED_CLOCK
         );
 
-        AnalysisReportBatchResult result = service.generateForAsset(AssetType.ETH, Instant.parse("2026-03-09T01:00:30Z"));
+        AnalysisReportBatchResult result = service.generateForAsset(AssetType.ETH, "run-002", Instant.parse("2026-03-09T01:00:30Z"));
 
         InOrder inOrder = inOrder(
                 marketIndicatorSnapshotPersistenceService,
@@ -101,6 +114,7 @@ class AnalysisReportBatchServiceTest {
                 Instant.parse("2026-03-09T01:00:30Z")
         );
 
+        assertThat(result.runId()).isEqualTo("run-002");
         assertThat(result.symbol()).isEqualTo("ETHUSDT");
         assertThat(result.snapshotSuccessCount()).isEqualTo(2);
         assertThat(result.reportSuccessCount()).isEqualTo(2);
@@ -120,7 +134,8 @@ class AnalysisReportBatchServiceTest {
         AnalysisReportBatchService service = new AnalysisReportBatchService(
                 marketIndicatorSnapshotPersistenceService,
                 analysisReportGenerationService,
-                properties
+                properties,
+                FIXED_CLOCK
         );
 
         when(marketIndicatorSnapshotPersistenceService.createAndSave("XRPUSDT", CandleInterval.ONE_HOUR))
@@ -144,9 +159,11 @@ class AnalysisReportBatchServiceTest {
 
         AnalysisReportBatchResult result = service.generateForAsset(
                 AssetType.XRP,
+                "run-003",
                 Instant.parse("2026-03-09T01:00:30Z")
         );
 
+        assertThat(result.runId()).isEqualTo("run-003");
         assertThat(result.symbol()).isEqualTo("XRPUSDT");
         assertThat(result.snapshotResults()).hasSize(2);
         assertThat(result.reportResults()).hasSize(2);
