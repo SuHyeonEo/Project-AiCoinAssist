@@ -1,12 +1,16 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
+import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
+import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
+import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
@@ -36,6 +40,9 @@ class AnalysisReportGenerationServiceTest {
     private AnalysisComparisonService analysisComparisonService;
 
     @Mock
+    private MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
+
+    @Mock
     private AnalysisReportAssembler analysisReportAssembler;
 
     @Mock
@@ -45,6 +52,7 @@ class AnalysisReportGenerationServiceTest {
     void generateAndSaveBuildsDraftFromLatestMappedSnapshot() {
         AnalysisReportGenerationService service = new AnalysisReportGenerationService(
                 marketIndicatorSnapshotRepository,
+                marketWindowSummarySnapshotPersistenceService,
                 analysisComparisonService,
                 analysisReportAssembler,
                 analysisReportPersistenceService
@@ -71,10 +79,50 @@ class AnalysisReportGenerationServiceTest {
                         "D1 shows price +1.7442% versus the reference point.",
                         "D1 keeps RSI Δ +7 and MACD hist Δ +10."
                 )),
+                List.of(new AnalysisWindowSummary(
+                        MarketWindowType.LAST_30D,
+                        Instant.parse("2026-02-07T00:59:59Z"),
+                        Instant.parse("2026-03-09T00:59:59Z"),
+                        180,
+                        new BigDecimal("90000"),
+                        new BigDecimal("82000"),
+                        new BigDecimal("8000"),
+                        new BigDecimal("0.68750000"),
+                        new BigDecimal("0.02777778"),
+                        new BigDecimal("0.06707317"),
+                        new BigDecimal("100.00000000"),
+                        new BigDecimal("1450.00000000"),
+                        new BigDecimal("0.22000000"),
+                        new BigDecimal("0.03448276")
+                )),
                 List.of(),
                 List.of(),
                 List.of(),
                 List.of(new AnalysisScenario("Base case", "bullish", "description"))
+        );
+        List<MarketWindowSummarySnapshotEntity> windowSummaryEntities = List.of(
+                MarketWindowSummarySnapshotEntity.builder()
+                                                 .symbol("BTCUSDT")
+                                                 .intervalValue("4h")
+                                                 .windowType(MarketWindowType.LAST_30D.name())
+                                                 .windowStartTime(Instant.parse("2026-02-07T00:59:59Z"))
+                                                 .windowEndTime(snapshot.getSnapshotTime())
+                                                 .sampleCount(180)
+                                                 .currentPrice(new BigDecimal("87500"))
+                                                 .windowHigh(new BigDecimal("90000"))
+                                                 .windowLow(new BigDecimal("82000"))
+                                                 .windowRange(new BigDecimal("8000"))
+                                                 .currentPositionInRange(new BigDecimal("0.68750000"))
+                                                 .distanceFromWindowHigh(new BigDecimal("0.02777778"))
+                                                 .reboundFromWindowLow(new BigDecimal("0.06707317"))
+                                                 .averageVolume(new BigDecimal("100.00000000"))
+                                                 .averageAtr(new BigDecimal("1450.00000000"))
+                                                 .currentVolume(new BigDecimal("122.00000000"))
+                                                 .currentAtr(new BigDecimal("1500.00000000"))
+                                                 .currentVolumeVsAverage(new BigDecimal("0.22000000"))
+                                                 .currentAtrVsAverage(new BigDecimal("0.03448276"))
+                                                 .sourceDataVersion("basis-key;windowType=LAST_30D")
+                                                 .build()
         );
         AnalysisReportEntity savedEntity = AnalysisReportEntity.builder()
                                                                .symbol("BTCUSDT")
@@ -89,8 +137,15 @@ class AnalysisReportGenerationServiceTest {
 
         when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueOrderBySnapshotTimeDescIdDesc("BTCUSDT", "4h"))
                 .thenReturn(Optional.of(snapshot));
+        when(marketWindowSummarySnapshotPersistenceService.createAndSaveForReportType(snapshot, AnalysisReportType.MID_TERM))
+                .thenReturn(windowSummaryEntities);
         when(analysisComparisonService.buildFacts(snapshot, AnalysisReportType.MID_TERM)).thenReturn(comparisonFacts);
-        when(analysisReportAssembler.assemble(snapshot, AnalysisReportType.MID_TERM, comparisonFacts)).thenReturn(payload);
+        when(analysisReportAssembler.assemble(
+                snapshot,
+                AnalysisReportType.MID_TERM,
+                comparisonFacts,
+                payload.windowSummaries()
+        )).thenReturn(payload);
         when(analysisReportPersistenceService.save(org.mockito.ArgumentMatchers.any(AnalysisReportDraft.class)))
                 .thenReturn(savedEntity);
 
@@ -120,6 +175,7 @@ class AnalysisReportGenerationServiceTest {
     void generateAndSaveFailsWhenNoSnapshotExistsForMappedInterval() {
         AnalysisReportGenerationService service = new AnalysisReportGenerationService(
                 marketIndicatorSnapshotRepository,
+                marketWindowSummarySnapshotPersistenceService,
                 analysisComparisonService,
                 analysisReportAssembler,
                 analysisReportPersistenceService

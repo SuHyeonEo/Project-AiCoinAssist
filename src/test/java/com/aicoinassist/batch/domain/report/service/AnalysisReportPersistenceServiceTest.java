@@ -8,8 +8,10 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
+import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
+import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -141,6 +143,24 @@ class AnalysisReportPersistenceServiceTest {
                                 AnalysisComparisonReference.PREV_BATCH,
                                 "Since the previous batch, price changed +0.5747% and RSI14 moved +2.",
                                 "PREV_BATCH confirms the latest impulse with MACD histogram Δ +5."
+                        )
+                ),
+                List.of(
+                        new AnalysisWindowSummary(
+                                MarketWindowType.LAST_7D,
+                                Instant.parse("2026-03-02T00:59:59Z"),
+                                Instant.parse("2026-03-09T00:59:59Z"),
+                                168,
+                                new BigDecimal("90000.00"),
+                                new BigDecimal("82000.00"),
+                                new BigDecimal("8000.00"),
+                                new BigDecimal("0.68750000"),
+                                new BigDecimal("0.02777778"),
+                                new BigDecimal("0.06707317"),
+                                new BigDecimal("100.00000000"),
+                                new BigDecimal("1450.00000000"),
+                                new BigDecimal("0.22000000"),
+                                new BigDecimal("0.03448276")
                         )
                 ),
                 List.of(new AnalysisPriceLevel("S1", new BigDecimal("84500.00"), "Recent pullback low")),

@@ -7,6 +7,7 @@ public record AnalysisReportPayload(
         String marketContext,
         List<AnalysisComparisonFact> comparisonFacts,
         List<AnalysisComparisonHighlight> comparisonHighlights,
+        List<AnalysisWindowSummary> windowSummaries,
         List<AnalysisPriceLevel> supportLevels,
         List<AnalysisPriceLevel> resistanceLevels,
         List<AnalysisRiskFactor> riskFactors,
