@@ -3,6 +3,8 @@ package com.aicoinassist.batch.infrastructure.client.binance;
 import com.aicoinassist.batch.global.config.BinanceProperties;
 import com.aicoinassist.batch.infrastructure.client.binance.dto.BinanceAggregateTradeResponse;
 import com.aicoinassist.batch.infrastructure.client.binance.dto.BinanceKlineResponse;
+import com.aicoinassist.batch.infrastructure.client.binance.dto.BinanceOpenInterestResponse;
+import com.aicoinassist.batch.infrastructure.client.binance.dto.BinancePremiumIndexResponse;
 import com.aicoinassist.batch.infrastructure.client.binance.dto.BinanceTickerPriceResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
@@ -57,6 +59,20 @@ public class BinanceApiClient {
         return response.stream()
                        .map(this::toKlineResponse)
                        .toList();
+    }
+
+    public BinanceOpenInterestResponse getOpenInterest(String symbol) {
+        return restClient.get()
+                         .uri(binanceProperties.futuresBaseUrl() + "/fapi/v1/openInterest?symbol={symbol}", symbol)
+                         .retrieve()
+                         .body(BinanceOpenInterestResponse.class);
+    }
+
+    public BinancePremiumIndexResponse getPremiumIndex(String symbol) {
+        return restClient.get()
+                         .uri(binanceProperties.futuresBaseUrl() + "/fapi/v1/premiumIndex?symbol={symbol}", symbol)
+                         .retrieve()
+                         .body(BinancePremiumIndexResponse.class);
     }
 
     private BinanceKlineResponse toKlineResponse(List<Object> item) {

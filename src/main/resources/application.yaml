@@ -51,3 +51,4 @@ batch:
 external:
   binance:
     base-url: https://api.binance.com
+    futures-base-url: https://fapi.binance.com
