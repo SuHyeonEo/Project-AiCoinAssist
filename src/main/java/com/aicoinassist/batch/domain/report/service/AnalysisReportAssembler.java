@@ -24,6 +24,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import org.springframework.stereotype.Component;
 
@@ -710,8 +712,10 @@ public class AnalysisReportAssembler {
                             + fundingRatePercentage(primaryComparisonFact.fundingRateDelta())
                             + ", basis Δ "
                             + signedPercent(primaryComparisonFact.basisRateDelta()),
-                    reportType == AnalysisReportType.SHORT_TERM ? "high" : "medium",
-                    "openInterest",
+                    reportType == AnalysisReportType.SHORT_TERM
+                            ? AnalysisDerivativeHighlightImportance.HIGH
+                            : AnalysisDerivativeHighlightImportance.MEDIUM,
+                    AnalysisDerivativeMetricType.OPEN_INTEREST,
                     primaryComparisonFact.reference(),
                     null
             ));
@@ -728,8 +732,10 @@ public class AnalysisReportAssembler {
                             + signedRatio(primaryWindowSummary.currentOpenInterestVsAverage())
                             + ", basis vs average "
                             + signedRatio(primaryWindowSummary.currentBasisVsAverage()),
-                    reportType == AnalysisReportType.LONG_TERM ? "high" : "medium",
-                    "fundingRate",
+                    reportType == AnalysisReportType.LONG_TERM
+                            ? AnalysisDerivativeHighlightImportance.HIGH
+                            : AnalysisDerivativeHighlightImportance.MEDIUM,
+                    AnalysisDerivativeMetricType.FUNDING_RATE,
                     null,
                     primaryWindowSummary.windowType()
             ));
@@ -741,8 +747,8 @@ public class AnalysisReportAssembler {
                     "Funding crowding",
                     "Current funding is " + fundingRatePercentage(derivativeContext.lastFundingRate())
                             + ", which points to leveraged directional crowding.",
-                    "high",
-                    "fundingRate",
+                    AnalysisDerivativeHighlightImportance.HIGH,
+                    AnalysisDerivativeMetricType.FUNDING_RATE,
                     null,
                     null
             ));
@@ -837,14 +843,14 @@ public class AnalysisReportAssembler {
         );
     }
 
-    private AnalysisContextHeadlineImportance headlineImportance(String importance) {
+    private AnalysisContextHeadlineImportance headlineImportance(AnalysisDerivativeHighlightImportance importance) {
         if (importance == null) {
             return AnalysisContextHeadlineImportance.MEDIUM;
         }
 
-        return switch (importance.toUpperCase(java.util.Locale.ROOT)) {
-            case "HIGH" -> AnalysisContextHeadlineImportance.HIGH;
-            default -> AnalysisContextHeadlineImportance.MEDIUM;
+        return switch (importance) {
+            case HIGH -> AnalysisContextHeadlineImportance.HIGH;
+            case MEDIUM -> AnalysisContextHeadlineImportance.MEDIUM;
         };
     }
 

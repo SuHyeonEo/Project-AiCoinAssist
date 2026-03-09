@@ -21,6 +21,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import org.junit.jupiter.api.Test;
 
@@ -104,8 +106,28 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.derivativeContext().comparisonFacts()).hasSize(3);
         assertThat(payload.derivativeContext().windowSummaries()).hasSize(2);
         assertThat(payload.derivativeContext().highlights()).hasSize(3);
-        assertThat(payload.derivativeContext().highlights()).extracting(AnalysisDerivativeHighlight::title)
-                                                            .contains("PREV_BATCH derivative shift", "LAST_7D derivative regime", "Funding crowding");
+        assertThat(payload.derivativeContext().highlights()).extracting(
+                        AnalysisDerivativeHighlight::title,
+                        AnalysisDerivativeHighlight::importance,
+                        AnalysisDerivativeHighlight::relatedMetric
+                )
+                .contains(
+                        org.assertj.core.groups.Tuple.tuple(
+                                "PREV_BATCH derivative shift",
+                                AnalysisDerivativeHighlightImportance.HIGH,
+                                AnalysisDerivativeMetricType.OPEN_INTEREST
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                "LAST_7D derivative regime",
+                                AnalysisDerivativeHighlightImportance.MEDIUM,
+                                AnalysisDerivativeMetricType.FUNDING_RATE
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                "Funding crowding",
+                                AnalysisDerivativeHighlightImportance.HIGH,
+                                AnalysisDerivativeMetricType.FUNDING_RATE
+                        )
+                );
         assertThat(payload.comparisonFacts()).hasSize(2);
         assertThat(payload.windowSummaries()).hasSize(2);
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)

@@ -32,6 +32,8 @@ import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -224,8 +226,8 @@ class AnalysisReportGenerationServiceTest {
                         List.of(new AnalysisDerivativeHighlight(
                                 "D7 derivative shift",
                                 "D7 keeps OI +4.6244%, funding Δ +0.014%, basis Δ +0.035%.",
-                                "medium",
-                                "openInterest",
+                                AnalysisDerivativeHighlightImportance.MEDIUM,
+                                AnalysisDerivativeMetricType.OPEN_INTEREST,
                                 AnalysisComparisonReference.D7,
                                 null
                         ))
