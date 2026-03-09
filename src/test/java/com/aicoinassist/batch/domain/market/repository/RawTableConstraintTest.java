@@ -1,7 +1,10 @@
 package com.aicoinassist.batch.domain.market.repository;
 
 import com.aicoinassist.batch.domain.market.entity.MarketCandleRawEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketOpenInterestRawEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketPremiumIndexRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketPriceRawEntity;
 import com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus;
 import org.junit.jupiter.api.Test;
@@ -25,6 +28,15 @@ class RawTableConstraintTest {
 
     @Autowired
     private MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
+
+    @Autowired
+    private MarketOpenInterestRawRepository marketOpenInterestRawRepository;
+
+    @Autowired
+    private MarketPremiumIndexRawRepository marketPremiumIndexRawRepository;
+
+    @Autowired
+    private MarketContextSnapshotRepository marketContextSnapshotRepository;
 
     @Test
     void marketPriceRawRejectsDuplicateSourceSymbolAndSourceEventTime() {
@@ -55,6 +67,39 @@ class RawTableConstraintTest {
 
         assertThatThrownBy(() -> marketIndicatorSnapshotRepository.saveAndFlush(
                 indicatorSnapshot(snapshotTime, "87510.12")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketOpenInterestRawRejectsDuplicateSourceSymbolAndSourceEventTime() {
+        Instant sourceEventTime = Instant.parse("2026-03-10T00:59:00Z");
+
+        marketOpenInterestRawRepository.saveAndFlush(openInterestRaw(sourceEventTime, "12345.67"));
+
+        assertThatThrownBy(() -> marketOpenInterestRawRepository.saveAndFlush(
+                openInterestRaw(sourceEventTime, "12346.67")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketPremiumIndexRawRejectsDuplicateSourceSymbolAndSourceEventTime() {
+        Instant sourceEventTime = Instant.parse("2026-03-10T00:59:30Z");
+
+        marketPremiumIndexRawRepository.saveAndFlush(premiumIndexRaw(sourceEventTime, "87500.12"));
+
+        assertThatThrownBy(() -> marketPremiumIndexRawRepository.saveAndFlush(
+                premiumIndexRaw(sourceEventTime, "87510.12")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketContextSnapshotRejectsDuplicateSymbolAndSnapshotTime() {
+        Instant snapshotTime = Instant.parse("2026-03-10T00:59:30Z");
+
+        marketContextSnapshotRepository.saveAndFlush(contextSnapshot(snapshotTime, "12345.67"));
+
+        assertThatThrownBy(() -> marketContextSnapshotRepository.saveAndFlush(
+                contextSnapshot(snapshotTime, "12346.67")
         )).isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -123,5 +168,52 @@ class RawTableConstraintTest {
                                             .bollingerMiddleBand(new BigDecimal("10"))
                                             .bollingerLowerBand(new BigDecimal("5"))
                                             .build();
+    }
+
+    private MarketOpenInterestRawEntity openInterestRaw(Instant sourceEventTime, String openInterest) {
+        return MarketOpenInterestRawEntity.builder()
+                                          .source("BINANCE")
+                                          .symbol("BTCUSDT")
+                                          .sourceEventTime(sourceEventTime)
+                                          .collectedTime(sourceEventTime.plusSeconds(10))
+                                          .validationStatus(RawDataValidationStatus.VALID)
+                                          .openInterest(new BigDecimal(openInterest))
+                                          .rawPayload("{\"openInterest\":\"" + openInterest + "\"}")
+                                          .build();
+    }
+
+    private MarketPremiumIndexRawEntity premiumIndexRaw(Instant sourceEventTime, String markPrice) {
+        return MarketPremiumIndexRawEntity.builder()
+                                          .source("BINANCE")
+                                          .symbol("BTCUSDT")
+                                          .sourceEventTime(sourceEventTime)
+                                          .collectedTime(sourceEventTime.plusSeconds(10))
+                                          .validationStatus(RawDataValidationStatus.VALID)
+                                          .markPrice(new BigDecimal(markPrice))
+                                          .indexPrice(new BigDecimal("87480.02"))
+                                          .lastFundingRate(new BigDecimal("0.00025"))
+                                          .nextFundingTime(Instant.parse("2026-03-10T08:00:00Z"))
+                                          .rawPayload("{\"markPrice\":\"" + markPrice + "\"}")
+                                          .build();
+    }
+
+    private MarketContextSnapshotEntity contextSnapshot(Instant snapshotTime, String openInterest) {
+        return MarketContextSnapshotEntity.builder()
+                                          .symbol("BTCUSDT")
+                                          .snapshotTime(snapshotTime)
+                                          .openInterestSourceEventTime(snapshotTime.minusSeconds(30))
+                                          .premiumIndexSourceEventTime(snapshotTime)
+                                          .sourceDataVersion(
+                                                  "openInterestSourceEventTime=" + snapshotTime.minusSeconds(30)
+                                                          + ";premiumIndexSourceEventTime=" + snapshotTime
+                                                          + ";nextFundingTime=2026-03-10T08:00:00Z"
+                                          )
+                                          .openInterest(new BigDecimal(openInterest))
+                                          .markPrice(new BigDecimal("87500.12"))
+                                          .indexPrice(new BigDecimal("87480.02"))
+                                          .lastFundingRate(new BigDecimal("0.00025"))
+                                          .nextFundingTime(Instant.parse("2026-03-10T08:00:00Z"))
+                                          .markIndexBasisRate(new BigDecimal("0.02297893"))
+                                          .build();
     }
 }
