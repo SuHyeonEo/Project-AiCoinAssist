@@ -60,7 +60,21 @@ public class AnalysisReportContinuityService {
             if (summaryNode == null || summaryNode.isNull()) {
                 return "Previous report exists but summary is unavailable.";
             }
-            return summaryNode.asText();
+            if (summaryNode.isTextual()) {
+                return summaryNode.asText();
+            }
+
+            JsonNode keyMessageNode = summaryNode.get("keyMessage");
+            if (keyMessageNode != null && !keyMessageNode.isNull() && !keyMessageNode.asText().isBlank()) {
+                return keyMessageNode.asText();
+            }
+
+            JsonNode headlineNode = summaryNode.get("headline");
+            if (headlineNode != null && !headlineNode.isNull() && !headlineNode.asText().isBlank()) {
+                return headlineNode.asText();
+            }
+
+            return "Previous report exists but summary is unavailable.";
         } catch (Exception exception) {
             return "Previous report exists but summary could not be parsed.";
         }

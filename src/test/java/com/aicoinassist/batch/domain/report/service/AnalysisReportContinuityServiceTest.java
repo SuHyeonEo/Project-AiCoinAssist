@@ -48,7 +48,7 @@ class AnalysisReportContinuityServiceTest {
                                     .rawReferenceTime(Instant.parse("2026-03-01T20:59:30Z"))
                                     .sourceDataVersion("basis-key")
                                     .analysisEngineVersion("report-assembler-v1")
-                                    .reportPayload("{\"summary\":\"Previous mid-term report emphasized structure holding above weekly support.\"}")
+                                    .reportPayload("{\"summary\":{\"headline\":\"MID_TERM view\",\"keyMessage\":\"Previous mid-term report emphasized structure holding above weekly support.\"}}")
                                     .storedTime(Instant.parse("2026-03-01T21:00:30Z"))
                                     .build()
         ));
