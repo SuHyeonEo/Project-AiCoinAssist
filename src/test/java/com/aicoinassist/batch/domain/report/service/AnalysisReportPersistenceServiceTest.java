@@ -12,8 +12,10 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -190,7 +192,31 @@ class AnalysisReportPersistenceServiceTest {
                         new BigDecimal("87480.02000000"),
                         new BigDecimal("0.00045000"),
                         Instant.parse("2026-03-09T08:00:00Z"),
-                        new BigDecimal("0.12000000")
+                        new BigDecimal("0.12000000"),
+                        List.of(
+                                new AnalysisDerivativeComparisonFact(
+                                        AnalysisComparisonReference.D1,
+                                        Instant.parse("2026-03-08T00:59:30Z"),
+                                        new BigDecimal("11800.00000000"),
+                                        new BigDecimal("0.04624400"),
+                                        new BigDecimal("0.00014000"),
+                                        new BigDecimal("0.03500000")
+                                )
+                        ),
+                        List.of(
+                                new AnalysisDerivativeWindowSummary(
+                                        MarketWindowType.LAST_7D,
+                                        Instant.parse("2026-03-02T00:59:30Z"),
+                                        Instant.parse("2026-03-09T00:59:30Z"),
+                                        168,
+                                        new BigDecimal("11000.00000000"),
+                                        new BigDecimal("0.12233445"),
+                                        new BigDecimal("0.00025000"),
+                                        new BigDecimal("0.80000000"),
+                                        new BigDecimal("0.07000000"),
+                                        new BigDecimal("0.71428571")
+                                )
+                        )
                 ),
                 List.of(new AnalysisPriceLevel("S1", new BigDecimal("84500.00"), "Recent pullback low")),
                 List.of(new AnalysisPriceLevel("R1", new BigDecimal("88500.00"), "Recent swing high")),

@@ -2,6 +2,8 @@ package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
@@ -37,7 +39,7 @@ public class AnalysisReportAssembler {
         List<AnalysisWindowHighlight> windowHighlights = windowHighlights(reportType, windowSummaries);
         String trendBias = determineTrendBias(snapshot);
         String summary = buildSummary(snapshot, trendBias, reportType, comparisonFacts, comparisonHighlights, windowSummaries, derivativeContext, continuityNotes);
-        String marketContext = buildMarketContext(snapshot, trendBias, comparisonFacts, comparisonHighlights, windowHighlights, windowSummaries, derivativeContext, continuityNotes);
+        String marketContext = buildMarketContext(snapshot, trendBias, reportType, comparisonFacts, comparisonHighlights, windowHighlights, windowSummaries, derivativeContext, continuityNotes);
 
         return new AnalysisReportPayload(
                 summary,
@@ -50,7 +52,7 @@ public class AnalysisReportAssembler {
                 derivativeContext,
                 supportLevels(snapshot),
                 resistanceLevels(snapshot),
-                riskFactors(snapshot, derivativeContext),
+                riskFactors(snapshot, reportType, derivativeContext),
                 scenarios(snapshot, trendBias)
         );
     }
@@ -113,6 +115,16 @@ public class AnalysisReportAssembler {
                     + " and next funding in "
                     + hoursUntilNextFunding(snapshot, derivativeContext)
                     + "h.";
+            AnalysisDerivativeComparisonFact primaryDerivativeFact = primaryDerivativeFact(reportType, derivativeContext);
+            if (primaryDerivativeFact != null) {
+                summary = summary + " "
+                        + primaryDerivativeFact.reference().name()
+                        + " keeps OI "
+                        + signedRatio(primaryDerivativeFact.openInterestChangeRate())
+                        + " with funding Δ "
+                        + fundingRatePercentage(primaryDerivativeFact.fundingRateDelta())
+                        + ".";
+            }
         }
 
         if (continuityNotes.isEmpty()) {
@@ -125,6 +137,7 @@ public class AnalysisReportAssembler {
     private String buildMarketContext(
             MarketIndicatorSnapshotEntity snapshot,
             String trendBias,
+            AnalysisReportType reportType,
             List<AnalysisComparisonFact> comparisonFacts,
             List<AnalysisComparisonHighlight> comparisonHighlights,
             List<AnalysisWindowHighlight> windowHighlights,
@@ -149,7 +162,7 @@ public class AnalysisReportAssembler {
                 + ".";
 
         if (comparisonFacts.isEmpty()) {
-            return appendWindowSummaryContext(context, windowHighlights, windowSummaries, derivativeContext, continuityNotes);
+            return appendWindowSummaryContext(context, reportType, windowHighlights, windowSummaries, derivativeContext, continuityNotes);
         }
 
         String highlightsText = comparisonHighlights.isEmpty()
@@ -163,11 +176,12 @@ public class AnalysisReportAssembler {
                                  .map(this::comparisonFactSummary)
                                  .collect(Collectors.joining("; "))
                 + "."
-                + highlightsText, windowHighlights, windowSummaries, derivativeContext, continuityNotes);
+                + highlightsText, reportType, windowHighlights, windowSummaries, derivativeContext, continuityNotes);
     }
 
     private String appendWindowSummaryContext(
             String context,
+            AnalysisReportType reportType,
             List<AnalysisWindowHighlight> windowHighlights,
             List<AnalysisWindowSummary> windowSummaries,
             AnalysisDerivativeContext derivativeContext,
@@ -212,6 +226,19 @@ public class AnalysisReportAssembler {
                     + ", next funding in "
                     + hoursUntilNextFunding(null, derivativeContext)
                     + "h.";
+
+            AnalysisDerivativeWindowSummary derivativeWindowSummary = primaryDerivativeWindowSummary(reportType, derivativeContext);
+            if (derivativeWindowSummary != null) {
+                context = context + " Derivative window summary: "
+                        + derivativeWindowSummary.windowType().name()
+                        + " OI vs average "
+                        + signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage())
+                        + ", funding vs average "
+                        + signedRatio(derivativeWindowSummary.currentFundingVsAverage())
+                        + ", basis vs average "
+                        + signedRatio(derivativeWindowSummary.currentBasisVsAverage())
+                        + ".";
+            }
         }
 
         if (continuityNotes.isEmpty()) {
@@ -262,6 +289,7 @@ public class AnalysisReportAssembler {
 
     private List<AnalysisRiskFactor> riskFactors(
             MarketIndicatorSnapshotEntity snapshot,
+            AnalysisReportType reportType,
             AnalysisDerivativeContext derivativeContext
     ) {
         List<AnalysisRiskFactor> candidates = new java.util.ArrayList<AnalysisRiskFactor>();
@@ -296,6 +324,19 @@ public class AnalysisReportAssembler {
                     "Basis expansion",
                     "Mark/index basis is " + signedPercent(derivativeContext.markIndexBasisRate())
                             + ", so futures positioning is trading away from spot."
+            ));
+        }
+
+        AnalysisDerivativeWindowSummary derivativeWindowSummary = derivativeContext == null
+                ? null
+                : primaryDerivativeWindowSummary(reportType, derivativeContext);
+        if (derivativeWindowSummary != null
+                && derivativeWindowSummary.currentOpenInterestVsAverage() != null
+                && derivativeWindowSummary.currentOpenInterestVsAverage().abs().compareTo(new BigDecimal("0.20")) >= 0) {
+            candidates.add(new AnalysisRiskFactor(
+                    "Open interest crowding",
+                    "Open interest is running " + signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage())
+                            + " versus the representative window average."
             ));
         }
 
@@ -503,6 +544,76 @@ public class AnalysisReportAssembler {
     private String distanceFromExtremum(BigDecimal priceChangeRate, String relation) {
         BigDecimal absoluteValue = priceChangeRate.abs();
         return absoluteValue.stripTrailingZeros().toPlainString() + "% " + relation;
+    }
+
+    private AnalysisDerivativeComparisonFact primaryDerivativeFact(
+            AnalysisReportType reportType,
+            AnalysisDerivativeContext derivativeContext
+    ) {
+        if (derivativeContext.comparisonFacts() == null || derivativeContext.comparisonFacts().isEmpty()) {
+            return null;
+        }
+
+        Map<AnalysisComparisonReference, AnalysisDerivativeComparisonFact> factByReference = derivativeContext.comparisonFacts()
+                                                                                             .stream()
+                                                                                             .collect(Collectors.toMap(
+                                                                                                     AnalysisDerivativeComparisonFact::reference,
+                                                                                                     fact -> fact,
+                                                                                                     (left, right) -> left
+                                                                                             ));
+
+        List<AnalysisComparisonReference> priority = switch (reportType) {
+            case SHORT_TERM -> List.of(AnalysisComparisonReference.PREV_BATCH, AnalysisComparisonReference.D1, AnalysisComparisonReference.D3);
+            case MID_TERM -> List.of(AnalysisComparisonReference.D7, AnalysisComparisonReference.D14, AnalysisComparisonReference.D30);
+            case LONG_TERM -> List.of(AnalysisComparisonReference.D180, AnalysisComparisonReference.D90, AnalysisComparisonReference.D30);
+        };
+
+        return priority.stream()
+                       .map(factByReference::get)
+                       .filter(java.util.Objects::nonNull)
+                       .findFirst()
+                       .orElse(derivativeContext.comparisonFacts().get(0));
+    }
+
+    private AnalysisDerivativeWindowSummary primaryDerivativeWindowSummary(
+            AnalysisReportType reportType,
+            AnalysisDerivativeContext derivativeContext
+    ) {
+        if (derivativeContext.windowSummaries() == null || derivativeContext.windowSummaries().isEmpty()) {
+            return null;
+        }
+
+        Map<com.aicoinassist.batch.domain.market.enumtype.MarketWindowType, AnalysisDerivativeWindowSummary> summaryByType = derivativeContext.windowSummaries()
+                                                                                                                                 .stream()
+                                                                                                                                 .collect(Collectors.toMap(
+                                                                                                                                         AnalysisDerivativeWindowSummary::windowType,
+                                                                                                                                         summary -> summary,
+                                                                                                                                         (left, right) -> left
+                                                                                                                                 ));
+
+        List<com.aicoinassist.batch.domain.market.enumtype.MarketWindowType> priority = switch (reportType) {
+            case SHORT_TERM -> List.of(
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_7D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_3D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_1D
+            );
+            case MID_TERM -> List.of(
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_30D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_14D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_7D
+            );
+            case LONG_TERM -> List.of(
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_180D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_90D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_30D
+            );
+        };
+
+        return priority.stream()
+                       .map(summaryByType::get)
+                       .filter(java.util.Objects::nonNull)
+                       .findFirst()
+                       .orElse(derivativeContext.windowSummaries().get(derivativeContext.windowSummaries().size() - 1));
     }
 
     private AnalysisWindowSummary primaryWindow(List<AnalysisWindowSummary> windowSummaries) {

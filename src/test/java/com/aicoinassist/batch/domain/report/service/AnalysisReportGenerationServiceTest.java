@@ -1,16 +1,20 @@
 package com.aicoinassist.batch.domain.report.service;
 
-import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
 import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
+import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
-import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
@@ -48,10 +52,16 @@ class AnalysisReportGenerationServiceTest {
     private MarketContextSnapshotPersistenceService marketContextSnapshotPersistenceService;
 
     @Mock
+    private MarketContextWindowSummarySnapshotPersistenceService marketContextWindowSummarySnapshotPersistenceService;
+
+    @Mock
     private MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
 
     @Mock
     private AnalysisReportContinuityService analysisReportContinuityService;
+
+    @Mock
+    private AnalysisDerivativeComparisonService analysisDerivativeComparisonService;
 
     @Mock
     private AnalysisReportAssembler analysisReportAssembler;
@@ -64,8 +74,10 @@ class AnalysisReportGenerationServiceTest {
         AnalysisReportGenerationService service = new AnalysisReportGenerationService(
                 marketIndicatorSnapshotRepository,
                 marketContextSnapshotPersistenceService,
+                marketContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
                 analysisComparisonService,
+                analysisDerivativeComparisonService,
                 analysisReportContinuityService,
                 analysisReportAssembler,
                 analysisReportPersistenceService
@@ -128,7 +140,27 @@ class AnalysisReportGenerationServiceTest {
                         new BigDecimal("87480.02000000"),
                         new BigDecimal("0.00045000"),
                         Instant.parse("2026-03-09T08:00:00Z"),
-                        new BigDecimal("0.12000000")
+                        new BigDecimal("0.12000000"),
+                        List.of(new AnalysisDerivativeComparisonFact(
+                                AnalysisComparisonReference.D7,
+                                Instant.parse("2026-03-02T00:59:30Z"),
+                                new BigDecimal("11800.00000000"),
+                                new BigDecimal("0.04624400"),
+                                new BigDecimal("0.00014000"),
+                                new BigDecimal("0.03500000")
+                        )),
+                        List.of(new AnalysisDerivativeWindowSummary(
+                                MarketWindowType.LAST_30D,
+                                Instant.parse("2026-02-07T00:59:30Z"),
+                                Instant.parse("2026-03-09T00:59:30Z"),
+                                180,
+                                new BigDecimal("11000.00000000"),
+                                new BigDecimal("0.12233445"),
+                                new BigDecimal("0.00025000"),
+                                new BigDecimal("0.80000000"),
+                                new BigDecimal("0.07000000"),
+                                new BigDecimal("0.71428571")
+                        ))
                 ),
                 List.of(),
                 List.of(),
@@ -172,6 +204,25 @@ class AnalysisReportGenerationServiceTest {
                                                  .sourceDataVersion("basis-key;windowType=LAST_30D")
                                                  .build()
         );
+        List<MarketContextWindowSummarySnapshotEntity> derivativeWindowSummaryEntities = List.of(
+                MarketContextWindowSummarySnapshotEntity.builder()
+                                                       .symbol("BTCUSDT")
+                                                       .windowType(MarketWindowType.LAST_30D.name())
+                                                       .windowStartTime(Instant.parse("2026-02-07T00:59:30Z"))
+                                                       .windowEndTime(Instant.parse("2026-03-09T00:59:30Z"))
+                                                       .sampleCount(180)
+                                                       .currentOpenInterest(new BigDecimal("12345.67890000"))
+                                                       .averageOpenInterest(new BigDecimal("11000.00000000"))
+                                                       .currentOpenInterestVsAverage(new BigDecimal("0.12233445"))
+                                                       .currentFundingRate(new BigDecimal("0.00045000"))
+                                                       .averageFundingRate(new BigDecimal("0.00025000"))
+                                                       .currentFundingVsAverage(new BigDecimal("0.80000000"))
+                                                       .currentBasisRate(new BigDecimal("0.12000000"))
+                                                       .averageBasisRate(new BigDecimal("0.07000000"))
+                                                       .currentBasisVsAverage(new BigDecimal("0.71428571"))
+                                                       .sourceDataVersion("context-basis-key;windowType=LAST_30D")
+                                                       .build()
+        );
         AnalysisReportEntity savedEntity = AnalysisReportEntity.builder()
                                                                .symbol("BTCUSDT")
                                                                .reportType(AnalysisReportType.MID_TERM)
@@ -192,6 +243,12 @@ class AnalysisReportGenerationServiceTest {
         )).thenReturn(payload.continuityNotes());
         when(marketContextSnapshotPersistenceService.createAndSave("BTCUSDT"))
                 .thenReturn(marketContextSnapshotEntity);
+        when(analysisDerivativeComparisonService.buildFacts(marketContextSnapshotEntity, AnalysisReportType.MID_TERM))
+                .thenReturn(payload.derivativeContext().comparisonFacts());
+        when(marketContextWindowSummarySnapshotPersistenceService.createAndSaveForReportType(
+                marketContextSnapshotEntity,
+                AnalysisReportType.MID_TERM
+        )).thenReturn(derivativeWindowSummaryEntities);
         when(marketWindowSummarySnapshotPersistenceService.createAndSaveForReportType(snapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(windowSummaryEntities);
         when(analysisComparisonService.buildFacts(snapshot, AnalysisReportType.MID_TERM)).thenReturn(comparisonFacts);
@@ -233,8 +290,10 @@ class AnalysisReportGenerationServiceTest {
         AnalysisReportGenerationService service = new AnalysisReportGenerationService(
                 marketIndicatorSnapshotRepository,
                 marketContextSnapshotPersistenceService,
+                marketContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
                 analysisComparisonService,
+                analysisDerivativeComparisonService,
                 analysisReportContinuityService,
                 analysisReportAssembler,
                 analysisReportPersistenceService
