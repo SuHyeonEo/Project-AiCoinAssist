@@ -5,6 +5,7 @@ import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
@@ -29,6 +30,7 @@ class AnalysisReportAssemblerTest {
                 AnalysisReportType.SHORT_TERM,
                 comparisonFacts(),
                 shortWindowSummaries(),
+                derivativeContext(),
                 shortContinuityNotes()
         );
 
@@ -38,7 +40,10 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.marketContext()).contains("above MA20");
         assertThat(payload.marketContext()).contains("D1 price");
         assertThat(payload.marketContext()).contains("Window summary:");
+        assertThat(payload.marketContext()).contains("Derivative context:");
         assertThat(payload.marketContext()).contains("Continuity note:");
+        assertThat(payload.derivativeContext()).isNotNull();
+        assertThat(payload.derivativeContext().lastFundingRate()).isEqualByComparingTo("0.00045000");
         assertThat(payload.comparisonFacts()).hasSize(2);
         assertThat(payload.windowSummaries()).hasSize(2);
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
@@ -62,11 +67,12 @@ class AnalysisReportAssemblerTest {
                 AnalysisReportType.SHORT_TERM,
                 comparisonFacts(),
                 shortWindowSummaries(),
+                derivativeContext(),
                 shortContinuityNotes()
         );
 
         assertThat(payload.riskFactors()).extracting("title")
-                                         .contains("RSI overheating", "Band extension", "Elevated volatility");
+                                         .contains("RSI overheating", "Band extension", "Elevated volatility", "Funding skew", "Basis expansion");
     }
 
     @Test
@@ -76,6 +82,7 @@ class AnalysisReportAssemblerTest {
                 AnalysisReportType.LONG_TERM,
                 longTermComparisonFacts(),
                 longWindowSummaries(),
+                derivativeContext(),
                 longContinuityNotes()
         );
 
@@ -88,6 +95,7 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.summary()).contains("52-week high");
         assertThat(payload.summary()).contains("LAST_52W");
         assertThat(payload.summary()).contains("Previous long-term");
+        assertThat(payload.summary()).contains("Derivatives show funding");
         assertThat(payload.marketContext()).contains("Highlights:");
         assertThat(payload.marketContext()).contains("cycle floor");
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
@@ -283,5 +291,20 @@ class AnalysisReportAssemblerTest {
                 Instant.parse("2026-01-15T00:00:00Z"),
                 "Previous long-term report emphasized cycle recovery above the major base."
         ));
+    }
+
+    private AnalysisDerivativeContext derivativeContext() {
+        return new AnalysisDerivativeContext(
+                Instant.parse("2026-03-09T00:59:30Z"),
+                Instant.parse("2026-03-09T00:59:00Z"),
+                Instant.parse("2026-03-09T00:59:30Z"),
+                "openInterestSourceEventTime=2026-03-09T00:59:00Z;premiumIndexSourceEventTime=2026-03-09T00:59:30Z;nextFundingTime=2026-03-09T08:00:00Z",
+                new BigDecimal("12345.67890000"),
+                new BigDecimal("87500.12000000"),
+                new BigDecimal("87480.02000000"),
+                new BigDecimal("0.00045000"),
+                Instant.parse("2026-03-09T08:00:00Z"),
+                new BigDecimal("0.12000000")
+        );
     }
 }
