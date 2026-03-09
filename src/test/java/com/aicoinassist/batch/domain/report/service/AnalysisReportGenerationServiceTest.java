@@ -36,8 +36,11 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImpo
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisScenarioBias;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
 import org.junit.jupiter.api.Test;
@@ -240,7 +243,7 @@ class AnalysisReportGenerationServiceTest {
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of(new AnalysisScenario("Base case", "bullish", "description"))
+                List.of(new AnalysisScenario("Base case", AnalysisScenarioBias.BULLISH, "description"))
         );
         MarketContextSnapshotEntity marketContextSnapshotEntity = MarketContextSnapshotEntity.builder()
                                                                                              .symbol("BTCUSDT")
