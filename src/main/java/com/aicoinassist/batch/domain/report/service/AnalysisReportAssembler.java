@@ -24,9 +24,14 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisConfidenceLevel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -50,7 +55,7 @@ public class AnalysisReportAssembler {
         List<AnalysisComparisonHighlight> comparisonHighlights = comparisonHighlights(reportType, comparisonFacts);
         List<AnalysisWindowHighlight> windowHighlights = windowHighlights(reportType, windowSummaries);
         AnalysisDerivativeContext enrichedDerivativeContext = enrichDerivativeContext(reportType, derivativeContext);
-        String trendBias = determineTrendBias(snapshot);
+        AnalysisTrendLabel trendBias = determineTrendBias(snapshot);
         AnalysisSummaryPayload summary = buildSummary(snapshot, trendBias, reportType, comparisonFacts, comparisonHighlights, windowSummaries, enrichedDerivativeContext, continuityNotes);
         AnalysisMarketContextPayload marketContext = buildMarketContext(snapshot, trendBias, reportType, comparisonFacts, comparisonHighlights, windowHighlights, windowSummaries, enrichedDerivativeContext, continuityNotes);
 
@@ -72,7 +77,7 @@ public class AnalysisReportAssembler {
 
     private AnalysisSummaryPayload buildSummary(
             MarketIndicatorSnapshotEntity snapshot,
-            String trendBias,
+            AnalysisTrendLabel trendBias,
             AnalysisReportType reportType,
             List<AnalysisComparisonFact> comparisonFacts,
             List<AnalysisComparisonHighlight> comparisonHighlights,
@@ -94,7 +99,7 @@ public class AnalysisReportAssembler {
 
         String keyMessage = snapshot.getSymbol()
                 + " is in a "
-                + trendBias
+                + enumLabel(trendBias)
                 + " structure with price at "
                 + snapshot.getCurrentPrice().stripTrailingZeros().toPlainString()
                 + ", RSI14 at "
@@ -113,13 +118,13 @@ public class AnalysisReportAssembler {
             keyMessage = keyMessage + " Continuity: " + continuityNotes.get(0).summary();
         }
 
-        String outlook = switch (trendBias) {
-            case "bullish" -> "constructive";
-            case "bearish" -> "defensive";
-            default -> "neutral";
+        AnalysisOutlookType outlook = switch (trendBias) {
+            case BULLISH -> AnalysisOutlookType.CONSTRUCTIVE;
+            case BEARISH -> AnalysisOutlookType.DEFENSIVE;
+            case NEUTRAL -> AnalysisOutlookType.NEUTRAL;
         };
 
-        String confidence = confidenceLabel(snapshot, comparisonFacts, derivativeContext);
+        AnalysisConfidenceLevel confidence = confidenceLabel(snapshot, comparisonFacts, derivativeContext);
 
         return new AnalysisSummaryPayload(
                 headline,
@@ -132,7 +137,7 @@ public class AnalysisReportAssembler {
 
     private AnalysisMarketContextPayload buildMarketContext(
             MarketIndicatorSnapshotEntity snapshot,
-            String trendBias,
+            AnalysisTrendLabel trendBias,
             AnalysisReportType reportType,
             List<AnalysisComparisonFact> comparisonFacts,
             List<AnalysisComparisonHighlight> comparisonHighlights,
@@ -348,24 +353,24 @@ public class AnalysisReportAssembler {
         return candidates;
     }
 
-    private List<AnalysisScenario> scenarios(MarketIndicatorSnapshotEntity snapshot, String trendBias) {
+    private List<AnalysisScenario> scenarios(MarketIndicatorSnapshotEntity snapshot, AnalysisTrendLabel trendBias) {
         return switch (trendBias) {
-            case "bullish" -> List.of(
+            case BULLISH -> List.of(
                     new AnalysisScenario("Base case", "bullish", "Price holds above MA20 and extends toward " + snapshot.getBollingerUpperBand().stripTrailingZeros().toPlainString() + "."),
                     new AnalysisScenario("Risk case", "neutral", "A loss of MA20 can trigger a pullback toward " + snapshot.getMa60().stripTrailingZeros().toPlainString() + ".")
             );
-            case "bearish" -> List.of(
+            case BEARISH -> List.of(
                     new AnalysisScenario("Base case", "bearish", "Price stays below MA20 and can probe " + snapshot.getBollingerLowerBand().stripTrailingZeros().toPlainString() + "."),
                     new AnalysisScenario("Risk case", "neutral", "A recovery above MA20 can force short-covering toward " + snapshot.getMa60().stripTrailingZeros().toPlainString() + ".")
             );
-            default -> List.of(
+            case NEUTRAL -> List.of(
                     new AnalysisScenario("Base case", "neutral", "Price oscillates between support and resistance while waiting for directional confirmation."),
                     new AnalysisScenario("Breakout case", "directional", "A decisive move beyond the current band extremes can set the next short-term direction.")
             );
         };
     }
 
-    private String determineTrendBias(MarketIndicatorSnapshotEntity snapshot) {
+    private AnalysisTrendLabel determineTrendBias(MarketIndicatorSnapshotEntity snapshot) {
         boolean bullishAlignment = snapshot.getCurrentPrice().compareTo(snapshot.getMa20()) >= 0
                 && snapshot.getMa20().compareTo(snapshot.getMa60()) >= 0
                 && snapshot.getMacdHistogram().compareTo(BigDecimal.ZERO) >= 0;
@@ -375,14 +380,14 @@ public class AnalysisReportAssembler {
                 && snapshot.getMacdHistogram().compareTo(BigDecimal.ZERO) <= 0;
 
         if (bullishAlignment) {
-            return "bullish";
+            return AnalysisTrendLabel.BULLISH;
         }
 
         if (bearishAlignment) {
-            return "bearish";
+            return AnalysisTrendLabel.BEARISH;
         }
 
-        return "neutral";
+        return AnalysisTrendLabel.NEUTRAL;
     }
 
     private String comparePriceToMovingAverage(BigDecimal currentPrice, BigDecimal movingAverage, String label) {
@@ -405,30 +410,30 @@ public class AnalysisReportAssembler {
         return "inside the Bollinger band range";
     }
 
-    private String volatilityLabel(MarketIndicatorSnapshotEntity snapshot) {
+    private AnalysisVolatilityLabel volatilityLabel(MarketIndicatorSnapshotEntity snapshot) {
         BigDecimal atrPercent = atrRatio(snapshot);
         if (atrPercent.compareTo(new BigDecimal("3.00")) >= 0) {
-            return "elevated";
+            return AnalysisVolatilityLabel.ELEVATED;
         }
         if (atrPercent.compareTo(new BigDecimal("1.50")) >= 0) {
-            return "moderate";
+            return AnalysisVolatilityLabel.MODERATE;
         }
-        return "contained";
+        return AnalysisVolatilityLabel.CONTAINED;
     }
 
-    private String rangePositionLabel(AnalysisWindowSummary primaryWindow) {
+    private AnalysisRangePositionLabel rangePositionLabel(AnalysisWindowSummary primaryWindow) {
         if (primaryWindow == null || primaryWindow.currentPositionInRange() == null) {
-            return "unavailable";
+            return AnalysisRangePositionLabel.UNAVAILABLE;
         }
 
         BigDecimal position = primaryWindow.currentPositionInRange();
         if (position.compareTo(new BigDecimal("0.67")) >= 0) {
-            return "upper-range";
+            return AnalysisRangePositionLabel.UPPER_RANGE;
         }
         if (position.compareTo(new BigDecimal("0.33")) <= 0) {
-            return "lower-range";
+            return AnalysisRangePositionLabel.LOWER_RANGE;
         }
-        return "mid-range";
+        return AnalysisRangePositionLabel.MID_RANGE;
     }
 
     private String momentumSummary(MarketIndicatorSnapshotEntity snapshot) {
@@ -438,24 +443,28 @@ public class AnalysisReportAssembler {
                 + snapshot.getMacdHistogram().stripTrailingZeros().toPlainString();
     }
 
-    private String confidenceLabel(
+    private AnalysisConfidenceLevel confidenceLabel(
             MarketIndicatorSnapshotEntity snapshot,
             List<AnalysisComparisonFact> comparisonFacts,
             AnalysisDerivativeContext derivativeContext
     ) {
-        boolean directionalTrend = !"neutral".equals(determineTrendBias(snapshot));
+        boolean directionalTrend = determineTrendBias(snapshot) != AnalysisTrendLabel.NEUTRAL;
         boolean hasComparisons = comparisonFacts != null && !comparisonFacts.isEmpty();
         boolean hasDerivativeHighlights = derivativeContext != null
                 && derivativeContext.highlights() != null
                 && !derivativeContext.highlights().isEmpty();
 
         if (directionalTrend && hasComparisons && hasDerivativeHighlights) {
-            return "high";
+            return AnalysisConfidenceLevel.HIGH;
         }
         if (directionalTrend && hasComparisons) {
-            return "medium";
+            return AnalysisConfidenceLevel.MEDIUM;
         }
-        return "low";
+        return AnalysisConfidenceLevel.LOW;
+    }
+
+    private String enumLabel(Enum<?> value) {
+        return value.name().toLowerCase(java.util.Locale.ROOT).replace('_', '-');
     }
 
     private BigDecimal atrRatio(MarketIndicatorSnapshotEntity snapshot) {
