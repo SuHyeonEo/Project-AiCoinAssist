@@ -10,6 +10,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
@@ -17,6 +18,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -131,8 +133,24 @@ class AnalysisReportPersistenceServiceTest {
 
     private AnalysisReportPayload payload(String summary) {
         return new AnalysisReportPayload(
-                summary,
-                "BTC is holding above short-term support while momentum remains constructive.",
+                new AnalysisSummaryPayload(
+                        "SHORT_TERM view",
+                        "constructive",
+                        "high",
+                        summary
+                ),
+                new AnalysisMarketContextPayload(
+                        new BigDecimal("87500.00"),
+                        "bullish",
+                        "moderate",
+                        "upper-range",
+                        "above MA20, above MA60, above MA120",
+                        "RSI14 62, MACD histogram 20",
+                        "PREV_BATCH price +0.5747%, RSI Δ +2, MACD hist Δ +5.",
+                        "LAST_7D range 82000 to 90000.",
+                        "Funding +0.045%, basis +0.12%.",
+                        "Previous short-term report highlighted momentum continuation."
+                ),
                 List.of(
                         new AnalysisComparisonFact(
                                 AnalysisComparisonReference.PREV_BATCH,
