@@ -14,6 +14,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
@@ -95,6 +96,39 @@ class AnalysisReportGenerationServiceTest {
                         new BigDecimal("15.3846")
                 )
         );
+        AnalysisDerivativeContext derivativeContextInput = new AnalysisDerivativeContext(
+                Instant.parse("2026-03-09T00:59:30Z"),
+                Instant.parse("2026-03-09T00:59:00Z"),
+                Instant.parse("2026-03-09T00:59:30Z"),
+                "context-basis-key",
+                new BigDecimal("12345.67890000"),
+                new BigDecimal("87500.12000000"),
+                new BigDecimal("87480.02000000"),
+                new BigDecimal("0.00045000"),
+                Instant.parse("2026-03-09T08:00:00Z"),
+                new BigDecimal("0.12000000"),
+                List.of(new AnalysisDerivativeComparisonFact(
+                        AnalysisComparisonReference.D7,
+                        Instant.parse("2026-03-02T00:59:30Z"),
+                        new BigDecimal("11800.00000000"),
+                        new BigDecimal("0.04624400"),
+                        new BigDecimal("0.00014000"),
+                        new BigDecimal("0.03500000")
+                )),
+                List.of(new AnalysisDerivativeWindowSummary(
+                        MarketWindowType.LAST_30D,
+                        Instant.parse("2026-02-07T00:59:30Z"),
+                        Instant.parse("2026-03-09T00:59:30Z"),
+                        180,
+                        new BigDecimal("11000.00000000"),
+                        new BigDecimal("0.12233445"),
+                        new BigDecimal("0.00025000"),
+                        new BigDecimal("0.80000000"),
+                        new BigDecimal("0.07000000"),
+                        new BigDecimal("0.71428571")
+                )),
+                List.of()
+        );
         AnalysisReportPayload payload = new AnalysisReportPayload(
                 "summary",
                 "context",
@@ -131,35 +165,25 @@ class AnalysisReportGenerationServiceTest {
                         new BigDecimal("0.03448276")
                 )),
                 new AnalysisDerivativeContext(
-                        Instant.parse("2026-03-09T00:59:30Z"),
-                        Instant.parse("2026-03-09T00:59:00Z"),
-                        Instant.parse("2026-03-09T00:59:30Z"),
-                        "context-basis-key",
-                        new BigDecimal("12345.67890000"),
-                        new BigDecimal("87500.12000000"),
-                        new BigDecimal("87480.02000000"),
-                        new BigDecimal("0.00045000"),
-                        Instant.parse("2026-03-09T08:00:00Z"),
-                        new BigDecimal("0.12000000"),
-                        List.of(new AnalysisDerivativeComparisonFact(
+                        derivativeContextInput.snapshotTime(),
+                        derivativeContextInput.openInterestSourceEventTime(),
+                        derivativeContextInput.premiumIndexSourceEventTime(),
+                        derivativeContextInput.sourceDataVersion(),
+                        derivativeContextInput.openInterest(),
+                        derivativeContextInput.markPrice(),
+                        derivativeContextInput.indexPrice(),
+                        derivativeContextInput.lastFundingRate(),
+                        derivativeContextInput.nextFundingTime(),
+                        derivativeContextInput.markIndexBasisRate(),
+                        derivativeContextInput.comparisonFacts(),
+                        derivativeContextInput.windowSummaries(),
+                        List.of(new AnalysisDerivativeHighlight(
+                                "D7 derivative shift",
+                                "D7 keeps OI +4.6244%, funding Δ +0.014%, basis Δ +0.035%.",
+                                "medium",
+                                "openInterest",
                                 AnalysisComparisonReference.D7,
-                                Instant.parse("2026-03-02T00:59:30Z"),
-                                new BigDecimal("11800.00000000"),
-                                new BigDecimal("0.04624400"),
-                                new BigDecimal("0.00014000"),
-                                new BigDecimal("0.03500000")
-                        )),
-                        List.of(new AnalysisDerivativeWindowSummary(
-                                MarketWindowType.LAST_30D,
-                                Instant.parse("2026-02-07T00:59:30Z"),
-                                Instant.parse("2026-03-09T00:59:30Z"),
-                                180,
-                                new BigDecimal("11000.00000000"),
-                                new BigDecimal("0.12233445"),
-                                new BigDecimal("0.00025000"),
-                                new BigDecimal("0.80000000"),
-                                new BigDecimal("0.07000000"),
-                                new BigDecimal("0.71428571")
+                                null
                         ))
                 ),
                 List.of(),
@@ -257,7 +281,7 @@ class AnalysisReportGenerationServiceTest {
                 AnalysisReportType.MID_TERM,
                 comparisonFacts,
                 payload.windowSummaries(),
-                payload.derivativeContext(),
+                derivativeContextInput,
                 payload.continuityNotes()
         )).thenReturn(payload);
         when(analysisReportPersistenceService.save(org.mockito.ArgumentMatchers.any(AnalysisReportDraft.class)))
