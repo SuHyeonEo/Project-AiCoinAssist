@@ -14,6 +14,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
@@ -159,7 +160,13 @@ class AnalysisReportGenerationServiceTest {
                                 "context window",
                                 List.of("window highlight")
                         ),
-                        "context derivative",
+                        new AnalysisDerivativeContextSummaryPayload(
+                                "context derivative",
+                                "context derivative window",
+                                List.of("derivative highlight"),
+                                List.of("derivative risk"),
+                                7L
+                        ),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_MID_REPORT,
                                 "continuity summary"

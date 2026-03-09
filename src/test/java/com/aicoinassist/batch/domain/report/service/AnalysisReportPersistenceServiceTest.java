@@ -10,6 +10,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
@@ -160,7 +161,13 @@ class AnalysisReportPersistenceServiceTest {
                                 "LAST_7D range 82000 to 90000.",
                                 List.of("LAST_7D volume vs average +22%, ATR vs average +3.45%, distance from range high 2.78%.")
                         ),
-                        "Funding +0.045%, basis +0.12%.",
+                        new AnalysisDerivativeContextSummaryPayload(
+                                "Funding +0.045%, basis +0.12%.",
+                                "LAST_7D derivative regime.",
+                                List.of("Funding crowding"),
+                                List.of("Funding skew at +0.045%."),
+                                7L
+                        ),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_SHORT_REPORT,
                                 "Previous short-term report highlighted momentum continuation."
