@@ -1,9 +1,12 @@
 package com.aicoinassist.batch.domain.report.dto;
 
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
+
 public record AnalysisContextHeadlinePayload(
-        String category,
+        AnalysisContextHeadlineCategory category,
         String title,
         String detail,
-        String importance
+        AnalysisContextHeadlineImportance importance
 ) {
 }

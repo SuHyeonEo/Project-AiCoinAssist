@@ -30,6 +30,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -143,9 +145,9 @@ class AnalysisReportGenerationServiceTest {
                         "high",
                         "summary",
                         List.of(
-                                new AnalysisContextHeadlinePayload("comparison", "D7 comparison", "detail", "medium"),
-                                new AnalysisContextHeadlinePayload("window", "LAST_30D position", "detail", "medium"),
-                                new AnalysisContextHeadlinePayload("derivative", "D7 derivative shift", "detail", "medium")
+                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.COMPARISON, "D7 comparison", "detail", AnalysisContextHeadlineImportance.MEDIUM),
+                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.WINDOW, "LAST_30D position", "detail", AnalysisContextHeadlineImportance.MEDIUM),
+                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.DERIVATIVE, "D7 derivative shift", "detail", AnalysisContextHeadlineImportance.MEDIUM)
                         )
                 ),
                 new AnalysisMarketContextPayload(
@@ -158,17 +160,17 @@ class AnalysisReportGenerationServiceTest {
                                 "RSI14 62, MACD histogram 20"
                         ),
                         new AnalysisComparisonContextPayload(
-                                new AnalysisContextHeadlinePayload("comparison", "D7 comparison", "detail", "medium"),
+                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.COMPARISON, "D7 comparison", "detail", AnalysisContextHeadlineImportance.MEDIUM),
                                 "context comparison",
                                 List.of("comparison highlight")
                         ),
                         new AnalysisWindowContextPayload(
-                                new AnalysisContextHeadlinePayload("window", "LAST_30D position", "detail", "medium"),
+                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.WINDOW, "LAST_30D position", "detail", AnalysisContextHeadlineImportance.MEDIUM),
                                 "context window",
                                 List.of("window highlight")
                         ),
                         "context derivative",
-                        new AnalysisContextHeadlinePayload("derivative", "D7 derivative shift", "detail", "medium"),
+                        new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.DERIVATIVE, "D7 derivative shift", "detail", AnalysisContextHeadlineImportance.MEDIUM),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_MID_REPORT,
                                 "continuity summary"

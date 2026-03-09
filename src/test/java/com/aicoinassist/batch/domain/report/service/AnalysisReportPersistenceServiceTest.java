@@ -25,6 +25,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -144,9 +146,9 @@ class AnalysisReportPersistenceServiceTest {
                         "high",
                         summary,
                         List.of(
-                                new AnalysisContextHeadlinePayload("comparison", "PREV_BATCH comparison", "detail", "high"),
-                                new AnalysisContextHeadlinePayload("window", "LAST_7D position", "detail", "medium"),
-                                new AnalysisContextHeadlinePayload("derivative", "D1 derivative shift", "detail", "medium")
+                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison", "detail", AnalysisContextHeadlineImportance.HIGH),
+                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.WINDOW, "LAST_7D position", "detail", AnalysisContextHeadlineImportance.MEDIUM),
+                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.DERIVATIVE, "D1 derivative shift", "detail", AnalysisContextHeadlineImportance.MEDIUM)
                         )
                 ),
                 new AnalysisMarketContextPayload(
@@ -159,17 +161,17 @@ class AnalysisReportPersistenceServiceTest {
                                 "RSI14 62, MACD histogram 20"
                         ),
                         new AnalysisComparisonContextPayload(
-                                new AnalysisContextHeadlinePayload("comparison", "PREV_BATCH comparison", "detail", "high"),
+                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison", "detail", AnalysisContextHeadlineImportance.HIGH),
                                 "PREV_BATCH price +0.5747%, RSI Δ +2, MACD hist Δ +5.",
                                 List.of("PREV_BATCH confirms the latest impulse with MACD histogram Δ +5.")
                         ),
                         new AnalysisWindowContextPayload(
-                                new AnalysisContextHeadlinePayload("window", "LAST_7D position", "detail", "medium"),
+                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.WINDOW, "LAST_7D position", "detail", AnalysisContextHeadlineImportance.MEDIUM),
                                 "LAST_7D range 82000 to 90000.",
                                 List.of("LAST_7D volume vs average +22%, ATR vs average +3.45%, distance from range high 2.78%.")
                         ),
                         "Funding +0.045%, basis +0.12%.",
-                        new AnalysisContextHeadlinePayload("derivative", "D1 derivative shift", "detail", "medium"),
+                        new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.DERIVATIVE, "D1 derivative shift", "detail", AnalysisContextHeadlineImportance.MEDIUM),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_SHORT_REPORT,
                                 "Previous short-term report highlighted momentum continuation."
