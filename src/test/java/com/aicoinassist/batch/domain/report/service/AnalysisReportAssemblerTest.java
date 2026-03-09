@@ -7,10 +7,10 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
-import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
@@ -51,7 +51,16 @@ class AnalysisReportAssemblerTest {
                 )
                 .containsExactly("SHORT_TERM view", "constructive", "high");
         assertThat(payload.summary().keyMessage()).contains("bullish");
-        assertThat(payload.summary().keyMessage()).contains("Since the previous batch");
+        assertThat(payload.summary().keyMessage()).contains("PREV_BATCH confirms the latest impulse");
+        assertThat(payload.summary().signalHeadlines()).extracting(
+                        AnalysisContextHeadlinePayload::category,
+                        AnalysisContextHeadlinePayload::title
+                )
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("comparison", "PREV_BATCH comparison"),
+                        org.assertj.core.groups.Tuple.tuple("window", "LAST_7D position"),
+                        org.assertj.core.groups.Tuple.tuple("derivative", "PREV_BATCH derivative shift")
+                );
         assertThat(payload.marketContext().currentState()).extracting(
                         AnalysisCurrentStatePayload::trendLabel,
                         AnalysisCurrentStatePayload::volatilityLabel,
@@ -59,15 +68,28 @@ class AnalysisReportAssemblerTest {
                 )
                 .containsExactly("bullish", "moderate", "mid-range");
         assertThat(payload.marketContext().currentState().maPositionSummary()).contains("above MA20");
+        assertThat(payload.marketContext().comparisonContext().headline()).extracting(
+                        AnalysisContextHeadlinePayload::category,
+                        AnalysisContextHeadlinePayload::title
+                )
+                .containsExactly("comparison", "PREV_BATCH comparison");
         assertThat(payload.marketContext().comparisonContext().factSummary()).contains("D1 price");
         assertThat(payload.marketContext().comparisonContext().highlightDetails()).isNotEmpty();
+        assertThat(payload.marketContext().windowContext().headline()).extracting(
+                        AnalysisContextHeadlinePayload::category,
+                        AnalysisContextHeadlinePayload::title
+                )
+                .containsExactly("window", "LAST_7D position");
         assertThat(payload.marketContext().windowContext().summary()).contains("Window summary:");
         assertThat(payload.marketContext().windowContext().highlightDetails()).isNotEmpty();
-        assertThat(payload.marketContext().derivativeContextSummary().currentStateSummary()).contains("Derivative context:");
-        assertThat(payload.marketContext().derivativeContextSummary().windowSummary()).contains("Derivative window summary:");
-        assertThat(payload.marketContext().derivativeContextSummary().highlightDetails()).isNotEmpty();
-        assertThat(payload.marketContext().derivativeContextSummary().riskSignals()).isNotEmpty();
-        assertThat(payload.marketContext().derivativeContextSummary().nextFundingHours()).isEqualTo(7L);
+        assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative context:");
+        assertThat(payload.marketContext().derivativeHeadline()).extracting(
+                        AnalysisContextHeadlinePayload::category,
+                        AnalysisContextHeadlinePayload::title
+                )
+                .containsExactly("derivative", "PREV_BATCH derivative shift");
+        assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative window summary:");
+        assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative highlights:");
         assertThat(payload.marketContext().continuityContext()).extracting(
                         AnalysisContinuityContextPayload::reference,
                         AnalysisContinuityContextPayload::summary
@@ -131,13 +153,17 @@ class AnalysisReportAssemblerTest {
                                                          AnalysisComparisonReference.Y52_LOW,
                                                          AnalysisComparisonReference.D180
                                                  );
-        assertThat(payload.summary().keyMessage()).contains("52-week high");
-        assertThat(payload.summary().keyMessage()).contains("LAST_52W");
         assertThat(payload.summary().keyMessage()).contains("Previous long-term");
-        assertThat(payload.summary().keyMessage()).contains("Derivatives show funding");
-        assertThat(payload.summary().keyMessage()).contains("D180 keeps OI");
+        assertThat(payload.summary().signalHeadlines()).extracting(
+                        AnalysisContextHeadlinePayload::category,
+                        AnalysisContextHeadlinePayload::title
+                )
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("comparison", "Y52_HIGH comparison"),
+                        org.assertj.core.groups.Tuple.tuple("window", "LAST_52W position"),
+                        org.assertj.core.groups.Tuple.tuple("derivative", "D180 derivative shift")
+                );
         assertThat(payload.marketContext().comparisonContext().highlightDetails()).anySatisfy(detail -> assertThat(detail).contains("cycle floor"));
-        assertThat(payload.marketContext().derivativeContextSummary().highlightDetails()).anySatisfy(detail -> assertThat(detail).contains("leveraged directional crowding"));
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
                                              .containsExactly(MarketWindowType.LAST_180D, MarketWindowType.LAST_52W);
     }

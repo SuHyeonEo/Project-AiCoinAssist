@@ -10,7 +10,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
-import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
@@ -142,7 +142,12 @@ class AnalysisReportPersistenceServiceTest {
                         "SHORT_TERM view",
                         "constructive",
                         "high",
-                        summary
+                        summary,
+                        List.of(
+                                new AnalysisContextHeadlinePayload("comparison", "PREV_BATCH comparison", "detail", "high"),
+                                new AnalysisContextHeadlinePayload("window", "LAST_7D position", "detail", "medium"),
+                                new AnalysisContextHeadlinePayload("derivative", "D1 derivative shift", "detail", "medium")
+                        )
                 ),
                 new AnalysisMarketContextPayload(
                         new AnalysisCurrentStatePayload(
@@ -154,20 +159,17 @@ class AnalysisReportPersistenceServiceTest {
                                 "RSI14 62, MACD histogram 20"
                         ),
                         new AnalysisComparisonContextPayload(
+                                new AnalysisContextHeadlinePayload("comparison", "PREV_BATCH comparison", "detail", "high"),
                                 "PREV_BATCH price +0.5747%, RSI Δ +2, MACD hist Δ +5.",
                                 List.of("PREV_BATCH confirms the latest impulse with MACD histogram Δ +5.")
                         ),
                         new AnalysisWindowContextPayload(
+                                new AnalysisContextHeadlinePayload("window", "LAST_7D position", "detail", "medium"),
                                 "LAST_7D range 82000 to 90000.",
                                 List.of("LAST_7D volume vs average +22%, ATR vs average +3.45%, distance from range high 2.78%.")
                         ),
-                        new AnalysisDerivativeContextSummaryPayload(
-                                "Funding +0.045%, basis +0.12%.",
-                                "LAST_7D derivative regime.",
-                                List.of("Funding crowding"),
-                                List.of("Funding skew at +0.045%."),
-                                7L
-                        ),
+                        "Funding +0.045%, basis +0.12%.",
+                        new AnalysisContextHeadlinePayload("derivative", "D1 derivative shift", "detail", "medium"),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_SHORT_REPORT,
                                 "Previous short-term report highlighted momentum continuation."

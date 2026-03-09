@@ -14,10 +14,10 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
-import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
@@ -141,7 +141,12 @@ class AnalysisReportGenerationServiceTest {
                         "MID_TERM view",
                         "constructive",
                         "high",
-                        "summary"
+                        "summary",
+                        List.of(
+                                new AnalysisContextHeadlinePayload("comparison", "D7 comparison", "detail", "medium"),
+                                new AnalysisContextHeadlinePayload("window", "LAST_30D position", "detail", "medium"),
+                                new AnalysisContextHeadlinePayload("derivative", "D7 derivative shift", "detail", "medium")
+                        )
                 ),
                 new AnalysisMarketContextPayload(
                         new AnalysisCurrentStatePayload(
@@ -153,20 +158,17 @@ class AnalysisReportGenerationServiceTest {
                                 "RSI14 62, MACD histogram 20"
                         ),
                         new AnalysisComparisonContextPayload(
+                                new AnalysisContextHeadlinePayload("comparison", "D7 comparison", "detail", "medium"),
                                 "context comparison",
                                 List.of("comparison highlight")
                         ),
                         new AnalysisWindowContextPayload(
+                                new AnalysisContextHeadlinePayload("window", "LAST_30D position", "detail", "medium"),
                                 "context window",
                                 List.of("window highlight")
                         ),
-                        new AnalysisDerivativeContextSummaryPayload(
-                                "context derivative",
-                                "context derivative window",
-                                List.of("derivative highlight"),
-                                List.of("derivative risk"),
-                                7L
-                        ),
+                        "context derivative",
+                        new AnalysisContextHeadlinePayload("derivative", "D7 derivative shift", "detail", "medium"),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_MID_REPORT,
                                 "continuity summary"
