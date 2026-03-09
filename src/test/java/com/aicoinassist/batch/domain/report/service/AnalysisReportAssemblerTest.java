@@ -15,6 +15,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload
 import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryKeyMessagePayload;
@@ -83,7 +85,20 @@ class AnalysisReportAssemblerTest {
                         AnalysisCurrentStatePayload::rangePositionLabel
                 )
                 .containsExactly(AnalysisTrendLabel.BULLISH, AnalysisVolatilityLabel.MODERATE, AnalysisRangePositionLabel.MID_RANGE);
-        assertThat(payload.marketContext().currentState().maPositionSummary()).contains("above MA20");
+        assertThat(payload.marketContext().currentState().movingAveragePositions()).extracting(
+                        AnalysisMovingAveragePositionPayload::movingAverageName,
+                        AnalysisMovingAveragePositionPayload::priceAbove
+                )
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("MA20", true),
+                        org.assertj.core.groups.Tuple.tuple("MA60", true),
+                        org.assertj.core.groups.Tuple.tuple("MA120", true)
+                );
+        assertThat(payload.marketContext().currentState().momentumState()).extracting(
+                        AnalysisMomentumStatePayload::rsi14,
+                        AnalysisMomentumStatePayload::macdHistogram
+                )
+                .containsExactly(new BigDecimal("62"), new BigDecimal("20"));
         assertThat(payload.marketContext().comparisonContext().headline()).extracting(
                         AnalysisContextHeadlinePayload::category,
                         AnalysisContextHeadlinePayload::title
@@ -112,12 +127,15 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.marketContext().derivativeContextSummary().riskSignals()).isNotEmpty();
         assertThat(payload.marketContext().continuityContext()).extracting(
                         AnalysisContinuityContextPayload::reference,
-                        AnalysisContinuityContextPayload::summary
+                        AnalysisContinuityContextPayload::previousHeadline
                 )
                 .containsExactly(
                         AnalysisComparisonReference.PREV_SHORT_REPORT,
                         "Previous short-term report highlighted a momentum continuation setup."
                 );
+        assertThat(payload.marketContext().continuityContext().carriedSignals()).containsExactly(
+                "Previous short-term report highlighted a momentum continuation setup."
+        );
         assertThat(payload.derivativeContext()).isNotNull();
         assertThat(payload.derivativeContext().lastFundingRate()).isEqualByComparingTo("0.00045000");
         assertThat(payload.derivativeContext().comparisonFacts()).hasSize(3);
@@ -159,6 +177,11 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.supportLevels()).extracting("label").contains(AnalysisPriceLevelLabel.MA20, AnalysisPriceLevelLabel.MA60);
         assertThat(payload.resistanceLevels()).extracting("label").contains(AnalysisPriceLevelLabel.BB_UPPER);
         assertThat(payload.scenarios()).extracting("bias").contains(AnalysisScenarioBias.BULLISH, AnalysisScenarioBias.NEUTRAL);
+        assertThat(payload.scenarios()).allSatisfy(scenario -> {
+            assertThat(scenario.triggerConditions()).isNotEmpty();
+            assertThat(scenario.pathSummary()).isNotBlank();
+            assertThat(scenario.invalidationSignals()).isNotEmpty();
+        });
     }
 
     @Test
@@ -180,6 +203,7 @@ class AnalysisReportAssemblerTest {
                                                  org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.FUNDING_SKEW, "Funding skew"),
                                                  org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.BASIS_EXPANSION, "Basis expansion")
                                          );
+        assertThat(payload.riskFactors()).allSatisfy(riskFactor -> assertThat(riskFactor.triggerFacts()).isNotEmpty());
     }
 
     @Test

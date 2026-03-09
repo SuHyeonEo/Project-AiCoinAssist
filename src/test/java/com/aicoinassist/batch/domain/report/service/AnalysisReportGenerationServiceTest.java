@@ -23,6 +23,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
@@ -174,8 +176,16 @@ class AnalysisReportGenerationServiceTest {
                                 AnalysisTrendLabel.BULLISH,
                                 AnalysisVolatilityLabel.MODERATE,
                                 AnalysisRangePositionLabel.UPPER_RANGE,
-                                "above MA20, above MA60, above MA120",
-                                "RSI14 62, MACD histogram 20"
+                                List.of(
+                                        new AnalysisMovingAveragePositionPayload("MA20", new BigDecimal("87000"), true),
+                                        new AnalysisMovingAveragePositionPayload("MA60", new BigDecimal("86000"), true),
+                                        new AnalysisMovingAveragePositionPayload("MA120", new BigDecimal("85000"), true)
+                                ),
+                                new AnalysisMomentumStatePayload(
+                                        new BigDecimal("62"),
+                                        new BigDecimal("20"),
+                                        "RSI14 62, MACD histogram 20"
+                                )
                         ),
                         new AnalysisComparisonContextPayload(
                                 new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.COMPARISON, "D7 comparison", "detail", AnalysisContextHeadlineImportance.MEDIUM),
@@ -204,7 +214,9 @@ class AnalysisReportGenerationServiceTest {
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.DERIVATIVE, "D7 derivative shift", "detail", AnalysisContextHeadlineImportance.MEDIUM),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_MID_REPORT,
-                                "continuity summary"
+                                "continuity summary",
+                                List.of("continuity summary"),
+                                List.of()
                         )
                 ),
                 comparisonFacts,
@@ -264,7 +276,13 @@ class AnalysisReportGenerationServiceTest {
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of(new AnalysisScenario("Base case", AnalysisScenarioBias.BULLISH, "description"))
+                List.of(new AnalysisScenario(
+                        "Base case",
+                        AnalysisScenarioBias.BULLISH,
+                        List.of("trigger"),
+                        "description",
+                        List.of("invalidation")
+                ))
         );
         MarketContextSnapshotEntity marketContextSnapshotEntity = MarketContextSnapshotEntity.builder()
                                                                                              .symbol("BTCUSDT")
