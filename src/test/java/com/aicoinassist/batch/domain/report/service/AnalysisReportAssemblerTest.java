@@ -32,6 +32,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlight
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
@@ -175,7 +176,18 @@ class AnalysisReportAssemblerTest {
                                                          AnalysisComparisonReference.D1
                                                  );
         assertThat(payload.supportLevels()).extracting("label").contains(AnalysisPriceLevelLabel.MA20, AnalysisPriceLevelLabel.MA60);
+        assertThat(payload.supportLevels()).allSatisfy(level -> {
+            assertThat(level.sourceType()).isEqualTo(AnalysisPriceLevelSourceType.MOVING_AVERAGE);
+            assertThat(level.distanceFromCurrent()).isNotNull();
+            assertThat(level.strengthScore()).isNotNull();
+            assertThat(level.triggerFacts()).isNotEmpty();
+        });
         assertThat(payload.resistanceLevels()).extracting("label").contains(AnalysisPriceLevelLabel.BB_UPPER);
+        assertThat(payload.resistanceLevels()).allSatisfy(level -> {
+            assertThat(level.distanceFromCurrent()).isNotNull();
+            assertThat(level.strengthScore()).isNotNull();
+            assertThat(level.triggerFacts()).isNotEmpty();
+        });
         assertThat(payload.scenarios()).extracting("bias").contains(AnalysisScenarioBias.BULLISH, AnalysisScenarioBias.NEUTRAL);
         assertThat(payload.scenarios()).allSatisfy(scenario -> {
             assertThat(scenario.triggerConditions()).isNotEmpty();

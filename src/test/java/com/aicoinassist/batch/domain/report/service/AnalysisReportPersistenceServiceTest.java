@@ -38,6 +38,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlight
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
@@ -316,8 +317,24 @@ class AnalysisReportPersistenceServiceTest {
                                 )
                         )
                 ),
-                List.of(new AnalysisPriceLevel(AnalysisPriceLevelLabel.S1, new BigDecimal("84500.00"), "Recent pullback low")),
-                List.of(new AnalysisPriceLevel(AnalysisPriceLevelLabel.R1, new BigDecimal("88500.00"), "Recent swing high")),
+                List.of(new AnalysisPriceLevel(
+                        AnalysisPriceLevelLabel.S1,
+                        AnalysisPriceLevelSourceType.PIVOT_LEVEL,
+                        new BigDecimal("84500.00"),
+                        new BigDecimal("0.03428571"),
+                        new BigDecimal("0.75"),
+                        "Recent pullback low",
+                        List.of("Current price is 3.43% away from S1.")
+                )),
+                List.of(new AnalysisPriceLevel(
+                        AnalysisPriceLevelLabel.R1,
+                        AnalysisPriceLevelSourceType.PIVOT_LEVEL,
+                        new BigDecimal("88500.00"),
+                        new BigDecimal("0.01142857"),
+                        new BigDecimal("0.75"),
+                        "Recent swing high",
+                        List.of("Current price is 1.14% away from R1.")
+                )),
                 List.of(new AnalysisRiskFactor(
                         AnalysisRiskFactorType.MACRO_VOLATILITY,
                         "Macro volatility",
