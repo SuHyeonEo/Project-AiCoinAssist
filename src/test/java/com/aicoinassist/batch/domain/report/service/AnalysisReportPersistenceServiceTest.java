@@ -16,7 +16,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
@@ -175,8 +177,16 @@ class AnalysisReportPersistenceServiceTest {
                                 AnalysisTrendLabel.BULLISH,
                                 AnalysisVolatilityLabel.MODERATE,
                                 AnalysisRangePositionLabel.UPPER_RANGE,
-                                "above MA20, above MA60, above MA120",
-                                "RSI14 62, MACD histogram 20"
+                                List.of(
+                                        new AnalysisMovingAveragePositionPayload("MA20", new BigDecimal("87000.00"), true),
+                                        new AnalysisMovingAveragePositionPayload("MA60", new BigDecimal("86000.00"), true),
+                                        new AnalysisMovingAveragePositionPayload("MA120", new BigDecimal("85000.00"), true)
+                                ),
+                                new AnalysisMomentumStatePayload(
+                                        new BigDecimal("62"),
+                                        new BigDecimal("20"),
+                                        "RSI14 62, MACD histogram 20"
+                                )
                         ),
                         new AnalysisComparisonContextPayload(
                                 new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison", "detail", AnalysisContextHeadlineImportance.HIGH),
@@ -205,7 +215,9 @@ class AnalysisReportPersistenceServiceTest {
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.DERIVATIVE, "D1 derivative shift", "detail", AnalysisContextHeadlineImportance.MEDIUM),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_SHORT_REPORT,
-                                "Previous short-term report highlighted momentum continuation."
+                                "Previous short-term report highlighted momentum continuation.",
+                                List.of("Previous short-term report highlighted momentum continuation."),
+                                List.of()
                         )
                 ),
                 List.of(
@@ -306,8 +318,19 @@ class AnalysisReportPersistenceServiceTest {
                 ),
                 List.of(new AnalysisPriceLevel(AnalysisPriceLevelLabel.S1, new BigDecimal("84500.00"), "Recent pullback low")),
                 List.of(new AnalysisPriceLevel(AnalysisPriceLevelLabel.R1, new BigDecimal("88500.00"), "Recent swing high")),
-                List.of(new AnalysisRiskFactor(AnalysisRiskFactorType.MACRO_VOLATILITY, "Macro volatility", "USD strength can pressure crypto risk assets.")),
-                List.of(new AnalysisScenario("Base case", AnalysisScenarioBias.BULLISH, "Price consolidates above support and retests resistance."))
+                List.of(new AnalysisRiskFactor(
+                        AnalysisRiskFactorType.MACRO_VOLATILITY,
+                        "Macro volatility",
+                        "USD strength can pressure crypto risk assets.",
+                        List.of("USD strength remains a macro headwind.")
+                )),
+                List.of(new AnalysisScenario(
+                        "Base case",
+                        AnalysisScenarioBias.BULLISH,
+                        List.of("Price consolidates above support."),
+                        "Price consolidates above support and retests resistance.",
+                        List.of("A support break invalidates the base case.")
+                ))
         );
     }
 }

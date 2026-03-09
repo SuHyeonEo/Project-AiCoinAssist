@@ -14,6 +14,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
@@ -151,11 +153,11 @@ public class AnalysisReportAssembler {
             AnalysisDerivativeContext derivativeContext,
             List<AnalysisContinuityNote> continuityNotes
     ) {
-        String maPositionSummary = comparePriceToMovingAverage(snapshot.getCurrentPrice(), snapshot.getMa20(), "MA20")
-                + ", "
-                + comparePriceToMovingAverage(snapshot.getCurrentPrice(), snapshot.getMa60(), "MA60")
-                + ", "
-                + comparePriceToMovingAverage(snapshot.getCurrentPrice(), snapshot.getMa120(), "MA120");
+        List<AnalysisMovingAveragePositionPayload> movingAveragePositions = List.of(
+                movingAveragePosition(snapshot.getCurrentPrice(), snapshot.getMa20(), "MA20"),
+                movingAveragePosition(snapshot.getCurrentPrice(), snapshot.getMa60(), "MA60"),
+                movingAveragePosition(snapshot.getCurrentPrice(), snapshot.getMa120(), "MA120")
+        );
         AnalysisComparisonFactSummaryPayload comparisonSummary = new AnalysisComparisonFactSummaryPayload(
                 comparisonFacts.isEmpty()
                         ? "No comparison facts available."
@@ -238,7 +240,9 @@ public class AnalysisReportAssembler {
                 ? null
                 : new AnalysisContinuityContextPayload(
                         continuityNotes.get(0).reference(),
-                        continuityNotes.get(0).summary()
+                        continuityNotes.get(0).summary(),
+                        List.of(continuityNotes.get(0).summary()),
+                        List.of()
                 );
 
         return new AnalysisMarketContextPayload(
@@ -247,8 +251,8 @@ public class AnalysisReportAssembler {
                         trendBias,
                         volatilityLabel(snapshot),
                         rangePositionLabel(primaryWindow),
-                        maPositionSummary,
-                        momentumSummary(snapshot)
+                        movingAveragePositions,
+                        momentumState(snapshot)
                 ),
                 new AnalysisComparisonContextPayload(
                         comparisonHeadline,
@@ -316,7 +320,8 @@ public class AnalysisReportAssembler {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.RSI_OVERHEATING,
                     "RSI overheating",
-                    "RSI14 is above 70, so upside continuation can weaken quickly."
+                    "RSI14 is above 70, so upside continuation can weaken quickly.",
+                    List.of("RSI14 " + snapshot.getRsi14().stripTrailingZeros().toPlainString() + " is above the 70 threshold.")
             ));
         }
 
@@ -324,7 +329,8 @@ public class AnalysisReportAssembler {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.RSI_COMPRESSION,
                     "RSI compression",
-                    "RSI14 is below 30, so downside can be stretched and whipsaws can increase."
+                    "RSI14 is below 30, so downside can be stretched and whipsaws can increase.",
+                    List.of("RSI14 " + snapshot.getRsi14().stripTrailingZeros().toPlainString() + " is below the 30 threshold.")
             ));
         }
 
@@ -333,7 +339,8 @@ public class AnalysisReportAssembler {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.BAND_EXTENSION,
                     "Band extension",
-                    "Price is trading at an outer Bollinger band, which raises reversion risk."
+                    "Price is trading at an outer Bollinger band, which raises reversion risk.",
+                    List.of("Current price is touching an outer Bollinger band.")
             ));
         }
 
@@ -341,7 +348,8 @@ public class AnalysisReportAssembler {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.ELEVATED_VOLATILITY,
                     "Elevated volatility",
-                    "ATR14 is more than 3% of price, so intraperiod swings can expand."
+                    "ATR14 is more than 3% of price, so intraperiod swings can expand.",
+                    List.of("ATR14 ratio is " + atrRatio(snapshot).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString() + "% of price.")
             ));
         }
 
@@ -350,7 +358,8 @@ public class AnalysisReportAssembler {
                     AnalysisRiskFactorType.FUNDING_SKEW,
                     "Funding skew",
                     "Funding is running at " + fundingRatePercentage(derivativeContext.lastFundingRate())
-                            + ", which can signal crowded directional leverage."
+                            + ", which can signal crowded directional leverage.",
+                    List.of("Current funding rate is " + fundingRatePercentage(derivativeContext.lastFundingRate()) + ".")
             ));
         }
 
@@ -359,7 +368,8 @@ public class AnalysisReportAssembler {
                     AnalysisRiskFactorType.BASIS_EXPANSION,
                     "Basis expansion",
                     "Mark/index basis is " + signedPercent(derivativeContext.markIndexBasisRate())
-                            + ", so futures positioning is trading away from spot."
+                            + ", so futures positioning is trading away from spot.",
+                    List.of("Mark/index basis rate is " + signedPercent(derivativeContext.markIndexBasisRate()) + ".")
             ));
         }
 
@@ -373,7 +383,8 @@ public class AnalysisReportAssembler {
                     AnalysisRiskFactorType.OPEN_INTEREST_CROWDING,
                     "Open interest crowding",
                     "Open interest is running " + signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage())
-                            + " versus the representative window average."
+                            + " versus the representative window average.",
+                    List.of("Open interest vs average is " + signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage()) + ".")
             ));
         }
 
@@ -381,7 +392,8 @@ public class AnalysisReportAssembler {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.MOMENTUM_TRANSITION,
                     "Momentum transition",
-                    "Momentum is not one-sided, so follow-through can slow near key levels."
+                    "Momentum is not one-sided, so follow-through can slow near key levels.",
+                    List.of("Current signals are mixed enough that follow-through may stall near nearby levels.")
             ));
         }
 
@@ -391,16 +403,52 @@ public class AnalysisReportAssembler {
     private List<AnalysisScenario> scenarios(MarketIndicatorSnapshotEntity snapshot, AnalysisTrendLabel trendBias) {
         return switch (trendBias) {
             case BULLISH -> List.of(
-                    new AnalysisScenario("Base case", AnalysisScenarioBias.BULLISH, "Price holds above MA20 and extends toward " + snapshot.getBollingerUpperBand().stripTrailingZeros().toPlainString() + "."),
-                    new AnalysisScenario("Risk case", AnalysisScenarioBias.NEUTRAL, "A loss of MA20 can trigger a pullback toward " + snapshot.getMa60().stripTrailingZeros().toPlainString() + ".")
+                    new AnalysisScenario(
+                            "Base case",
+                            AnalysisScenarioBias.BULLISH,
+                            List.of("Price holds above MA20.", "Momentum remains constructive."),
+                            "Price holds above MA20 and extends toward " + snapshot.getBollingerUpperBand().stripTrailingZeros().toPlainString() + ".",
+                            List.of("A loss of MA20 weakens the bullish continuation path.")
+                    ),
+                    new AnalysisScenario(
+                            "Risk case",
+                            AnalysisScenarioBias.NEUTRAL,
+                            List.of("Price loses MA20 support."),
+                            "A loss of MA20 can trigger a pullback toward " + snapshot.getMa60().stripTrailingZeros().toPlainString() + ".",
+                            List.of("A fast recovery above MA20 invalidates the pullback case.")
+                    )
             );
             case BEARISH -> List.of(
-                    new AnalysisScenario("Base case", AnalysisScenarioBias.BEARISH, "Price stays below MA20 and can probe " + snapshot.getBollingerLowerBand().stripTrailingZeros().toPlainString() + "."),
-                    new AnalysisScenario("Risk case", AnalysisScenarioBias.NEUTRAL, "A recovery above MA20 can force short-covering toward " + snapshot.getMa60().stripTrailingZeros().toPlainString() + ".")
+                    new AnalysisScenario(
+                            "Base case",
+                            AnalysisScenarioBias.BEARISH,
+                            List.of("Price stays below MA20.", "Momentum remains weak."),
+                            "Price stays below MA20 and can probe " + snapshot.getBollingerLowerBand().stripTrailingZeros().toPlainString() + ".",
+                            List.of("A recovery above MA20 weakens the bearish continuation case.")
+                    ),
+                    new AnalysisScenario(
+                            "Risk case",
+                            AnalysisScenarioBias.NEUTRAL,
+                            List.of("Price reclaims MA20."),
+                            "A recovery above MA20 can force short-covering toward " + snapshot.getMa60().stripTrailingZeros().toPlainString() + ".",
+                            List.of("Failure back below MA20 invalidates the squeeze scenario.")
+                    )
             );
             case NEUTRAL -> List.of(
-                    new AnalysisScenario("Base case", AnalysisScenarioBias.NEUTRAL, "Price oscillates between support and resistance while waiting for directional confirmation."),
-                    new AnalysisScenario("Breakout case", AnalysisScenarioBias.DIRECTIONAL, "A decisive move beyond the current band extremes can set the next short-term direction.")
+                    new AnalysisScenario(
+                            "Base case",
+                            AnalysisScenarioBias.NEUTRAL,
+                            List.of("Price remains inside the active range.", "Trend strength stays mixed."),
+                            "Price oscillates between support and resistance while waiting for directional confirmation.",
+                            List.of("A decisive break beyond range extremes invalidates the range case.")
+                    ),
+                    new AnalysisScenario(
+                            "Breakout case",
+                            AnalysisScenarioBias.DIRECTIONAL,
+                            List.of("Price breaks beyond the current band extremes."),
+                            "A decisive move beyond the current band extremes can set the next short-term direction.",
+                            List.of("Failure to hold the breakout level invalidates the directional case.")
+                    )
             );
         };
     }
@@ -471,11 +519,27 @@ public class AnalysisReportAssembler {
         return AnalysisRangePositionLabel.MID_RANGE;
     }
 
-    private String momentumSummary(MarketIndicatorSnapshotEntity snapshot) {
-        return "RSI14 "
-                + snapshot.getRsi14().stripTrailingZeros().toPlainString()
-                + ", MACD histogram "
-                + snapshot.getMacdHistogram().stripTrailingZeros().toPlainString();
+    private AnalysisMomentumStatePayload momentumState(MarketIndicatorSnapshotEntity snapshot) {
+        return new AnalysisMomentumStatePayload(
+                snapshot.getRsi14(),
+                snapshot.getMacdHistogram(),
+                "RSI14 "
+                        + snapshot.getRsi14().stripTrailingZeros().toPlainString()
+                        + ", MACD histogram "
+                        + snapshot.getMacdHistogram().stripTrailingZeros().toPlainString()
+        );
+    }
+
+    private AnalysisMovingAveragePositionPayload movingAveragePosition(
+            BigDecimal currentPrice,
+            BigDecimal movingAverage,
+            String movingAverageName
+    ) {
+        return new AnalysisMovingAveragePositionPayload(
+                movingAverageName,
+                movingAverage,
+                currentPrice.compareTo(movingAverage) >= 0
+        );
     }
 
     private AnalysisConfidenceLevel confidenceLabel(
