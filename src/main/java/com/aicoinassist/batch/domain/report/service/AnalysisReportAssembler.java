@@ -1,12 +1,14 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
+import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
+import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
@@ -26,18 +28,22 @@ public class AnalysisReportAssembler {
             MarketIndicatorSnapshotEntity snapshot,
             AnalysisReportType reportType,
             List<AnalysisComparisonFact> comparisonFacts,
-            List<AnalysisWindowSummary> windowSummaries
+            List<AnalysisWindowSummary> windowSummaries,
+            List<AnalysisContinuityNote> continuityNotes
     ) {
         List<AnalysisComparisonHighlight> comparisonHighlights = comparisonHighlights(reportType, comparisonFacts);
+        List<AnalysisWindowHighlight> windowHighlights = windowHighlights(reportType, windowSummaries);
         String trendBias = determineTrendBias(snapshot);
-        String summary = buildSummary(snapshot, trendBias, reportType, comparisonFacts, comparisonHighlights, windowSummaries);
-        String marketContext = buildMarketContext(snapshot, trendBias, comparisonFacts, comparisonHighlights, windowSummaries);
+        String summary = buildSummary(snapshot, trendBias, reportType, comparisonFacts, comparisonHighlights, windowSummaries, continuityNotes);
+        String marketContext = buildMarketContext(snapshot, trendBias, comparisonFacts, comparisonHighlights, windowHighlights, windowSummaries, continuityNotes);
 
         return new AnalysisReportPayload(
                 summary,
                 marketContext,
                 comparisonFacts,
                 comparisonHighlights,
+                windowHighlights,
+                continuityNotes,
                 windowSummaries,
                 supportLevels(snapshot),
                 resistanceLevels(snapshot),
@@ -52,7 +58,8 @@ public class AnalysisReportAssembler {
             AnalysisReportType reportType,
             List<AnalysisComparisonFact> comparisonFacts,
             List<AnalysisComparisonHighlight> comparisonHighlights,
-            List<AnalysisWindowSummary> windowSummaries
+            List<AnalysisWindowSummary> windowSummaries,
+            List<AnalysisContinuityNote> continuityNotes
     ) {
         String summary = reportType.name() + " view: "
                 + snapshot.getSymbol()
@@ -84,17 +91,21 @@ public class AnalysisReportAssembler {
         }
 
         AnalysisWindowSummary primaryWindow = primaryWindow(windowSummaries);
-        if (primaryWindow == null) {
+        if (primaryWindow != null) {
+            summary = summary + " "
+                    + primaryWindow.windowType().name()
+                    + " keeps price at "
+                    + percentage(primaryWindow.currentPositionInRange())
+                    + " of the window range with volume "
+                    + signedRatio(primaryWindow.currentVolumeVsAverage())
+                    + " versus the window average.";
+        }
+
+        if (continuityNotes.isEmpty()) {
             return summary;
         }
 
-        return summary + " "
-                + primaryWindow.windowType().name()
-                + " keeps price at "
-                + percentage(primaryWindow.currentPositionInRange())
-                + " of the window range with volume "
-                + signedRatio(primaryWindow.currentVolumeVsAverage())
-                + " versus the window average.";
+        return summary + " Continuity: " + continuityNotes.get(0).summary();
     }
 
     private String buildMarketContext(
@@ -102,7 +113,9 @@ public class AnalysisReportAssembler {
             String trendBias,
             List<AnalysisComparisonFact> comparisonFacts,
             List<AnalysisComparisonHighlight> comparisonHighlights,
-            List<AnalysisWindowSummary> windowSummaries
+            List<AnalysisWindowHighlight> windowHighlights,
+            List<AnalysisWindowSummary> windowSummaries,
+            List<AnalysisContinuityNote> continuityNotes
     ) {
         String maContext = comparePriceToMovingAverage(snapshot.getCurrentPrice(), snapshot.getMa20(), "MA20")
                 + ", "
@@ -121,7 +134,7 @@ public class AnalysisReportAssembler {
                 + ".";
 
         if (comparisonFacts.isEmpty()) {
-            return appendWindowSummaryContext(context, windowSummaries);
+            return appendWindowSummaryContext(context, windowHighlights, windowSummaries, continuityNotes);
         }
 
         String highlightsText = comparisonHighlights.isEmpty()
@@ -135,28 +148,44 @@ public class AnalysisReportAssembler {
                                  .map(this::comparisonFactSummary)
                                  .collect(Collectors.joining("; "))
                 + "."
-                + highlightsText, windowSummaries);
+                + highlightsText, windowHighlights, windowSummaries, continuityNotes);
     }
 
-    private String appendWindowSummaryContext(String context, List<AnalysisWindowSummary> windowSummaries) {
+    private String appendWindowSummaryContext(
+            String context,
+            List<AnalysisWindowHighlight> windowHighlights,
+            List<AnalysisWindowSummary> windowSummaries,
+            List<AnalysisContinuityNote> continuityNotes
+    ) {
         AnalysisWindowSummary primaryWindow = primaryWindow(windowSummaries);
-        if (primaryWindow == null) {
+        if (primaryWindow != null) {
+            context = context + " Window summary: "
+                    + primaryWindow.windowType().name()
+                    + " range "
+                    + primaryWindow.low().stripTrailingZeros().toPlainString()
+                    + " to "
+                    + primaryWindow.high().stripTrailingZeros().toPlainString()
+                    + ", position "
+                    + percentage(primaryWindow.currentPositionInRange())
+                    + ", distance from high "
+                    + percentage(primaryWindow.distanceFromWindowHigh())
+                    + ", ATR vs average "
+                    + signedRatio(primaryWindow.currentAtrVsAverage())
+                    + ".";
+        }
+
+        if (!windowHighlights.isEmpty()) {
+            context = context + " Window highlights: "
+                    + windowHighlights.stream()
+                                      .map(AnalysisWindowHighlight::detail)
+                                      .collect(Collectors.joining(" "));
+        }
+
+        if (continuityNotes.isEmpty()) {
             return context;
         }
 
-        return context + " Window summary: "
-                + primaryWindow.windowType().name()
-                + " range "
-                + primaryWindow.low().stripTrailingZeros().toPlainString()
-                + " to "
-                + primaryWindow.high().stripTrailingZeros().toPlainString()
-                + ", position "
-                + percentage(primaryWindow.currentPositionInRange())
-                + ", distance from high "
-                + percentage(primaryWindow.distanceFromWindowHigh())
-                + ", ATR vs average "
-                + signedRatio(primaryWindow.currentAtrVsAverage())
-                + ".";
+        return context + " Continuity note: " + continuityNotes.get(0).summary();
     }
 
     private List<AnalysisPriceLevel> supportLevels(MarketIndicatorSnapshotEntity snapshot) {
@@ -322,17 +351,46 @@ public class AnalysisReportAssembler {
                     AnalysisComparisonReference.D3
             );
             case MID_TERM -> List.of(
-                    AnalysisComparisonReference.PREV_MID_REPORT,
                     AnalysisComparisonReference.D7,
+                    AnalysisComparisonReference.D14,
                     AnalysisComparisonReference.D30
             );
             case LONG_TERM -> List.of(
                     AnalysisComparisonReference.Y52_HIGH,
                     AnalysisComparisonReference.Y52_LOW,
-                    AnalysisComparisonReference.PREV_LONG_REPORT,
                     AnalysisComparisonReference.D180
             );
         };
+    }
+
+    private List<AnalysisWindowHighlight> windowHighlights(
+            AnalysisReportType reportType,
+            List<AnalysisWindowSummary> windowSummaries
+    ) {
+        Map<com.aicoinassist.batch.domain.market.enumtype.MarketWindowType, AnalysisWindowSummary> summaryByType = windowSummaries.stream()
+                                                                                                                           .collect(Collectors.toMap(
+                                                                                                                                   AnalysisWindowSummary::windowType,
+                                                                                                                                   summary -> summary,
+                                                                                                                                   (left, right) -> left
+                                                                                                                           ));
+
+        return (switch (reportType) {
+            case SHORT_TERM -> List.of(
+                    summaryByType.get(com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_1D),
+                    summaryByType.get(com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_7D)
+            );
+            case MID_TERM -> List.of(
+                    summaryByType.get(com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_7D),
+                    summaryByType.get(com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_30D)
+            );
+            case LONG_TERM -> List.of(
+                    summaryByType.get(com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_180D),
+                    summaryByType.get(com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_52W)
+            );
+        }).stream()
+         .filter(java.util.Objects::nonNull)
+         .map(this::toWindowHighlight)
+         .toList();
     }
 
     private AnalysisComparisonHighlight toHighlight(AnalysisComparisonFact fact) {
@@ -347,7 +405,7 @@ public class AnalysisReportAssembler {
                     fact.reference().name() + " shows price " + signed(fact.priceChangeRate()) + "% versus the reference point.",
                     fact.reference().name() + " keeps RSI Δ " + signed(fact.rsiDelta()) + " and MACD hist Δ " + signed(fact.macdHistogramDelta()) + "."
             );
-            case PREV_MID_REPORT, PREV_LONG_REPORT -> new AnalysisComparisonHighlight(
+            case PREV_SHORT_REPORT, PREV_MID_REPORT, PREV_LONG_REPORT -> new AnalysisComparisonHighlight(
                     fact.reference(),
                     "Versus " + fact.reference().name() + ", price changed " + signed(fact.priceChangeRate()) + "%.",
                     fact.reference().name() + " comparison shows RSI Δ " + signed(fact.rsiDelta()) + " and ATR change " + signed(fact.atrChangeRate()) + "%."
@@ -373,6 +431,21 @@ public class AnalysisReportAssembler {
                 + signed(fact.rsiDelta())
                 + ", MACD hist Δ "
                 + signed(fact.macdHistogramDelta());
+    }
+
+    private AnalysisWindowHighlight toWindowHighlight(AnalysisWindowSummary summary) {
+        return new AnalysisWindowHighlight(
+                summary.windowType(),
+                summary.windowType().name() + " keeps price at " + percentage(summary.currentPositionInRange()) + " of the range.",
+                summary.windowType().name()
+                        + " volume vs average "
+                        + signedRatio(summary.currentVolumeVsAverage())
+                        + ", ATR vs average "
+                        + signedRatio(summary.currentAtrVsAverage())
+                        + ", distance from range high "
+                        + percentage(summary.distanceFromWindowHigh())
+                        + "."
+        );
     }
 
     private String distanceFromExtremum(BigDecimal priceChangeRate, String relation) {

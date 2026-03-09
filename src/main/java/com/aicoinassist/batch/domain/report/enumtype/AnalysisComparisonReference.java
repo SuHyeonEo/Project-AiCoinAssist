@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.report.enumtype;
 
 public enum AnalysisComparisonReference {
+    PREV_SHORT_REPORT,
     PREV_BATCH,
     D1,
     D3,

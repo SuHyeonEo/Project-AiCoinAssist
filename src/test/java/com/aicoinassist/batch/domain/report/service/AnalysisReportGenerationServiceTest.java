@@ -6,10 +6,12 @@ import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
+import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
@@ -43,6 +45,9 @@ class AnalysisReportGenerationServiceTest {
     private MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
 
     @Mock
+    private AnalysisReportContinuityService analysisReportContinuityService;
+
+    @Mock
     private AnalysisReportAssembler analysisReportAssembler;
 
     @Mock
@@ -54,6 +59,7 @@ class AnalysisReportGenerationServiceTest {
                 marketIndicatorSnapshotRepository,
                 marketWindowSummarySnapshotPersistenceService,
                 analysisComparisonService,
+                analysisReportContinuityService,
                 analysisReportAssembler,
                 analysisReportPersistenceService
         );
@@ -78,6 +84,16 @@ class AnalysisReportGenerationServiceTest {
                         AnalysisComparisonReference.D1,
                         "D1 shows price +1.7442% versus the reference point.",
                         "D1 keeps RSI Δ +7 and MACD hist Δ +10."
+                )),
+                List.of(new AnalysisWindowHighlight(
+                        MarketWindowType.LAST_30D,
+                        "LAST_30D keeps price at 68.75% of the range.",
+                        "LAST_30D volume vs average +22%, ATR vs average +3.45%, distance from range high 2.78%."
+                )),
+                List.of(new AnalysisContinuityNote(
+                        AnalysisComparisonReference.PREV_MID_REPORT,
+                        Instant.parse("2026-03-01T20:59:59Z"),
+                        "Previous mid-term report emphasized structure holding above weekly support."
                 )),
                 List.of(new AnalysisWindowSummary(
                         MarketWindowType.LAST_30D,
@@ -137,6 +153,11 @@ class AnalysisReportGenerationServiceTest {
 
         when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueOrderBySnapshotTimeDescIdDesc("BTCUSDT", "4h"))
                 .thenReturn(Optional.of(snapshot));
+        when(analysisReportContinuityService.buildNotes(
+                "BTCUSDT",
+                AnalysisReportType.MID_TERM,
+                snapshot.getSnapshotTime()
+        )).thenReturn(payload.continuityNotes());
         when(marketWindowSummarySnapshotPersistenceService.createAndSaveForReportType(snapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(windowSummaryEntities);
         when(analysisComparisonService.buildFacts(snapshot, AnalysisReportType.MID_TERM)).thenReturn(comparisonFacts);
@@ -144,7 +165,8 @@ class AnalysisReportGenerationServiceTest {
                 snapshot,
                 AnalysisReportType.MID_TERM,
                 comparisonFacts,
-                payload.windowSummaries()
+                payload.windowSummaries(),
+                payload.continuityNotes()
         )).thenReturn(payload);
         when(analysisReportPersistenceService.save(org.mockito.ArgumentMatchers.any(AnalysisReportDraft.class)))
                 .thenReturn(savedEntity);
@@ -177,6 +199,7 @@ class AnalysisReportGenerationServiceTest {
                 marketIndicatorSnapshotRepository,
                 marketWindowSummarySnapshotPersistenceService,
                 analysisComparisonService,
+                analysisReportContinuityService,
                 analysisReportAssembler,
                 analysisReportPersistenceService
         );
