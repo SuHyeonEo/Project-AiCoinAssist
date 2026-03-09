@@ -3,13 +3,13 @@ package com.aicoinassist.batch.domain.report.service;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
-import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
@@ -77,6 +77,17 @@ public class AnalysisReportAssembler {
             List<AnalysisContinuityNote> continuityNotes
     ) {
         String headline = reportType.name() + " view";
+        AnalysisContextHeadlinePayload comparisonHeadline = comparisonContextHeadline(reportType, comparisonFacts, comparisonHighlights);
+        AnalysisContextHeadlinePayload windowHeadline = windowContextHeadline(reportType, windowSummaries);
+        AnalysisContextHeadlinePayload derivativeHeadline = derivativeContextHeadline(reportType, derivativeContext);
+        List<AnalysisContextHeadlinePayload> signalHeadlines = java.util.stream.Stream.of(
+                        comparisonHeadline,
+                        windowHeadline,
+                        derivativeHeadline
+                )
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
         String keyMessage = snapshot.getSymbol()
                 + " is in a "
                 + trendBias
@@ -88,51 +99,10 @@ public class AnalysisReportAssembler {
                 + snapshot.getMacdHistogram().stripTrailingZeros().toPlainString()
                 + ".";
 
-        if (!comparisonHighlights.isEmpty()) {
-            keyMessage = keyMessage + " " + comparisonHighlights.get(0).headline();
-        } else if (!comparisonFacts.isEmpty()) {
-            AnalysisComparisonFact primaryFact = comparisonFacts.get(0);
-            keyMessage = keyMessage + " Versus "
-                    + primaryFact.reference().name()
-                    + ", price changed "
-                    + signed(primaryFact.priceChangeRate())
-                    + "% and RSI14 moved "
-                    + signed(primaryFact.rsiDelta())
-                    + ".";
-        }
-
-        AnalysisWindowSummary primaryWindow = primaryWindow(windowSummaries);
-        if (primaryWindow != null) {
-            keyMessage = keyMessage + " "
-                    + primaryWindow.windowType().name()
-                    + " keeps price at "
-                    + percentage(primaryWindow.currentPositionInRange())
-                    + " of the window range with volume "
-                    + signedRatio(primaryWindow.currentVolumeVsAverage())
-                    + " versus the window average.";
-        }
-
-        if (derivativeContext != null) {
-            keyMessage = keyMessage + " Derivatives show funding "
-                    + fundingRatePercentage(derivativeContext.lastFundingRate())
-                    + " with basis "
-                    + signedPercent(derivativeContext.markIndexBasisRate())
-                    + " and next funding in "
-                    + hoursUntilNextFunding(snapshot, derivativeContext)
-                    + "h.";
-            AnalysisDerivativeComparisonFact primaryDerivativeFact = primaryDerivativeFact(reportType, derivativeContext);
-            if (primaryDerivativeFact != null) {
-                keyMessage = keyMessage + " "
-                        + primaryDerivativeFact.reference().name()
-                        + " keeps OI "
-                        + signedRatio(primaryDerivativeFact.openInterestChangeRate())
-                        + " with funding Δ "
-                        + fundingRatePercentage(primaryDerivativeFact.fundingRateDelta())
-                        + ".";
-            }
-            if (derivativeContext.highlights() != null && !derivativeContext.highlights().isEmpty()) {
-                keyMessage = keyMessage + " " + derivativeContext.highlights().get(0).summary();
-            }
+        if (!signalHeadlines.isEmpty()) {
+            keyMessage = keyMessage + " " + signalHeadlines.stream()
+                                                           .map(AnalysisContextHeadlinePayload::detail)
+                                                           .collect(Collectors.joining(" "));
         }
 
         if (!continuityNotes.isEmpty()) {
@@ -151,7 +121,8 @@ public class AnalysisReportAssembler {
                 headline,
                 outlook,
                 confidence,
-                keyMessage
+                keyMessage,
+                signalHeadlines
         );
     }
 
@@ -179,6 +150,7 @@ public class AnalysisReportAssembler {
         List<String> comparisonHighlightDetails = comparisonHighlights.stream()
                                                                      .map(AnalysisComparisonHighlight::detail)
                                                                      .toList();
+        AnalysisContextHeadlinePayload comparisonHeadline = comparisonContextHeadline(reportType, comparisonFacts, comparisonHighlights);
 
         AnalysisWindowSummary primaryWindow = primaryWindow(windowSummaries);
         String windowSummary = null;
@@ -200,10 +172,12 @@ public class AnalysisReportAssembler {
         List<String> windowHighlightDetails = windowHighlights.stream()
                                                               .map(AnalysisWindowHighlight::detail)
                                                               .toList();
+        AnalysisContextHeadlinePayload windowHeadline = windowContextHeadline(reportType, windowSummaries);
 
-        AnalysisDerivativeContextSummaryPayload derivativeContextSummary = null;
+        String derivativeContextSummary = null;
+        AnalysisContextHeadlinePayload derivativeHeadline = null;
         if (derivativeContext != null) {
-            String currentStateSummary = "Derivative context: open interest "
+            derivativeContextSummary = "Derivative context: open interest "
                     + derivativeContext.openInterest().stripTrailingZeros().toPlainString()
                     + ", funding "
                     + fundingRatePercentage(derivativeContext.lastFundingRate())
@@ -219,9 +193,8 @@ public class AnalysisReportAssembler {
                     + "h.";
 
             AnalysisDerivativeWindowSummary derivativeWindowSummary = primaryDerivativeWindowSummary(reportType, derivativeContext);
-            String derivativeWindowSummaryText = null;
             if (derivativeWindowSummary != null) {
-                derivativeWindowSummaryText = "Derivative window summary: "
+                derivativeContextSummary = derivativeContextSummary + " Derivative window summary: "
                         + derivativeWindowSummary.windowType().name()
                         + " OI vs average "
                         + signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage())
@@ -231,19 +204,13 @@ public class AnalysisReportAssembler {
                         + signedRatio(derivativeWindowSummary.currentBasisVsAverage())
                         + ".";
             }
-            List<String> derivativeHighlightDetails = derivativeContext.highlights() == null
-                    ? List.of()
-                    : derivativeContext.highlights().stream()
-                                       .map(AnalysisDerivativeHighlight::summary)
-                                       .toList();
-            List<String> derivativeRiskSignals = derivativeRiskSignals(reportType, derivativeContext);
-            derivativeContextSummary = new AnalysisDerivativeContextSummaryPayload(
-                    currentStateSummary,
-                    derivativeWindowSummaryText,
-                    derivativeHighlightDetails,
-                    derivativeRiskSignals,
-                    hoursUntilNextFunding(null, derivativeContext)
-            );
+            if (derivativeContext.highlights() != null && !derivativeContext.highlights().isEmpty()) {
+                derivativeContextSummary = derivativeContextSummary + " Derivative highlights: "
+                        + derivativeContext.highlights().stream()
+                                           .map(AnalysisDerivativeHighlight::summary)
+                                           .collect(Collectors.joining(" "));
+            }
+            derivativeHeadline = derivativeContextHeadline(reportType, derivativeContext);
         }
 
         AnalysisContinuityContextPayload continuityContext = continuityNotes.isEmpty()
@@ -263,14 +230,17 @@ public class AnalysisReportAssembler {
                         momentumSummary(snapshot)
                 ),
                 new AnalysisComparisonContextPayload(
+                        comparisonHeadline,
                         comparisonSummary,
                         comparisonHighlightDetails
                 ),
                 new AnalysisWindowContextPayload(
+                        windowHeadline,
                         windowSummary,
                         windowHighlightDetails
                 ),
                 derivativeContextSummary,
+                derivativeHeadline,
                 continuityContext
         );
     }
@@ -779,30 +749,84 @@ public class AnalysisReportAssembler {
         return highlights.stream().limit(3).toList();
     }
 
-    private List<String> derivativeRiskSignals(
+    private AnalysisContextHeadlinePayload comparisonContextHeadline(
+            AnalysisReportType reportType,
+            List<AnalysisComparisonFact> comparisonFacts,
+            List<AnalysisComparisonHighlight> comparisonHighlights
+    ) {
+        if (!comparisonHighlights.isEmpty()) {
+            AnalysisComparisonHighlight highlight = comparisonHighlights.get(0);
+            return new AnalysisContextHeadlinePayload(
+                    "comparison",
+                    highlight.reference().name() + " comparison",
+                    highlight.detail(),
+                    reportType == AnalysisReportType.SHORT_TERM ? "high" : "medium"
+            );
+        }
+        if (!comparisonFacts.isEmpty()) {
+            AnalysisComparisonFact fact = comparisonFacts.get(0);
+            return new AnalysisContextHeadlinePayload(
+                    "comparison",
+                    fact.reference().name() + " comparison",
+                    comparisonFactSummary(fact),
+                    "medium"
+            );
+        }
+        return null;
+    }
+
+    private AnalysisContextHeadlinePayload windowContextHeadline(
+            AnalysisReportType reportType,
+            List<AnalysisWindowSummary> windowSummaries
+    ) {
+        AnalysisWindowSummary primaryWindow = primaryWindow(windowSummaries);
+        if (primaryWindow == null) {
+            return null;
+        }
+        return new AnalysisContextHeadlinePayload(
+                "window",
+                primaryWindow.windowType().name() + " position",
+                primaryWindow.windowType().name()
+                        + " keeps price at "
+                        + percentage(primaryWindow.currentPositionInRange())
+                        + " of the range with volume "
+                        + signedRatio(primaryWindow.currentVolumeVsAverage())
+                        + " versus average.",
+                reportType == AnalysisReportType.LONG_TERM ? "high" : "medium"
+        );
+    }
+
+    private AnalysisContextHeadlinePayload derivativeContextHeadline(
             AnalysisReportType reportType,
             AnalysisDerivativeContext derivativeContext
     ) {
-        java.util.ArrayList<String> signals = new java.util.ArrayList<>();
-
-        if (derivativeContext.lastFundingRate() != null
-                && derivativeContext.lastFundingRate().abs().compareTo(new BigDecimal("0.0004")) >= 0) {
-            signals.add("Funding skew at " + fundingRatePercentage(derivativeContext.lastFundingRate()) + ".");
+        if (derivativeContext == null) {
+            return null;
         }
-
-        if (derivativeContext.markIndexBasisRate() != null
-                && derivativeContext.markIndexBasisRate().abs().compareTo(new BigDecimal("0.05")) >= 0) {
-            signals.add("Basis expansion at " + signedPercent(derivativeContext.markIndexBasisRate()) + ".");
+        if (derivativeContext.highlights() != null && !derivativeContext.highlights().isEmpty()) {
+            AnalysisDerivativeHighlight highlight = derivativeContext.highlights().get(0);
+            return new AnalysisContextHeadlinePayload(
+                    "derivative",
+                    highlight.title(),
+                    highlight.summary(),
+                    highlight.importance()
+            );
         }
-
-        AnalysisDerivativeWindowSummary derivativeWindowSummary = primaryDerivativeWindowSummary(reportType, derivativeContext);
-        if (derivativeWindowSummary != null
-                && derivativeWindowSummary.currentOpenInterestVsAverage() != null
-                && derivativeWindowSummary.currentOpenInterestVsAverage().abs().compareTo(new BigDecimal("0.20")) >= 0) {
-            signals.add("Open interest crowding at " + signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage()) + " versus average.");
+        AnalysisDerivativeComparisonFact primaryDerivativeFact = primaryDerivativeFact(reportType, derivativeContext);
+        if (primaryDerivativeFact == null) {
+            return null;
         }
-
-        return signals;
+        return new AnalysisContextHeadlinePayload(
+                "derivative",
+                primaryDerivativeFact.reference().name() + " derivative shift",
+                primaryDerivativeFact.reference().name()
+                        + " keeps OI "
+                        + signedRatio(primaryDerivativeFact.openInterestChangeRate())
+                        + " with funding Δ "
+                        + fundingRatePercentage(primaryDerivativeFact.fundingRateDelta())
+                        + ".",
+                reportType == AnalysisReportType.SHORT_TERM ? "high" : "medium"
+        );
     }
 
     private AnalysisWindowSummary primaryWindow(List<AnalysisWindowSummary> windowSummaries) {

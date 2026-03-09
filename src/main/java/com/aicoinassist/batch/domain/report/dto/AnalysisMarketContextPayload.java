@@ -4,7 +4,8 @@ public record AnalysisMarketContextPayload(
         AnalysisCurrentStatePayload currentState,
         AnalysisComparisonContextPayload comparisonContext,
         AnalysisWindowContextPayload windowContext,
-        AnalysisDerivativeContextSummaryPayload derivativeContextSummary,
+        String derivativeContextSummary,
+        AnalysisContextHeadlinePayload derivativeHeadline,
         AnalysisContinuityContextPayload continuityContext
 ) {
 }
