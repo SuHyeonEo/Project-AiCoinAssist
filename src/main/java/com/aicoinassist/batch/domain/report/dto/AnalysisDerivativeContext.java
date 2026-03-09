@@ -2,6 +2,7 @@ package com.aicoinassist.batch.domain.report.dto;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 public record AnalysisDerivativeContext(
         Instant snapshotTime,
@@ -13,6 +14,8 @@ public record AnalysisDerivativeContext(
         BigDecimal indexPrice,
         BigDecimal lastFundingRate,
         Instant nextFundingTime,
-        BigDecimal markIndexBasisRate
+        BigDecimal markIndexBasisRate,
+        List<AnalysisDerivativeComparisonFact> comparisonFacts,
+        List<AnalysisDerivativeWindowSummary> windowSummaries
 ) {
 }

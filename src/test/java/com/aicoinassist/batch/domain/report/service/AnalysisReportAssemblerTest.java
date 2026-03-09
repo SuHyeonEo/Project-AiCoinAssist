@@ -5,7 +5,9 @@ import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
@@ -41,9 +43,12 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.marketContext()).contains("D1 price");
         assertThat(payload.marketContext()).contains("Window summary:");
         assertThat(payload.marketContext()).contains("Derivative context:");
+        assertThat(payload.marketContext()).contains("Derivative window summary:");
         assertThat(payload.marketContext()).contains("Continuity note:");
         assertThat(payload.derivativeContext()).isNotNull();
         assertThat(payload.derivativeContext().lastFundingRate()).isEqualByComparingTo("0.00045000");
+        assertThat(payload.derivativeContext().comparisonFacts()).hasSize(3);
+        assertThat(payload.derivativeContext().windowSummaries()).hasSize(2);
         assertThat(payload.comparisonFacts()).hasSize(2);
         assertThat(payload.windowSummaries()).hasSize(2);
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
@@ -304,7 +309,67 @@ class AnalysisReportAssemblerTest {
                 new BigDecimal("87480.02000000"),
                 new BigDecimal("0.00045000"),
                 Instant.parse("2026-03-09T08:00:00Z"),
-                new BigDecimal("0.12000000")
+                new BigDecimal("0.12000000"),
+                derivativeComparisonFacts(),
+                derivativeWindowSummaries()
+        );
+    }
+
+    private List<AnalysisDerivativeComparisonFact> derivativeComparisonFacts() {
+        return List.of(
+                new AnalysisDerivativeComparisonFact(
+                        AnalysisComparisonReference.PREV_BATCH,
+                        Instant.parse("2026-03-08T23:59:30Z"),
+                        new BigDecimal("12000.00000000"),
+                        new BigDecimal("0.02880658"),
+                        new BigDecimal("0.00010000"),
+                        new BigDecimal("0.02000000")
+                ),
+                new AnalysisDerivativeComparisonFact(
+                        AnalysisComparisonReference.D1,
+                        Instant.parse("2026-03-08T00:59:30Z"),
+                        new BigDecimal("11800.00000000"),
+                        new BigDecimal("0.04624400"),
+                        new BigDecimal("0.00014000"),
+                        new BigDecimal("0.03500000")
+                ),
+                new AnalysisDerivativeComparisonFact(
+                        AnalysisComparisonReference.D180,
+                        Instant.parse("2025-09-10T00:59:30Z"),
+                        new BigDecimal("9000.00000000"),
+                        new BigDecimal("0.37174210"),
+                        new BigDecimal("0.00030000"),
+                        new BigDecimal("0.08000000")
+                )
+        );
+    }
+
+    private List<AnalysisDerivativeWindowSummary> derivativeWindowSummaries() {
+        return List.of(
+                new AnalysisDerivativeWindowSummary(
+                        MarketWindowType.LAST_7D,
+                        Instant.parse("2026-03-02T00:59:30Z"),
+                        Instant.parse("2026-03-09T00:59:30Z"),
+                        42,
+                        new BigDecimal("11000.00000000"),
+                        new BigDecimal("0.12233445"),
+                        new BigDecimal("0.00025000"),
+                        new BigDecimal("0.80000000"),
+                        new BigDecimal("0.07000000"),
+                        new BigDecimal("0.71428571")
+                ),
+                new AnalysisDerivativeWindowSummary(
+                        MarketWindowType.LAST_180D,
+                        Instant.parse("2025-09-10T00:59:30Z"),
+                        Instant.parse("2026-03-09T00:59:30Z"),
+                        180,
+                        new BigDecimal("9800.00000000"),
+                        new BigDecimal("0.25976315"),
+                        new BigDecimal("0.00018000"),
+                        new BigDecimal("1.50000000"),
+                        new BigDecimal("0.04000000"),
+                        new BigDecimal("2.00000000")
+                )
         );
     }
 }
