@@ -1,9 +1,11 @@
 package com.aicoinassist.batch.domain.report.dto;
 
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
+
 import java.math.BigDecimal;
 
 public record AnalysisPriceLevel(
-        String label,
+        AnalysisPriceLevelLabel label,
         BigDecimal price,
         String rationale
 ) {

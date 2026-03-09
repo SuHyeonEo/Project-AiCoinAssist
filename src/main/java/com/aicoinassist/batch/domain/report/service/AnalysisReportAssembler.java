@@ -28,8 +28,11 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisConfidenceLevel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisScenarioBias;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
 import org.springframework.stereotype.Component;
@@ -256,10 +259,10 @@ public class AnalysisReportAssembler {
 
     private List<AnalysisPriceLevel> supportLevels(MarketIndicatorSnapshotEntity snapshot) {
         List<AnalysisPriceLevel> candidates = List.of(
-                new AnalysisPriceLevel("MA20", snapshot.getMa20(), "Short-term average support"),
-                new AnalysisPriceLevel("MA60", snapshot.getMa60(), "Mid-trend average support"),
-                new AnalysisPriceLevel("MA120", snapshot.getMa120(), "Longer trend average support"),
-                new AnalysisPriceLevel("BB_LOWER", snapshot.getBollingerLowerBand(), "Lower Bollinger band support")
+                new AnalysisPriceLevel(AnalysisPriceLevelLabel.MA20, snapshot.getMa20(), "Short-term average support"),
+                new AnalysisPriceLevel(AnalysisPriceLevelLabel.MA60, snapshot.getMa60(), "Mid-trend average support"),
+                new AnalysisPriceLevel(AnalysisPriceLevelLabel.MA120, snapshot.getMa120(), "Longer trend average support"),
+                new AnalysisPriceLevel(AnalysisPriceLevelLabel.BB_LOWER, snapshot.getBollingerLowerBand(), "Lower Bollinger band support")
         );
 
         return candidates.stream()
@@ -271,10 +274,10 @@ public class AnalysisReportAssembler {
 
     private List<AnalysisPriceLevel> resistanceLevels(MarketIndicatorSnapshotEntity snapshot) {
         List<AnalysisPriceLevel> candidates = List.of(
-                new AnalysisPriceLevel("MA20", snapshot.getMa20(), "Short-term average resistance"),
-                new AnalysisPriceLevel("MA60", snapshot.getMa60(), "Mid-trend average resistance"),
-                new AnalysisPriceLevel("MA120", snapshot.getMa120(), "Longer trend average resistance"),
-                new AnalysisPriceLevel("BB_UPPER", snapshot.getBollingerUpperBand(), "Upper Bollinger band resistance")
+                new AnalysisPriceLevel(AnalysisPriceLevelLabel.MA20, snapshot.getMa20(), "Short-term average resistance"),
+                new AnalysisPriceLevel(AnalysisPriceLevelLabel.MA60, snapshot.getMa60(), "Mid-trend average resistance"),
+                new AnalysisPriceLevel(AnalysisPriceLevelLabel.MA120, snapshot.getMa120(), "Longer trend average resistance"),
+                new AnalysisPriceLevel(AnalysisPriceLevelLabel.BB_UPPER, snapshot.getBollingerUpperBand(), "Upper Bollinger band resistance")
         );
 
         List<AnalysisPriceLevel> levels = candidates.stream()
@@ -301,24 +304,41 @@ public class AnalysisReportAssembler {
         List<AnalysisRiskFactor> candidates = new java.util.ArrayList<AnalysisRiskFactor>();
 
         if (snapshot.getRsi14().compareTo(new BigDecimal("70")) >= 0) {
-            candidates.add(new AnalysisRiskFactor("RSI overheating", "RSI14 is above 70, so upside continuation can weaken quickly."));
+            candidates.add(new AnalysisRiskFactor(
+                    AnalysisRiskFactorType.RSI_OVERHEATING,
+                    "RSI overheating",
+                    "RSI14 is above 70, so upside continuation can weaken quickly."
+            ));
         }
 
         if (snapshot.getRsi14().compareTo(new BigDecimal("30")) <= 0) {
-            candidates.add(new AnalysisRiskFactor("RSI compression", "RSI14 is below 30, so downside can be stretched and whipsaws can increase."));
+            candidates.add(new AnalysisRiskFactor(
+                    AnalysisRiskFactorType.RSI_COMPRESSION,
+                    "RSI compression",
+                    "RSI14 is below 30, so downside can be stretched and whipsaws can increase."
+            ));
         }
 
         if (snapshot.getCurrentPrice().compareTo(snapshot.getBollingerUpperBand()) >= 0
                 || snapshot.getCurrentPrice().compareTo(snapshot.getBollingerLowerBand()) <= 0) {
-            candidates.add(new AnalysisRiskFactor("Band extension", "Price is trading at an outer Bollinger band, which raises reversion risk."));
+            candidates.add(new AnalysisRiskFactor(
+                    AnalysisRiskFactorType.BAND_EXTENSION,
+                    "Band extension",
+                    "Price is trading at an outer Bollinger band, which raises reversion risk."
+            ));
         }
 
         if (atrRatio(snapshot).compareTo(new BigDecimal("3.00")) >= 0) {
-            candidates.add(new AnalysisRiskFactor("Elevated volatility", "ATR14 is more than 3% of price, so intraperiod swings can expand."));
+            candidates.add(new AnalysisRiskFactor(
+                    AnalysisRiskFactorType.ELEVATED_VOLATILITY,
+                    "Elevated volatility",
+                    "ATR14 is more than 3% of price, so intraperiod swings can expand."
+            ));
         }
 
         if (derivativeContext != null && derivativeContext.lastFundingRate().abs().compareTo(new BigDecimal("0.0004")) >= 0) {
             candidates.add(new AnalysisRiskFactor(
+                    AnalysisRiskFactorType.FUNDING_SKEW,
                     "Funding skew",
                     "Funding is running at " + fundingRatePercentage(derivativeContext.lastFundingRate())
                             + ", which can signal crowded directional leverage."
@@ -327,6 +347,7 @@ public class AnalysisReportAssembler {
 
         if (derivativeContext != null && derivativeContext.markIndexBasisRate().abs().compareTo(new BigDecimal("0.05")) >= 0) {
             candidates.add(new AnalysisRiskFactor(
+                    AnalysisRiskFactorType.BASIS_EXPANSION,
                     "Basis expansion",
                     "Mark/index basis is " + signedPercent(derivativeContext.markIndexBasisRate())
                             + ", so futures positioning is trading away from spot."
@@ -340,6 +361,7 @@ public class AnalysisReportAssembler {
                 && derivativeWindowSummary.currentOpenInterestVsAverage() != null
                 && derivativeWindowSummary.currentOpenInterestVsAverage().abs().compareTo(new BigDecimal("0.20")) >= 0) {
             candidates.add(new AnalysisRiskFactor(
+                    AnalysisRiskFactorType.OPEN_INTEREST_CROWDING,
                     "Open interest crowding",
                     "Open interest is running " + signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage())
                             + " versus the representative window average."
@@ -347,7 +369,11 @@ public class AnalysisReportAssembler {
         }
 
         if (candidates.isEmpty()) {
-            candidates.add(new AnalysisRiskFactor("Momentum transition", "Momentum is not one-sided, so follow-through can slow near key levels."));
+            candidates.add(new AnalysisRiskFactor(
+                    AnalysisRiskFactorType.MOMENTUM_TRANSITION,
+                    "Momentum transition",
+                    "Momentum is not one-sided, so follow-through can slow near key levels."
+            ));
         }
 
         return candidates;
@@ -356,16 +382,16 @@ public class AnalysisReportAssembler {
     private List<AnalysisScenario> scenarios(MarketIndicatorSnapshotEntity snapshot, AnalysisTrendLabel trendBias) {
         return switch (trendBias) {
             case BULLISH -> List.of(
-                    new AnalysisScenario("Base case", "bullish", "Price holds above MA20 and extends toward " + snapshot.getBollingerUpperBand().stripTrailingZeros().toPlainString() + "."),
-                    new AnalysisScenario("Risk case", "neutral", "A loss of MA20 can trigger a pullback toward " + snapshot.getMa60().stripTrailingZeros().toPlainString() + ".")
+                    new AnalysisScenario("Base case", AnalysisScenarioBias.BULLISH, "Price holds above MA20 and extends toward " + snapshot.getBollingerUpperBand().stripTrailingZeros().toPlainString() + "."),
+                    new AnalysisScenario("Risk case", AnalysisScenarioBias.NEUTRAL, "A loss of MA20 can trigger a pullback toward " + snapshot.getMa60().stripTrailingZeros().toPlainString() + ".")
             );
             case BEARISH -> List.of(
-                    new AnalysisScenario("Base case", "bearish", "Price stays below MA20 and can probe " + snapshot.getBollingerLowerBand().stripTrailingZeros().toPlainString() + "."),
-                    new AnalysisScenario("Risk case", "neutral", "A recovery above MA20 can force short-covering toward " + snapshot.getMa60().stripTrailingZeros().toPlainString() + ".")
+                    new AnalysisScenario("Base case", AnalysisScenarioBias.BEARISH, "Price stays below MA20 and can probe " + snapshot.getBollingerLowerBand().stripTrailingZeros().toPlainString() + "."),
+                    new AnalysisScenario("Risk case", AnalysisScenarioBias.NEUTRAL, "A recovery above MA20 can force short-covering toward " + snapshot.getMa60().stripTrailingZeros().toPlainString() + ".")
             );
             case NEUTRAL -> List.of(
-                    new AnalysisScenario("Base case", "neutral", "Price oscillates between support and resistance while waiting for directional confirmation."),
-                    new AnalysisScenario("Breakout case", "directional", "A decisive move beyond the current band extremes can set the next short-term direction.")
+                    new AnalysisScenario("Base case", AnalysisScenarioBias.NEUTRAL, "Price oscillates between support and resistance while waiting for directional confirmation."),
+                    new AnalysisScenario("Breakout case", AnalysisScenarioBias.DIRECTIONAL, "A decisive move beyond the current band extremes can set the next short-term direction.")
             );
         };
     }

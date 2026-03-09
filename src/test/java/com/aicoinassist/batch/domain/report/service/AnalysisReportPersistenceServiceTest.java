@@ -31,9 +31,12 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImpo
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisScenarioBias;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -280,10 +283,10 @@ class AnalysisReportPersistenceServiceTest {
                                 )
                         )
                 ),
-                List.of(new AnalysisPriceLevel("S1", new BigDecimal("84500.00"), "Recent pullback low")),
-                List.of(new AnalysisPriceLevel("R1", new BigDecimal("88500.00"), "Recent swing high")),
-                List.of(new AnalysisRiskFactor("Macro volatility", "USD strength can pressure crypto risk assets.")),
-                List.of(new AnalysisScenario("Base case", "bullish", "Price consolidates above support and retests resistance."))
+                List.of(new AnalysisPriceLevel(AnalysisPriceLevelLabel.S1, new BigDecimal("84500.00"), "Recent pullback low")),
+                List.of(new AnalysisPriceLevel(AnalysisPriceLevelLabel.R1, new BigDecimal("88500.00"), "Recent swing high")),
+                List.of(new AnalysisRiskFactor(AnalysisRiskFactorType.MACRO_VOLATILITY, "Macro volatility", "USD strength can pressure crypto risk assets.")),
+                List.of(new AnalysisScenario("Base case", AnalysisScenarioBias.BULLISH, "Price consolidates above support and retests resistance."))
         );
     }
 }

@@ -25,8 +25,11 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCate
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisScenarioBias;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
 import org.junit.jupiter.api.Test;
@@ -144,9 +147,9 @@ class AnalysisReportAssemblerTest {
                                                          AnalysisComparisonReference.PREV_BATCH,
                                                          AnalysisComparisonReference.D1
                                                  );
-        assertThat(payload.supportLevels()).extracting("label").contains("MA20", "MA60");
-        assertThat(payload.resistanceLevels()).extracting("label").contains("BB_UPPER");
-        assertThat(payload.scenarios()).extracting("bias").contains("bullish", "neutral");
+        assertThat(payload.supportLevels()).extracting("label").contains(AnalysisPriceLevelLabel.MA20, AnalysisPriceLevelLabel.MA60);
+        assertThat(payload.resistanceLevels()).extracting("label").contains(AnalysisPriceLevelLabel.BB_UPPER);
+        assertThat(payload.scenarios()).extracting("bias").contains(AnalysisScenarioBias.BULLISH, AnalysisScenarioBias.NEUTRAL);
     }
 
     @Test
@@ -160,8 +163,14 @@ class AnalysisReportAssemblerTest {
                 shortContinuityNotes()
         );
 
-        assertThat(payload.riskFactors()).extracting("title")
-                                         .contains("RSI overheating", "Band extension", "Elevated volatility", "Funding skew", "Basis expansion");
+        assertThat(payload.riskFactors()).extracting("type", "title")
+                                         .contains(
+                                                 org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.RSI_OVERHEATING, "RSI overheating"),
+                                                 org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.BAND_EXTENSION, "Band extension"),
+                                                 org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.ELEVATED_VOLATILITY, "Elevated volatility"),
+                                                 org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.FUNDING_SKEW, "Funding skew"),
+                                                 org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.BASIS_EXPANSION, "Basis expansion")
+                                         );
     }
 
     @Test
