@@ -20,6 +20,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import org.junit.jupiter.api.Test;
 
@@ -57,9 +58,9 @@ class AnalysisReportAssemblerTest {
                         AnalysisContextHeadlinePayload::title
                 )
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("comparison", "PREV_BATCH comparison"),
-                        org.assertj.core.groups.Tuple.tuple("window", "LAST_7D position"),
-                        org.assertj.core.groups.Tuple.tuple("derivative", "PREV_BATCH derivative shift")
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison"),
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.WINDOW, "LAST_7D position"),
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.DERIVATIVE, "PREV_BATCH derivative shift")
                 );
         assertThat(payload.marketContext().currentState()).extracting(
                         AnalysisCurrentStatePayload::trendLabel,
@@ -72,14 +73,14 @@ class AnalysisReportAssemblerTest {
                         AnalysisContextHeadlinePayload::category,
                         AnalysisContextHeadlinePayload::title
                 )
-                .containsExactly("comparison", "PREV_BATCH comparison");
+                .containsExactly(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison");
         assertThat(payload.marketContext().comparisonContext().factSummary()).contains("D1 price");
         assertThat(payload.marketContext().comparisonContext().highlightDetails()).isNotEmpty();
         assertThat(payload.marketContext().windowContext().headline()).extracting(
                         AnalysisContextHeadlinePayload::category,
                         AnalysisContextHeadlinePayload::title
                 )
-                .containsExactly("window", "LAST_7D position");
+                .containsExactly(AnalysisContextHeadlineCategory.WINDOW, "LAST_7D position");
         assertThat(payload.marketContext().windowContext().summary()).contains("Window summary:");
         assertThat(payload.marketContext().windowContext().highlightDetails()).isNotEmpty();
         assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative context:");
@@ -87,7 +88,7 @@ class AnalysisReportAssemblerTest {
                         AnalysisContextHeadlinePayload::category,
                         AnalysisContextHeadlinePayload::title
                 )
-                .containsExactly("derivative", "PREV_BATCH derivative shift");
+                .containsExactly(AnalysisContextHeadlineCategory.DERIVATIVE, "PREV_BATCH derivative shift");
         assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative window summary:");
         assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative highlights:");
         assertThat(payload.marketContext().continuityContext()).extracting(
@@ -159,9 +160,9 @@ class AnalysisReportAssemblerTest {
                         AnalysisContextHeadlinePayload::title
                 )
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("comparison", "Y52_HIGH comparison"),
-                        org.assertj.core.groups.Tuple.tuple("window", "LAST_52W position"),
-                        org.assertj.core.groups.Tuple.tuple("derivative", "D180 derivative shift")
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.COMPARISON, "Y52_HIGH comparison"),
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.WINDOW, "LAST_52W position"),
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.DERIVATIVE, "D180 derivative shift")
                 );
         assertThat(payload.marketContext().comparisonContext().highlightDetails()).anySatisfy(detail -> assertThat(detail).contains("cycle floor"));
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)

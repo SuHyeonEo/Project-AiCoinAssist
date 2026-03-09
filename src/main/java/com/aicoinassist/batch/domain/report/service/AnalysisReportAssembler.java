@@ -21,6 +21,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import org.springframework.stereotype.Component;
@@ -757,19 +759,21 @@ public class AnalysisReportAssembler {
         if (!comparisonHighlights.isEmpty()) {
             AnalysisComparisonHighlight highlight = comparisonHighlights.get(0);
             return new AnalysisContextHeadlinePayload(
-                    "comparison",
+                    AnalysisContextHeadlineCategory.COMPARISON,
                     highlight.reference().name() + " comparison",
                     highlight.detail(),
-                    reportType == AnalysisReportType.SHORT_TERM ? "high" : "medium"
+                    reportType == AnalysisReportType.SHORT_TERM
+                            ? AnalysisContextHeadlineImportance.HIGH
+                            : AnalysisContextHeadlineImportance.MEDIUM
             );
         }
         if (!comparisonFacts.isEmpty()) {
             AnalysisComparisonFact fact = comparisonFacts.get(0);
             return new AnalysisContextHeadlinePayload(
-                    "comparison",
+                    AnalysisContextHeadlineCategory.COMPARISON,
                     fact.reference().name() + " comparison",
                     comparisonFactSummary(fact),
-                    "medium"
+                    AnalysisContextHeadlineImportance.MEDIUM
             );
         }
         return null;
@@ -784,7 +788,7 @@ public class AnalysisReportAssembler {
             return null;
         }
         return new AnalysisContextHeadlinePayload(
-                "window",
+                AnalysisContextHeadlineCategory.WINDOW,
                 primaryWindow.windowType().name() + " position",
                 primaryWindow.windowType().name()
                         + " keeps price at "
@@ -792,7 +796,9 @@ public class AnalysisReportAssembler {
                         + " of the range with volume "
                         + signedRatio(primaryWindow.currentVolumeVsAverage())
                         + " versus average.",
-                reportType == AnalysisReportType.LONG_TERM ? "high" : "medium"
+                reportType == AnalysisReportType.LONG_TERM
+                        ? AnalysisContextHeadlineImportance.HIGH
+                        : AnalysisContextHeadlineImportance.MEDIUM
         );
     }
 
@@ -806,10 +812,10 @@ public class AnalysisReportAssembler {
         if (derivativeContext.highlights() != null && !derivativeContext.highlights().isEmpty()) {
             AnalysisDerivativeHighlight highlight = derivativeContext.highlights().get(0);
             return new AnalysisContextHeadlinePayload(
-                    "derivative",
+                    AnalysisContextHeadlineCategory.DERIVATIVE,
                     highlight.title(),
                     highlight.summary(),
-                    highlight.importance()
+                    headlineImportance(highlight.importance())
             );
         }
         AnalysisDerivativeComparisonFact primaryDerivativeFact = primaryDerivativeFact(reportType, derivativeContext);
@@ -817,7 +823,7 @@ public class AnalysisReportAssembler {
             return null;
         }
         return new AnalysisContextHeadlinePayload(
-                "derivative",
+                AnalysisContextHeadlineCategory.DERIVATIVE,
                 primaryDerivativeFact.reference().name() + " derivative shift",
                 primaryDerivativeFact.reference().name()
                         + " keeps OI "
@@ -825,8 +831,21 @@ public class AnalysisReportAssembler {
                         + " with funding Δ "
                         + fundingRatePercentage(primaryDerivativeFact.fundingRateDelta())
                         + ".",
-                reportType == AnalysisReportType.SHORT_TERM ? "high" : "medium"
+                reportType == AnalysisReportType.SHORT_TERM
+                        ? AnalysisContextHeadlineImportance.HIGH
+                        : AnalysisContextHeadlineImportance.MEDIUM
         );
+    }
+
+    private AnalysisContextHeadlineImportance headlineImportance(String importance) {
+        if (importance == null) {
+            return AnalysisContextHeadlineImportance.MEDIUM;
+        }
+
+        return switch (importance.toUpperCase(java.util.Locale.ROOT)) {
+            case "HIGH" -> AnalysisContextHeadlineImportance.HIGH;
+            default -> AnalysisContextHeadlineImportance.MEDIUM;
+        };
     }
 
     private AnalysisWindowSummary primaryWindow(List<AnalysisWindowSummary> windowSummaries) {
