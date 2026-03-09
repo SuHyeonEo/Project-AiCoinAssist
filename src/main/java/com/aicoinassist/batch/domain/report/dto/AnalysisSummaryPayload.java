@@ -7,7 +7,7 @@ public record AnalysisSummaryPayload(
         String headline,
         AnalysisOutlookType outlook,
         AnalysisConfidenceLevel confidence,
-        String keyMessage,
+        AnalysisSummaryKeyMessagePayload keyMessage,
         java.util.List<AnalysisContextHeadlinePayload> signalHeadlines
 ) {
 }

@@ -65,8 +65,15 @@ public class AnalysisReportContinuityService {
             }
 
             JsonNode keyMessageNode = summaryNode.get("keyMessage");
-            if (keyMessageNode != null && !keyMessageNode.isNull() && !keyMessageNode.asText().isBlank()) {
-                return keyMessageNode.asText();
+            if (keyMessageNode != null && !keyMessageNode.isNull()) {
+                if (keyMessageNode.isTextual() && !keyMessageNode.asText().isBlank()) {
+                    return keyMessageNode.asText();
+                }
+
+                JsonNode primaryMessageNode = keyMessageNode.get("primaryMessage");
+                if (primaryMessageNode != null && !primaryMessageNode.isNull() && !primaryMessageNode.asText().isBlank()) {
+                    return primaryMessageNode.asText();
+                }
             }
 
             JsonNode headlineNode = summaryNode.get("headline");
