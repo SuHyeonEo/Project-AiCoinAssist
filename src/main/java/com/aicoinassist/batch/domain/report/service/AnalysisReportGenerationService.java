@@ -1,5 +1,6 @@
 package com.aicoinassist.batch.domain.report.service;
 
+import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySnapshotEntity;
@@ -7,6 +8,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEn
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
+import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
@@ -15,15 +17,21 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
+import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -31,6 +39,7 @@ import java.util.List;
 public class AnalysisReportGenerationService {
 
     private final MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
+    private final MarketCandidateLevelSnapshotPersistenceService marketCandidateLevelSnapshotPersistenceService;
     private final MarketContextSnapshotPersistenceService marketContextSnapshotPersistenceService;
     private final MarketContextWindowSummarySnapshotPersistenceService marketContextWindowSummarySnapshotPersistenceService;
     private final MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
@@ -39,6 +48,7 @@ public class AnalysisReportGenerationService {
     private final AnalysisReportContinuityService analysisReportContinuityService;
     private final AnalysisReportAssembler analysisReportAssembler;
     private final AnalysisReportPersistenceService analysisReportPersistenceService;
+    private final ObjectMapper objectMapper;
 
     public AnalysisReportEntity generateAndSave(
             String symbol,
@@ -79,13 +89,19 @@ public class AnalysisReportGenerationService {
                 .stream()
                 .map(this::toWindowSummary)
                 .toList();
+        List<MarketCandidateLevelSnapshotEntity> candidateLevelSnapshots = marketCandidateLevelSnapshotPersistenceService
+                .createAndSaveAll(snapshot);
+        List<AnalysisPriceLevel> supportLevels = candidateLevels(candidateLevelSnapshots, "SUPPORT", Comparator.comparing(AnalysisPriceLevel::price).reversed());
+        List<AnalysisPriceLevel> resistanceLevels = candidateLevels(candidateLevelSnapshots, "RESISTANCE", Comparator.comparing(AnalysisPriceLevel::price));
         AnalysisReportPayload payload = analysisReportAssembler.assemble(
                 snapshot,
                 reportType,
                 comparisonFacts,
                 windowSummaries,
                 derivativeContext,
-                continuityNotes
+                continuityNotes,
+                supportLevels,
+                resistanceLevels
         );
         AnalysisReportDraft draft = new AnalysisReportDraft(
                 snapshot.getSymbol(),
@@ -163,5 +179,37 @@ public class AnalysisReportGenerationService {
                 entity.getAverageBasisRate(),
                 entity.getCurrentBasisVsAverage()
         );
+    }
+
+    private List<AnalysisPriceLevel> candidateLevels(
+            List<MarketCandidateLevelSnapshotEntity> entities,
+            String levelType,
+            Comparator<AnalysisPriceLevel> comparator
+    ) {
+        return entities.stream()
+                       .filter(entity -> entity.getLevelType().equals(levelType))
+                       .map(this::toPriceLevel)
+                       .sorted(comparator)
+                       .toList();
+    }
+
+    private AnalysisPriceLevel toPriceLevel(MarketCandidateLevelSnapshotEntity entity) {
+        return new AnalysisPriceLevel(
+                AnalysisPriceLevelLabel.valueOf(entity.getLevelLabel()),
+                AnalysisPriceLevelSourceType.valueOf(entity.getSourceType()),
+                entity.getLevelPrice(),
+                entity.getDistanceFromCurrent(),
+                entity.getStrengthScore(),
+                entity.getRationale(),
+                triggerFacts(entity.getTriggerFactsPayload())
+        );
+    }
+
+    private List<String> triggerFacts(String triggerFactsPayload) {
+        try {
+            return objectMapper.readValue(triggerFactsPayload, new TypeReference<>() {});
+        } catch (Exception exception) {
+            throw new IllegalStateException("Failed to deserialize market candidate level trigger facts.", exception);
+        }
     }
 }
