@@ -9,7 +9,10 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
@@ -19,6 +22,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -140,16 +144,27 @@ class AnalysisReportPersistenceServiceTest {
                         summary
                 ),
                 new AnalysisMarketContextPayload(
-                        new BigDecimal("87500.00"),
-                        "bullish",
-                        "moderate",
-                        "upper-range",
-                        "above MA20, above MA60, above MA120",
-                        "RSI14 62, MACD histogram 20",
-                        "PREV_BATCH price +0.5747%, RSI Δ +2, MACD hist Δ +5.",
-                        "LAST_7D range 82000 to 90000.",
+                        new AnalysisCurrentStatePayload(
+                                new BigDecimal("87500.00"),
+                                "bullish",
+                                "moderate",
+                                "upper-range",
+                                "above MA20, above MA60, above MA120",
+                                "RSI14 62, MACD histogram 20"
+                        ),
+                        new AnalysisComparisonContextPayload(
+                                "PREV_BATCH price +0.5747%, RSI Δ +2, MACD hist Δ +5.",
+                                List.of("PREV_BATCH confirms the latest impulse with MACD histogram Δ +5.")
+                        ),
+                        new AnalysisWindowContextPayload(
+                                "LAST_7D range 82000 to 90000.",
+                                List.of("LAST_7D volume vs average +22%, ATR vs average +3.45%, distance from range high 2.78%.")
+                        ),
                         "Funding +0.045%, basis +0.12%.",
-                        "Previous short-term report highlighted momentum continuation."
+                        new AnalysisContinuityContextPayload(
+                                AnalysisComparisonReference.PREV_SHORT_REPORT,
+                                "Previous short-term report highlighted momentum continuation."
+                        )
                 ),
                 List.of(
                         new AnalysisComparisonFact(

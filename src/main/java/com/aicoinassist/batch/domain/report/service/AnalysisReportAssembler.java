@@ -8,6 +8,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
@@ -15,6 +18,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
@@ -171,12 +175,9 @@ public class AnalysisReportAssembler {
                 : comparisonFacts.stream()
                                  .map(this::comparisonFactSummary)
                                  .collect(Collectors.joining("; "));
-        if (!comparisonHighlights.isEmpty()) {
-            comparisonSummary = comparisonSummary + " Highlights: "
-                    + comparisonHighlights.stream()
-                                          .map(AnalysisComparisonHighlight::detail)
-                                          .collect(Collectors.joining(" "));
-        }
+        List<String> comparisonHighlightDetails = comparisonHighlights.stream()
+                                                                     .map(AnalysisComparisonHighlight::detail)
+                                                                     .toList();
 
         AnalysisWindowSummary primaryWindow = primaryWindow(windowSummaries);
         String windowSummary = null;
@@ -195,14 +196,9 @@ public class AnalysisReportAssembler {
                     + signedRatio(primaryWindow.currentAtrVsAverage())
                     + ".";
         }
-
-        if (!windowHighlights.isEmpty()) {
-            String highlightSummary = "Window highlights: "
-                    + windowHighlights.stream()
-                                      .map(AnalysisWindowHighlight::detail)
-                                      .collect(Collectors.joining(" "));
-            windowSummary = windowSummary == null ? highlightSummary : windowSummary + " " + highlightSummary;
-        }
+        List<String> windowHighlightDetails = windowHighlights.stream()
+                                                              .map(AnalysisWindowHighlight::detail)
+                                                              .toList();
 
         String derivativeContextSummary = null;
         if (derivativeContext != null) {
@@ -241,21 +237,32 @@ public class AnalysisReportAssembler {
             }
         }
 
-        String continuitySummary = continuityNotes.isEmpty()
+        AnalysisContinuityContextPayload continuityContext = continuityNotes.isEmpty()
                 ? null
-                : continuityNotes.get(0).summary();
+                : new AnalysisContinuityContextPayload(
+                        continuityNotes.get(0).reference(),
+                        continuityNotes.get(0).summary()
+                );
 
         return new AnalysisMarketContextPayload(
-                snapshot.getCurrentPrice(),
-                trendBias,
-                volatilityLabel(snapshot),
-                rangePositionLabel(primaryWindow),
-                maPositionSummary,
-                momentumSummary(snapshot),
-                comparisonSummary,
-                windowSummary,
+                new AnalysisCurrentStatePayload(
+                        snapshot.getCurrentPrice(),
+                        trendBias,
+                        volatilityLabel(snapshot),
+                        rangePositionLabel(primaryWindow),
+                        maPositionSummary,
+                        momentumSummary(snapshot)
+                ),
+                new AnalysisComparisonContextPayload(
+                        comparisonSummary,
+                        comparisonHighlightDetails
+                ),
+                new AnalysisWindowContextPayload(
+                        windowSummary,
+                        windowHighlightDetails
+                ),
                 derivativeContextSummary,
-                continuitySummary
+                continuityContext
         );
     }
 

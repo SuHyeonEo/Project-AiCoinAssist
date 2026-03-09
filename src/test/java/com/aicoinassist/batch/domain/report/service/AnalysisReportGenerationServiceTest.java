@@ -16,11 +16,15 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
@@ -139,16 +143,27 @@ class AnalysisReportGenerationServiceTest {
                         "summary"
                 ),
                 new AnalysisMarketContextPayload(
-                        new BigDecimal("87500"),
-                        "bullish",
-                        "moderate",
-                        "upper-range",
-                        "above MA20, above MA60, above MA120",
-                        "RSI14 62, MACD histogram 20",
-                        "context comparison",
-                        "context window",
+                        new AnalysisCurrentStatePayload(
+                                new BigDecimal("87500"),
+                                "bullish",
+                                "moderate",
+                                "upper-range",
+                                "above MA20, above MA60, above MA120",
+                                "RSI14 62, MACD histogram 20"
+                        ),
+                        new AnalysisComparisonContextPayload(
+                                "context comparison",
+                                List.of("comparison highlight")
+                        ),
+                        new AnalysisWindowContextPayload(
+                                "context window",
+                                List.of("window highlight")
+                        ),
                         "context derivative",
-                        "continuity summary"
+                        new AnalysisContinuityContextPayload(
+                                AnalysisComparisonReference.PREV_MID_REPORT,
+                                "continuity summary"
+                        )
                 ),
                 comparisonFacts,
                 List.of(new AnalysisComparisonHighlight(
