@@ -27,6 +27,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -266,8 +268,8 @@ class AnalysisReportPersistenceServiceTest {
                                 new AnalysisDerivativeHighlight(
                                         "D1 derivative shift",
                                         "D1 keeps OI +4.6244%, funding Δ +0.014%, basis Δ +0.035%.",
-                                        "medium",
-                                        "openInterest",
+                                        AnalysisDerivativeHighlightImportance.MEDIUM,
+                                        AnalysisDerivativeMetricType.OPEN_INTEREST,
                                         AnalysisComparisonReference.D1,
                                         null
                                 )
