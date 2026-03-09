@@ -16,9 +16,11 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
@@ -130,8 +132,24 @@ class AnalysisReportGenerationServiceTest {
                 List.of()
         );
         AnalysisReportPayload payload = new AnalysisReportPayload(
-                "summary",
-                "context",
+                new AnalysisSummaryPayload(
+                        "MID_TERM view",
+                        "constructive",
+                        "high",
+                        "summary"
+                ),
+                new AnalysisMarketContextPayload(
+                        new BigDecimal("87500"),
+                        "bullish",
+                        "moderate",
+                        "upper-range",
+                        "above MA20, above MA60, above MA120",
+                        "RSI14 62, MACD histogram 20",
+                        "context comparison",
+                        "context window",
+                        "context derivative",
+                        "continuity summary"
+                ),
                 comparisonFacts,
                 List.of(new AnalysisComparisonHighlight(
                         AnalysisComparisonReference.D1,

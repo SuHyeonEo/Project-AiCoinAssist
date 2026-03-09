@@ -9,7 +9,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
@@ -37,16 +39,27 @@ class AnalysisReportAssemblerTest {
                 shortContinuityNotes()
         );
 
-        assertThat(payload.summary()).contains("SHORT_TERM view");
-        assertThat(payload.summary()).contains("bullish");
-        assertThat(payload.summary()).contains("Since the previous batch");
-        assertThat(payload.marketContext()).contains("above MA20");
-        assertThat(payload.marketContext()).contains("D1 price");
-        assertThat(payload.marketContext()).contains("Window summary:");
-        assertThat(payload.marketContext()).contains("Derivative context:");
-        assertThat(payload.marketContext()).contains("Derivative window summary:");
-        assertThat(payload.marketContext()).contains("Derivative highlights:");
-        assertThat(payload.marketContext()).contains("Continuity note:");
+        assertThat(payload.summary()).extracting(
+                        AnalysisSummaryPayload::headline,
+                        AnalysisSummaryPayload::outlook,
+                        AnalysisSummaryPayload::confidence
+                )
+                .containsExactly("SHORT_TERM view", "constructive", "high");
+        assertThat(payload.summary().keyMessage()).contains("bullish");
+        assertThat(payload.summary().keyMessage()).contains("Since the previous batch");
+        assertThat(payload.marketContext()).extracting(
+                        AnalysisMarketContextPayload::currentTrendLabel,
+                        AnalysisMarketContextPayload::volatilityLabel,
+                        AnalysisMarketContextPayload::rangePositionLabel
+                )
+                .containsExactly("bullish", "moderate", "mid-range");
+        assertThat(payload.marketContext().maPositionSummary()).contains("above MA20");
+        assertThat(payload.marketContext().comparisonSummary()).contains("D1 price");
+        assertThat(payload.marketContext().windowSummary()).contains("Window summary:");
+        assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative context:");
+        assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative window summary:");
+        assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative highlights:");
+        assertThat(payload.marketContext().continuitySummary()).contains("momentum continuation setup");
         assertThat(payload.derivativeContext()).isNotNull();
         assertThat(payload.derivativeContext().lastFundingRate()).isEqualByComparingTo("0.00045000");
         assertThat(payload.derivativeContext().comparisonFacts()).hasSize(3);
@@ -102,13 +115,13 @@ class AnalysisReportAssemblerTest {
                                                          AnalysisComparisonReference.Y52_LOW,
                                                          AnalysisComparisonReference.D180
                                                  );
-        assertThat(payload.summary()).contains("52-week high");
-        assertThat(payload.summary()).contains("LAST_52W");
-        assertThat(payload.summary()).contains("Previous long-term");
-        assertThat(payload.summary()).contains("Derivatives show funding");
-        assertThat(payload.summary()).contains("D180 keeps OI");
-        assertThat(payload.marketContext()).contains("Highlights:");
-        assertThat(payload.marketContext()).contains("cycle floor");
+        assertThat(payload.summary().keyMessage()).contains("52-week high");
+        assertThat(payload.summary().keyMessage()).contains("LAST_52W");
+        assertThat(payload.summary().keyMessage()).contains("Previous long-term");
+        assertThat(payload.summary().keyMessage()).contains("Derivatives show funding");
+        assertThat(payload.summary().keyMessage()).contains("D180 keeps OI");
+        assertThat(payload.marketContext().comparisonSummary()).contains("Highlights:");
+        assertThat(payload.marketContext().comparisonSummary()).contains("cycle floor");
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
                                              .containsExactly(MarketWindowType.LAST_180D, MarketWindowType.LAST_52W);
     }

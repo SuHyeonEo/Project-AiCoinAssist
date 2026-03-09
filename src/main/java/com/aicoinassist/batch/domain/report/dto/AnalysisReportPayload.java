@@ -3,8 +3,8 @@ package com.aicoinassist.batch.domain.report.dto;
 import java.util.List;
 
 public record AnalysisReportPayload(
-        String summary,
-        String marketContext,
+        AnalysisSummaryPayload summary,
+        AnalysisMarketContextPayload marketContext,
         List<AnalysisComparisonFact> comparisonFacts,
         List<AnalysisComparisonHighlight> comparisonHighlights,
         List<AnalysisWindowHighlight> windowHighlights,
