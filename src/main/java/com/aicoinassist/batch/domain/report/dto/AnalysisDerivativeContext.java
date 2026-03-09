@@ -16,6 +16,7 @@ public record AnalysisDerivativeContext(
         Instant nextFundingTime,
         BigDecimal markIndexBasisRate,
         List<AnalysisDerivativeComparisonFact> comparisonFacts,
-        List<AnalysisDerivativeWindowSummary> windowSummaries
+        List<AnalysisDerivativeWindowSummary> windowSummaries,
+        List<AnalysisDerivativeHighlight> highlights
 ) {
 }

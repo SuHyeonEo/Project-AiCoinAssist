@@ -7,6 +7,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
@@ -44,11 +45,15 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.marketContext()).contains("Window summary:");
         assertThat(payload.marketContext()).contains("Derivative context:");
         assertThat(payload.marketContext()).contains("Derivative window summary:");
+        assertThat(payload.marketContext()).contains("Derivative highlights:");
         assertThat(payload.marketContext()).contains("Continuity note:");
         assertThat(payload.derivativeContext()).isNotNull();
         assertThat(payload.derivativeContext().lastFundingRate()).isEqualByComparingTo("0.00045000");
         assertThat(payload.derivativeContext().comparisonFacts()).hasSize(3);
         assertThat(payload.derivativeContext().windowSummaries()).hasSize(2);
+        assertThat(payload.derivativeContext().highlights()).hasSize(3);
+        assertThat(payload.derivativeContext().highlights()).extracting(AnalysisDerivativeHighlight::title)
+                                                            .contains("PREV_BATCH derivative shift", "LAST_7D derivative regime", "Funding crowding");
         assertThat(payload.comparisonFacts()).hasSize(2);
         assertThat(payload.windowSummaries()).hasSize(2);
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
@@ -101,6 +106,7 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.summary()).contains("LAST_52W");
         assertThat(payload.summary()).contains("Previous long-term");
         assertThat(payload.summary()).contains("Derivatives show funding");
+        assertThat(payload.summary()).contains("D180 keeps OI");
         assertThat(payload.marketContext()).contains("Highlights:");
         assertThat(payload.marketContext()).contains("cycle floor");
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
@@ -311,7 +317,8 @@ class AnalysisReportAssemblerTest {
                 Instant.parse("2026-03-09T08:00:00Z"),
                 new BigDecimal("0.12000000"),
                 derivativeComparisonFacts(),
-                derivativeWindowSummaries()
+                derivativeWindowSummaries(),
+                List.of()
         );
     }
 

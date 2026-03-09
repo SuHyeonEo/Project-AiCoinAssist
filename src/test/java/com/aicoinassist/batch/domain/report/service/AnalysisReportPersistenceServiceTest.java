@@ -15,6 +15,7 @@ import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
@@ -215,6 +216,16 @@ class AnalysisReportPersistenceServiceTest {
                                         new BigDecimal("0.80000000"),
                                         new BigDecimal("0.07000000"),
                                         new BigDecimal("0.71428571")
+                                )
+                        ),
+                        List.of(
+                                new AnalysisDerivativeHighlight(
+                                        "D1 derivative shift",
+                                        "D1 keeps OI +4.6244%, funding Δ +0.014%, basis Δ +0.035%.",
+                                        "medium",
+                                        "openInterest",
+                                        AnalysisComparisonReference.D1,
+                                        null
                                 )
                         )
                 ),

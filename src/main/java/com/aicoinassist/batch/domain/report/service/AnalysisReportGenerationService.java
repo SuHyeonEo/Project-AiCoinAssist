@@ -145,7 +145,8 @@ public class AnalysisReportGenerationService {
                 entity.getNextFundingTime(),
                 entity.getMarkIndexBasisRate(),
                 derivativeComparisonFacts,
-                derivativeWindowSummaries
+                derivativeWindowSummaries,
+                List.of()
         );
     }
 
