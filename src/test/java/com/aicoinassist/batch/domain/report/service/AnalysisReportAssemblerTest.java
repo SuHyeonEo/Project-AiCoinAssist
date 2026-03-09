@@ -7,6 +7,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
@@ -62,9 +63,11 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.marketContext().comparisonContext().highlightDetails()).isNotEmpty();
         assertThat(payload.marketContext().windowContext().summary()).contains("Window summary:");
         assertThat(payload.marketContext().windowContext().highlightDetails()).isNotEmpty();
-        assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative context:");
-        assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative window summary:");
-        assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative highlights:");
+        assertThat(payload.marketContext().derivativeContextSummary().currentStateSummary()).contains("Derivative context:");
+        assertThat(payload.marketContext().derivativeContextSummary().windowSummary()).contains("Derivative window summary:");
+        assertThat(payload.marketContext().derivativeContextSummary().highlightDetails()).isNotEmpty();
+        assertThat(payload.marketContext().derivativeContextSummary().riskSignals()).isNotEmpty();
+        assertThat(payload.marketContext().derivativeContextSummary().nextFundingHours()).isEqualTo(7L);
         assertThat(payload.marketContext().continuityContext()).extracting(
                         AnalysisContinuityContextPayload::reference,
                         AnalysisContinuityContextPayload::summary
@@ -134,6 +137,7 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.summary().keyMessage()).contains("Derivatives show funding");
         assertThat(payload.summary().keyMessage()).contains("D180 keeps OI");
         assertThat(payload.marketContext().comparisonContext().highlightDetails()).anySatisfy(detail -> assertThat(detail).contains("cycle floor"));
+        assertThat(payload.marketContext().derivativeContextSummary().highlightDetails()).anySatisfy(detail -> assertThat(detail).contains("leveraged directional crowding"));
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
                                              .containsExactly(MarketWindowType.LAST_180D, MarketWindowType.LAST_52W);
     }

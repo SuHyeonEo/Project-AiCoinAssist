@@ -3,6 +3,7 @@ package com.aicoinassist.batch.domain.report.service;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
@@ -200,9 +201,9 @@ public class AnalysisReportAssembler {
                                                               .map(AnalysisWindowHighlight::detail)
                                                               .toList();
 
-        String derivativeContextSummary = null;
+        AnalysisDerivativeContextSummaryPayload derivativeContextSummary = null;
         if (derivativeContext != null) {
-            derivativeContextSummary = "Derivative context: open interest "
+            String currentStateSummary = "Derivative context: open interest "
                     + derivativeContext.openInterest().stripTrailingZeros().toPlainString()
                     + ", funding "
                     + fundingRatePercentage(derivativeContext.lastFundingRate())
@@ -218,8 +219,9 @@ public class AnalysisReportAssembler {
                     + "h.";
 
             AnalysisDerivativeWindowSummary derivativeWindowSummary = primaryDerivativeWindowSummary(reportType, derivativeContext);
+            String derivativeWindowSummaryText = null;
             if (derivativeWindowSummary != null) {
-                derivativeContextSummary = derivativeContextSummary + " Derivative window summary: "
+                derivativeWindowSummaryText = "Derivative window summary: "
                         + derivativeWindowSummary.windowType().name()
                         + " OI vs average "
                         + signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage())
@@ -229,12 +231,19 @@ public class AnalysisReportAssembler {
                         + signedRatio(derivativeWindowSummary.currentBasisVsAverage())
                         + ".";
             }
-            if (derivativeContext.highlights() != null && !derivativeContext.highlights().isEmpty()) {
-                derivativeContextSummary = derivativeContextSummary + " Derivative highlights: "
-                        + derivativeContext.highlights().stream()
-                                           .map(AnalysisDerivativeHighlight::summary)
-                                           .collect(Collectors.joining(" "));
-            }
+            List<String> derivativeHighlightDetails = derivativeContext.highlights() == null
+                    ? List.of()
+                    : derivativeContext.highlights().stream()
+                                       .map(AnalysisDerivativeHighlight::summary)
+                                       .toList();
+            List<String> derivativeRiskSignals = derivativeRiskSignals(reportType, derivativeContext);
+            derivativeContextSummary = new AnalysisDerivativeContextSummaryPayload(
+                    currentStateSummary,
+                    derivativeWindowSummaryText,
+                    derivativeHighlightDetails,
+                    derivativeRiskSignals,
+                    hoursUntilNextFunding(null, derivativeContext)
+            );
         }
 
         AnalysisContinuityContextPayload continuityContext = continuityNotes.isEmpty()
@@ -768,6 +777,32 @@ public class AnalysisReportAssembler {
         }
 
         return highlights.stream().limit(3).toList();
+    }
+
+    private List<String> derivativeRiskSignals(
+            AnalysisReportType reportType,
+            AnalysisDerivativeContext derivativeContext
+    ) {
+        java.util.ArrayList<String> signals = new java.util.ArrayList<>();
+
+        if (derivativeContext.lastFundingRate() != null
+                && derivativeContext.lastFundingRate().abs().compareTo(new BigDecimal("0.0004")) >= 0) {
+            signals.add("Funding skew at " + fundingRatePercentage(derivativeContext.lastFundingRate()) + ".");
+        }
+
+        if (derivativeContext.markIndexBasisRate() != null
+                && derivativeContext.markIndexBasisRate().abs().compareTo(new BigDecimal("0.05")) >= 0) {
+            signals.add("Basis expansion at " + signedPercent(derivativeContext.markIndexBasisRate()) + ".");
+        }
+
+        AnalysisDerivativeWindowSummary derivativeWindowSummary = primaryDerivativeWindowSummary(reportType, derivativeContext);
+        if (derivativeWindowSummary != null
+                && derivativeWindowSummary.currentOpenInterestVsAverage() != null
+                && derivativeWindowSummary.currentOpenInterestVsAverage().abs().compareTo(new BigDecimal("0.20")) >= 0) {
+            signals.add("Open interest crowding at " + signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage()) + " versus average.");
+        }
+
+        return signals;
     }
 
     private AnalysisWindowSummary primaryWindow(List<AnalysisWindowSummary> windowSummaries) {
