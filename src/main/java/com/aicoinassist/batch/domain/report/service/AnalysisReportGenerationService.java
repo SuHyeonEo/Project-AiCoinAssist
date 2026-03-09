@@ -7,6 +7,7 @@ import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
@@ -25,6 +26,7 @@ public class AnalysisReportGenerationService {
     private final MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
     private final MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
     private final AnalysisComparisonService analysisComparisonService;
+    private final AnalysisReportContinuityService analysisReportContinuityService;
     private final AnalysisReportAssembler analysisReportAssembler;
     private final AnalysisReportPersistenceService analysisReportPersistenceService;
 
@@ -42,12 +44,23 @@ public class AnalysisReportGenerationService {
                 ));
 
         List<AnalysisComparisonFact> comparisonFacts = analysisComparisonService.buildFacts(snapshot, reportType);
+        List<AnalysisContinuityNote> continuityNotes = analysisReportContinuityService.buildNotes(
+                symbol,
+                reportType,
+                snapshot.getSnapshotTime()
+        );
         List<AnalysisWindowSummary> windowSummaries = marketWindowSummarySnapshotPersistenceService
                 .createAndSaveForReportType(snapshot, reportType)
                 .stream()
                 .map(this::toWindowSummary)
                 .toList();
-        AnalysisReportPayload payload = analysisReportAssembler.assemble(snapshot, reportType, comparisonFacts, windowSummaries);
+        AnalysisReportPayload payload = analysisReportAssembler.assemble(
+                snapshot,
+                reportType,
+                comparisonFacts,
+                windowSummaries,
+                continuityNotes
+        );
         AnalysisReportDraft draft = new AnalysisReportDraft(
                 snapshot.getSymbol(),
                 reportType,

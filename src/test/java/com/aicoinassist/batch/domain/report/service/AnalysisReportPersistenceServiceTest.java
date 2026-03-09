@@ -1,12 +1,14 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
+import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
@@ -143,6 +145,20 @@ class AnalysisReportPersistenceServiceTest {
                                 AnalysisComparisonReference.PREV_BATCH,
                                 "Since the previous batch, price changed +0.5747% and RSI14 moved +2.",
                                 "PREV_BATCH confirms the latest impulse with MACD histogram Δ +5."
+                        )
+                ),
+                List.of(
+                        new AnalysisWindowHighlight(
+                                MarketWindowType.LAST_7D,
+                                "LAST_7D keeps price at 68.75% of the range.",
+                                "LAST_7D volume vs average +22%, ATR vs average +3.45%, distance from range high 2.78%."
+                        )
+                ),
+                List.of(
+                        new AnalysisContinuityNote(
+                                AnalysisComparisonReference.PREV_SHORT_REPORT,
+                                Instant.parse("2026-03-08T23:59:59Z"),
+                                "Previous short-term report highlighted momentum continuation."
                         )
                 ),
                 List.of(

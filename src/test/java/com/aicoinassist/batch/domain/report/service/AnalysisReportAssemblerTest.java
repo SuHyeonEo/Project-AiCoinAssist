@@ -2,9 +2,11 @@ package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
+import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
@@ -26,7 +28,8 @@ class AnalysisReportAssemblerTest {
                 bullishSnapshot(),
                 AnalysisReportType.SHORT_TERM,
                 comparisonFacts(),
-                shortWindowSummaries()
+                shortWindowSummaries(),
+                shortContinuityNotes()
         );
 
         assertThat(payload.summary()).contains("SHORT_TERM view");
@@ -35,8 +38,13 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.marketContext()).contains("above MA20");
         assertThat(payload.marketContext()).contains("D1 price");
         assertThat(payload.marketContext()).contains("Window summary:");
+        assertThat(payload.marketContext()).contains("Continuity note:");
         assertThat(payload.comparisonFacts()).hasSize(2);
         assertThat(payload.windowSummaries()).hasSize(2);
+        assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
+                                             .containsExactly(MarketWindowType.LAST_1D, MarketWindowType.LAST_7D);
+        assertThat(payload.continuityNotes()).extracting(AnalysisContinuityNote::reference)
+                                             .containsExactly(AnalysisComparisonReference.PREV_SHORT_REPORT);
         assertThat(payload.comparisonHighlights()).extracting(AnalysisComparisonHighlight::reference)
                                                  .containsExactly(
                                                          AnalysisComparisonReference.PREV_BATCH,
@@ -53,7 +61,8 @@ class AnalysisReportAssemblerTest {
                 extendedSnapshot(),
                 AnalysisReportType.SHORT_TERM,
                 comparisonFacts(),
-                shortWindowSummaries()
+                shortWindowSummaries(),
+                shortContinuityNotes()
         );
 
         assertThat(payload.riskFactors()).extracting("title")
@@ -66,20 +75,23 @@ class AnalysisReportAssemblerTest {
                 bullishSnapshot(),
                 AnalysisReportType.LONG_TERM,
                 longTermComparisonFacts(),
-                longWindowSummaries()
+                longWindowSummaries(),
+                longContinuityNotes()
         );
 
         assertThat(payload.comparisonHighlights()).extracting(AnalysisComparisonHighlight::reference)
                                                  .containsExactly(
                                                          AnalysisComparisonReference.Y52_HIGH,
                                                          AnalysisComparisonReference.Y52_LOW,
-                                                         AnalysisComparisonReference.PREV_LONG_REPORT,
                                                          AnalysisComparisonReference.D180
                                                  );
         assertThat(payload.summary()).contains("52-week high");
         assertThat(payload.summary()).contains("LAST_52W");
+        assertThat(payload.summary()).contains("Previous long-term");
         assertThat(payload.marketContext()).contains("Highlights:");
         assertThat(payload.marketContext()).contains("cycle floor");
+        assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
+                                             .containsExactly(MarketWindowType.LAST_180D, MarketWindowType.LAST_52W);
     }
 
     private List<AnalysisWindowSummary> shortWindowSummaries() {
@@ -253,16 +265,23 @@ class AnalysisReportAssemblerTest {
                         new BigDecimal("34"),
                         new BigDecimal("75"),
                         new BigDecimal("97.3684")
-                ),
-                new AnalysisComparisonFact(
-                        AnalysisComparisonReference.PREV_LONG_REPORT,
-                        Instant.parse("2026-01-15T00:00:00Z"),
-                        new BigDecimal("70000"),
-                        new BigDecimal("25"),
-                        new BigDecimal("20"),
-                        new BigDecimal("35"),
-                        new BigDecimal("76.4706")
                 )
         );
+    }
+
+    private List<AnalysisContinuityNote> shortContinuityNotes() {
+        return List.of(new AnalysisContinuityNote(
+                AnalysisComparisonReference.PREV_SHORT_REPORT,
+                Instant.parse("2026-03-08T23:59:59Z"),
+                "Previous short-term report highlighted a momentum continuation setup."
+        ));
+    }
+
+    private List<AnalysisContinuityNote> longContinuityNotes() {
+        return List.of(new AnalysisContinuityNote(
+                AnalysisComparisonReference.PREV_LONG_REPORT,
+                Instant.parse("2026-01-15T00:00:00Z"),
+                "Previous long-term report emphasized cycle recovery above the major base."
+        ));
     }
 }

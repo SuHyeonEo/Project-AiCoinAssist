@@ -3,10 +3,8 @@ package com.aicoinassist.batch.domain.report.service;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
-import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
-import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -26,14 +24,10 @@ class AnalysisComparisonServiceTest {
     @Mock
     private MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
 
-    @Mock
-    private AnalysisReportRepository analysisReportRepository;
-
     @Test
     void buildFactsCreatesShortTermComparisonFactsFromReferenceSnapshots() {
         AnalysisComparisonService service = new AnalysisComparisonService(
-                marketIndicatorSnapshotRepository,
-                analysisReportRepository
+                marketIndicatorSnapshotRepository
         );
 
         MarketIndicatorSnapshotEntity currentSnapshot = snapshot(
@@ -86,8 +80,7 @@ class AnalysisComparisonServiceTest {
     @Test
     void buildFactsReturnsEmptyWhenReferenceSnapshotsAreMissing() {
         AnalysisComparisonService service = new AnalysisComparisonService(
-                marketIndicatorSnapshotRepository,
-                analysisReportRepository
+                marketIndicatorSnapshotRepository
         );
 
         List<AnalysisComparisonFact> facts = service.buildFacts(
@@ -101,8 +94,7 @@ class AnalysisComparisonServiceTest {
     @Test
     void buildFactsCreatesMidTermComparisonFactsFromTimeWindows() {
         AnalysisComparisonService service = new AnalysisComparisonService(
-                marketIndicatorSnapshotRepository,
-                analysisReportRepository
+                marketIndicatorSnapshotRepository
         );
 
         MarketIndicatorSnapshotEntity currentSnapshot = snapshot(
@@ -129,42 +121,24 @@ class AnalysisComparisonServiceTest {
                 "4h",
                 Instant.parse("2026-02-07T00:59:59Z")
         )).thenReturn(Optional.of(snapshot(Instant.parse("2026-02-06T20:59:59Z"), "4h", "74000", "43", "-20", "900")));
-        when(analysisReportRepository.findTopBySymbolAndReportTypeAndAnalysisBasisTimeLessThanOrderByAnalysisBasisTimeDescIdDesc(
-                "BTCUSDT",
-                AnalysisReportType.MID_TERM,
-                Instant.parse("2026-03-09T00:59:59Z")
-        )).thenReturn(Optional.of(previousReport(
-                AnalysisReportType.MID_TERM,
-                Instant.parse("2026-03-01T20:59:59Z")
-        )));
-        when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeOrderByIdDesc(
-                "BTCUSDT",
-                "4h",
-                Instant.parse("2026-03-01T20:59:59Z")
-        )).thenReturn(Optional.of(snapshot(Instant.parse("2026-03-01T20:59:59Z"), "4h", "79000", "46", "-8", "1050")));
-
         List<AnalysisComparisonFact> facts = service.buildFacts(currentSnapshot, AnalysisReportType.MID_TERM);
 
-        assertThat(facts).hasSize(4);
+        assertThat(facts).hasSize(3);
         assertThat(facts).extracting(AnalysisComparisonFact::reference)
                          .containsExactly(
                                  AnalysisComparisonReference.D7,
                                  AnalysisComparisonReference.D14,
-                                 AnalysisComparisonReference.D30,
-                                 AnalysisComparisonReference.PREV_MID_REPORT
+                                 AnalysisComparisonReference.D30
                          );
         assertThat(facts.get(0).priceChangeRate()).isEqualByComparingTo("9.3750");
         assertThat(facts.get(1).rsiDelta()).isEqualByComparingTo("17");
         assertThat(facts.get(2).macdHistogramDelta()).isEqualByComparingTo("40");
-        assertThat(facts.get(3).referenceTime()).isEqualTo(Instant.parse("2026-03-01T20:59:59Z"));
-        assertThat(facts.get(3).priceChangeRate()).isEqualByComparingTo("10.7595");
     }
 
     @Test
     void buildFactsCreatesLongTermComparisonFactsFromTimeWindows() {
         AnalysisComparisonService service = new AnalysisComparisonService(
-                marketIndicatorSnapshotRepository,
-                analysisReportRepository
+                marketIndicatorSnapshotRepository
         );
 
         MarketIndicatorSnapshotEntity currentSnapshot = snapshot(
@@ -203,31 +177,16 @@ class AnalysisComparisonServiceTest {
                 Instant.parse("2025-03-10T00:59:59Z"),
                 Instant.parse("2026-03-09T00:59:59Z")
         )).thenReturn(Optional.of(snapshot(Instant.parse("2025-05-15T00:00:00Z"), "1d", "52000", "28", "-55", "760")));
-        when(analysisReportRepository.findTopBySymbolAndReportTypeAndAnalysisBasisTimeLessThanOrderByAnalysisBasisTimeDescIdDesc(
-                "BTCUSDT",
-                AnalysisReportType.LONG_TERM,
-                Instant.parse("2026-03-09T00:59:59Z")
-        )).thenReturn(Optional.of(previousReport(
-                AnalysisReportType.LONG_TERM,
-                Instant.parse("2026-01-15T00:00:00Z")
-        )));
-        when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeOrderByIdDesc(
-                "BTCUSDT",
-                "1d",
-                Instant.parse("2026-01-15T00:00:00Z")
-        )).thenReturn(Optional.of(snapshot(Instant.parse("2026-01-15T00:00:00Z"), "1d", "70000", "42", "-15", "850")));
-
         List<AnalysisComparisonFact> facts = service.buildFacts(currentSnapshot, AnalysisReportType.LONG_TERM);
 
-        assertThat(facts).hasSize(6);
+        assertThat(facts).hasSize(5);
         assertThat(facts).extracting(AnalysisComparisonFact::reference)
                          .containsExactly(
                                  AnalysisComparisonReference.D30,
                                  AnalysisComparisonReference.D90,
                                  AnalysisComparisonReference.D180,
                                  AnalysisComparisonReference.Y52_HIGH,
-                                 AnalysisComparisonReference.Y52_LOW,
-                                 AnalysisComparisonReference.PREV_LONG_REPORT
+                                 AnalysisComparisonReference.Y52_LOW
                          );
         assertThat(facts.get(0).priceChangeRate()).isEqualByComparingTo("18.2432");
         assertThat(facts.get(1).rsiDelta()).isEqualByComparingTo("22");
@@ -236,15 +195,12 @@ class AnalysisComparisonServiceTest {
         assertThat(facts.get(3).priceChangeRate()).isEqualByComparingTo("-4.8913");
         assertThat(facts.get(4).referenceTime()).isEqualTo(Instant.parse("2025-05-15T00:00:00Z"));
         assertThat(facts.get(4).priceChangeRate()).isEqualByComparingTo("68.2692");
-        assertThat(facts.get(5).referenceTime()).isEqualTo(Instant.parse("2026-01-15T00:00:00Z"));
-        assertThat(facts.get(5).macdHistogramDelta()).isEqualByComparingTo("35");
     }
 
     @Test
-    void buildFactsSkipsPreviousReportReferenceWhenBasisSnapshotCannotBeLoaded() {
+    void buildFactsReturnsEmptyWhenMidTermAnchorReferencesAreMissing() {
         AnalysisComparisonService service = new AnalysisComparisonService(
-                marketIndicatorSnapshotRepository,
-                analysisReportRepository
+                marketIndicatorSnapshotRepository
         );
 
         MarketIndicatorSnapshotEntity currentSnapshot = snapshot(
@@ -255,20 +211,6 @@ class AnalysisComparisonServiceTest {
                 "20",
                 "1500"
         );
-
-        when(analysisReportRepository.findTopBySymbolAndReportTypeAndAnalysisBasisTimeLessThanOrderByAnalysisBasisTimeDescIdDesc(
-                "BTCUSDT",
-                AnalysisReportType.MID_TERM,
-                Instant.parse("2026-03-09T00:59:59Z")
-        )).thenReturn(Optional.of(previousReport(
-                AnalysisReportType.MID_TERM,
-                Instant.parse("2026-03-01T20:59:59Z")
-        )));
-        when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeOrderByIdDesc(
-                "BTCUSDT",
-                "4h",
-                Instant.parse("2026-03-01T20:59:59Z")
-        )).thenReturn(Optional.empty());
 
         List<AnalysisComparisonFact> facts = service.buildFacts(currentSnapshot, AnalysisReportType.MID_TERM);
 
@@ -305,16 +247,4 @@ class AnalysisComparisonServiceTest {
                                             .build();
     }
 
-    private AnalysisReportEntity previousReport(AnalysisReportType reportType, Instant analysisBasisTime) {
-        return AnalysisReportEntity.builder()
-                                   .symbol("BTCUSDT")
-                                   .reportType(reportType)
-                                   .analysisBasisTime(analysisBasisTime)
-                                   .rawReferenceTime(analysisBasisTime.minusSeconds(30))
-                                   .sourceDataVersion("basis-key-" + analysisBasisTime)
-                                   .analysisEngineVersion("gpt-5.4")
-                                   .reportPayload("{\"summary\":\"previous\"}")
-                                   .storedTime(analysisBasisTime.plusSeconds(60))
-                                   .build();
-    }
 }
