@@ -7,6 +7,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
+import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import org.springframework.stereotype.Component;
@@ -24,18 +25,20 @@ public class AnalysisReportAssembler {
     public AnalysisReportPayload assemble(
             MarketIndicatorSnapshotEntity snapshot,
             AnalysisReportType reportType,
-            List<AnalysisComparisonFact> comparisonFacts
+            List<AnalysisComparisonFact> comparisonFacts,
+            List<AnalysisWindowSummary> windowSummaries
     ) {
         List<AnalysisComparisonHighlight> comparisonHighlights = comparisonHighlights(reportType, comparisonFacts);
         String trendBias = determineTrendBias(snapshot);
-        String summary = buildSummary(snapshot, trendBias, reportType, comparisonFacts, comparisonHighlights);
-        String marketContext = buildMarketContext(snapshot, trendBias, comparisonFacts, comparisonHighlights);
+        String summary = buildSummary(snapshot, trendBias, reportType, comparisonFacts, comparisonHighlights, windowSummaries);
+        String marketContext = buildMarketContext(snapshot, trendBias, comparisonFacts, comparisonHighlights, windowSummaries);
 
         return new AnalysisReportPayload(
                 summary,
                 marketContext,
                 comparisonFacts,
                 comparisonHighlights,
+                windowSummaries,
                 supportLevels(snapshot),
                 resistanceLevels(snapshot),
                 riskFactors(snapshot),
@@ -48,7 +51,8 @@ public class AnalysisReportAssembler {
             String trendBias,
             AnalysisReportType reportType,
             List<AnalysisComparisonFact> comparisonFacts,
-            List<AnalysisComparisonHighlight> comparisonHighlights
+            List<AnalysisComparisonHighlight> comparisonHighlights,
+            List<AnalysisWindowSummary> windowSummaries
     ) {
         String summary = reportType.name() + " view: "
                 + snapshot.getSymbol()
@@ -67,24 +71,38 @@ public class AnalysisReportAssembler {
         }
 
         if (!comparisonHighlights.isEmpty()) {
-            return summary + " " + comparisonHighlights.get(0).headline();
+            summary = summary + " " + comparisonHighlights.get(0).headline();
+        } else if (!comparisonFacts.isEmpty()) {
+            AnalysisComparisonFact primaryFact = comparisonFacts.get(0);
+            summary = summary + " Versus "
+                    + primaryFact.reference().name()
+                    + ", price changed "
+                    + signed(primaryFact.priceChangeRate())
+                    + "% and RSI14 moved "
+                    + signed(primaryFact.rsiDelta())
+                    + ".";
         }
 
-        AnalysisComparisonFact primaryFact = comparisonFacts.get(0);
-        return summary + " Versus "
-                + primaryFact.reference().name()
-                + ", price changed "
-                + signed(primaryFact.priceChangeRate())
-                + "% and RSI14 moved "
-                + signed(primaryFact.rsiDelta())
-                + ".";
+        AnalysisWindowSummary primaryWindow = primaryWindow(windowSummaries);
+        if (primaryWindow == null) {
+            return summary;
+        }
+
+        return summary + " "
+                + primaryWindow.windowType().name()
+                + " keeps price at "
+                + percentage(primaryWindow.currentPositionInRange())
+                + " of the window range with volume "
+                + signedRatio(primaryWindow.currentVolumeVsAverage())
+                + " versus the window average.";
     }
 
     private String buildMarketContext(
             MarketIndicatorSnapshotEntity snapshot,
             String trendBias,
             List<AnalysisComparisonFact> comparisonFacts,
-            List<AnalysisComparisonHighlight> comparisonHighlights
+            List<AnalysisComparisonHighlight> comparisonHighlights,
+            List<AnalysisWindowSummary> windowSummaries
     ) {
         String maContext = comparePriceToMovingAverage(snapshot.getCurrentPrice(), snapshot.getMa20(), "MA20")
                 + ", "
@@ -103,7 +121,7 @@ public class AnalysisReportAssembler {
                 + ".";
 
         if (comparisonFacts.isEmpty()) {
-            return context;
+            return appendWindowSummaryContext(context, windowSummaries);
         }
 
         String highlightsText = comparisonHighlights.isEmpty()
@@ -112,12 +130,33 @@ public class AnalysisReportAssembler {
                                                         .map(AnalysisComparisonHighlight::detail)
                                                         .collect(Collectors.joining(" "));
 
-        return context + " Comparison facts: "
+        return appendWindowSummaryContext(context + " Comparison facts: "
                 + comparisonFacts.stream()
                                  .map(this::comparisonFactSummary)
                                  .collect(Collectors.joining("; "))
                 + "."
-                + highlightsText;
+                + highlightsText, windowSummaries);
+    }
+
+    private String appendWindowSummaryContext(String context, List<AnalysisWindowSummary> windowSummaries) {
+        AnalysisWindowSummary primaryWindow = primaryWindow(windowSummaries);
+        if (primaryWindow == null) {
+            return context;
+        }
+
+        return context + " Window summary: "
+                + primaryWindow.windowType().name()
+                + " range "
+                + primaryWindow.low().stripTrailingZeros().toPlainString()
+                + " to "
+                + primaryWindow.high().stripTrailingZeros().toPlainString()
+                + ", position "
+                + percentage(primaryWindow.currentPositionInRange())
+                + ", distance from high "
+                + percentage(primaryWindow.distanceFromWindowHigh())
+                + ", ATR vs average "
+                + signedRatio(primaryWindow.currentAtrVsAverage())
+                + ".";
     }
 
     private List<AnalysisPriceLevel> supportLevels(MarketIndicatorSnapshotEntity snapshot) {
@@ -339,5 +378,37 @@ public class AnalysisReportAssembler {
     private String distanceFromExtremum(BigDecimal priceChangeRate, String relation) {
         BigDecimal absoluteValue = priceChangeRate.abs();
         return absoluteValue.stripTrailingZeros().toPlainString() + "% " + relation;
+    }
+
+    private AnalysisWindowSummary primaryWindow(List<AnalysisWindowSummary> windowSummaries) {
+        if (windowSummaries == null || windowSummaries.isEmpty()) {
+            return null;
+        }
+        return windowSummaries.get(windowSummaries.size() - 1);
+    }
+
+    private String percentage(BigDecimal value) {
+        if (value == null) {
+            return "unavailable";
+        }
+
+        return value.multiply(new BigDecimal("100"))
+                    .setScale(2, RoundingMode.HALF_UP)
+                    .stripTrailingZeros()
+                    .toPlainString() + "%";
+    }
+
+    private String signedRatio(BigDecimal value) {
+        if (value == null) {
+            return "unavailable";
+        }
+
+        BigDecimal asPercent = value.multiply(new BigDecimal("100"))
+                                    .setScale(2, RoundingMode.HALF_UP)
+                                    .stripTrailingZeros();
+        if (asPercent.compareTo(BigDecimal.ZERO) > 0) {
+            return "+" + asPercent.toPlainString() + "%";
+        }
+        return asPercent.toPlainString() + "%";
     }
 }

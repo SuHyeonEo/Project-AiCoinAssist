@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.market.repository;
 
 import com.aicoinassist.batch.domain.market.entity.MarketCandleRawEntity;
+import com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;
@@ -14,5 +15,14 @@ public interface MarketCandleRawRepository extends JpaRepository<MarketCandleRaw
             String symbol,
             String intervalValue,
             Collection<Instant> openTimes
+    );
+
+    List<MarketCandleRawEntity> findAllBySourceAndSymbolAndIntervalValueAndValidationStatusAndOpenTimeGreaterThanEqualAndOpenTimeLessThanEqualOrderByOpenTimeAsc(
+            String source,
+            String symbol,
+            String intervalValue,
+            RawDataValidationStatus validationStatus,
+            Instant openTimeFrom,
+            Instant openTimeTo
     );
 }

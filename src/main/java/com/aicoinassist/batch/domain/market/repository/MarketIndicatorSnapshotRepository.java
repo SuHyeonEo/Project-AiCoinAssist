@@ -4,6 +4,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface MarketIndicatorSnapshotRepository extends JpaRepository<MarketIndicatorSnapshotEntity, Long> {
@@ -39,6 +40,13 @@ public interface MarketIndicatorSnapshotRepository extends JpaRepository<MarketI
     );
 
     Optional<MarketIndicatorSnapshotEntity> findTopBySymbolAndIntervalValueAndSnapshotTimeGreaterThanEqualAndSnapshotTimeLessThanEqualOrderByCurrentPriceAscSnapshotTimeDescIdDesc(
+            String symbol,
+            String intervalValue,
+            Instant snapshotTimeFrom,
+            Instant snapshotTimeTo
+    );
+
+    List<MarketIndicatorSnapshotEntity> findAllBySymbolAndIntervalValueAndSnapshotTimeGreaterThanEqualAndSnapshotTimeLessThanEqualOrderBySnapshotTimeAsc(
             String symbol,
             String intervalValue,
             Instant snapshotTimeFrom,

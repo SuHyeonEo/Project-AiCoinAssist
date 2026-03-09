@@ -1,9 +1,11 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
+import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import org.junit.jupiter.api.Test;
@@ -23,7 +25,8 @@ class AnalysisReportAssemblerTest {
         AnalysisReportPayload payload = assembler.assemble(
                 bullishSnapshot(),
                 AnalysisReportType.SHORT_TERM,
-                comparisonFacts()
+                comparisonFacts(),
+                shortWindowSummaries()
         );
 
         assertThat(payload.summary()).contains("SHORT_TERM view");
@@ -31,7 +34,9 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.summary()).contains("Since the previous batch");
         assertThat(payload.marketContext()).contains("above MA20");
         assertThat(payload.marketContext()).contains("D1 price");
+        assertThat(payload.marketContext()).contains("Window summary:");
         assertThat(payload.comparisonFacts()).hasSize(2);
+        assertThat(payload.windowSummaries()).hasSize(2);
         assertThat(payload.comparisonHighlights()).extracting(AnalysisComparisonHighlight::reference)
                                                  .containsExactly(
                                                          AnalysisComparisonReference.PREV_BATCH,
@@ -47,7 +52,8 @@ class AnalysisReportAssemblerTest {
         AnalysisReportPayload payload = assembler.assemble(
                 extendedSnapshot(),
                 AnalysisReportType.SHORT_TERM,
-                comparisonFacts()
+                comparisonFacts(),
+                shortWindowSummaries()
         );
 
         assertThat(payload.riskFactors()).extracting("title")
@@ -59,7 +65,8 @@ class AnalysisReportAssemblerTest {
         AnalysisReportPayload payload = assembler.assemble(
                 bullishSnapshot(),
                 AnalysisReportType.LONG_TERM,
-                longTermComparisonFacts()
+                longTermComparisonFacts(),
+                longWindowSummaries()
         );
 
         assertThat(payload.comparisonHighlights()).extracting(AnalysisComparisonHighlight::reference)
@@ -70,8 +77,83 @@ class AnalysisReportAssemblerTest {
                                                          AnalysisComparisonReference.D180
                                                  );
         assertThat(payload.summary()).contains("52-week high");
+        assertThat(payload.summary()).contains("LAST_52W");
         assertThat(payload.marketContext()).contains("Highlights:");
         assertThat(payload.marketContext()).contains("cycle floor");
+    }
+
+    private List<AnalysisWindowSummary> shortWindowSummaries() {
+        return List.of(
+                new AnalysisWindowSummary(
+                        MarketWindowType.LAST_1D,
+                        Instant.parse("2026-03-08T00:59:59Z"),
+                        Instant.parse("2026-03-09T00:59:59Z"),
+                        24,
+                        new BigDecimal("88000"),
+                        new BigDecimal("86000"),
+                        new BigDecimal("2000"),
+                        new BigDecimal("0.75"),
+                        new BigDecimal("0.0057"),
+                        new BigDecimal("0.0174"),
+                        new BigDecimal("100"),
+                        new BigDecimal("1400"),
+                        new BigDecimal("0.20"),
+                        new BigDecimal("0.0714")
+                ),
+                new AnalysisWindowSummary(
+                        MarketWindowType.LAST_7D,
+                        Instant.parse("2026-03-02T00:59:59Z"),
+                        Instant.parse("2026-03-09T00:59:59Z"),
+                        168,
+                        new BigDecimal("91000"),
+                        new BigDecimal("82000"),
+                        new BigDecimal("9000"),
+                        new BigDecimal("0.61111111"),
+                        new BigDecimal("0.03846154"),
+                        new BigDecimal("0.06707317"),
+                        new BigDecimal("100"),
+                        new BigDecimal("1450"),
+                        new BigDecimal("0.22"),
+                        new BigDecimal("0.03448276")
+                )
+        );
+    }
+
+    private List<AnalysisWindowSummary> longWindowSummaries() {
+        return List.of(
+                new AnalysisWindowSummary(
+                        MarketWindowType.LAST_180D,
+                        Instant.parse("2025-09-10T00:59:59Z"),
+                        Instant.parse("2026-03-09T00:59:59Z"),
+                        180,
+                        new BigDecimal("92000"),
+                        new BigDecimal("52000"),
+                        new BigDecimal("40000"),
+                        new BigDecimal("0.8875"),
+                        new BigDecimal("0.04891300"),
+                        new BigDecimal("0.68269230"),
+                        new BigDecimal("120"),
+                        new BigDecimal("1300"),
+                        new BigDecimal("0.15"),
+                        new BigDecimal("0.1538")
+                ),
+                new AnalysisWindowSummary(
+                        MarketWindowType.LAST_52W,
+                        Instant.parse("2025-03-10T00:59:59Z"),
+                        Instant.parse("2026-03-09T00:59:59Z"),
+                        364,
+                        new BigDecimal("92000"),
+                        new BigDecimal("52000"),
+                        new BigDecimal("40000"),
+                        new BigDecimal("0.8875"),
+                        new BigDecimal("0.04891300"),
+                        new BigDecimal("0.68269230"),
+                        new BigDecimal("140"),
+                        new BigDecimal("1350"),
+                        new BigDecimal("0.12"),
+                        new BigDecimal("0.1111")
+                )
+        );
     }
 
     private MarketIndicatorSnapshotEntity bullishSnapshot() {

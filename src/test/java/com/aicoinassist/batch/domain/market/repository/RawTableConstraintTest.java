@@ -6,6 +6,8 @@ import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity
 import com.aicoinassist.batch.domain.market.entity.MarketOpenInterestRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketPremiumIndexRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketPriceRawEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
+import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,9 @@ class RawTableConstraintTest {
 
     @Autowired
     private MarketContextSnapshotRepository marketContextSnapshotRepository;
+
+    @Autowired
+    private MarketWindowSummarySnapshotRepository marketWindowSummarySnapshotRepository;
 
     @Test
     void marketPriceRawRejectsDuplicateSourceSymbolAndSourceEventTime() {
@@ -100,6 +105,17 @@ class RawTableConstraintTest {
 
         assertThatThrownBy(() -> marketContextSnapshotRepository.saveAndFlush(
                 contextSnapshot(snapshotTime, "12346.67")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketWindowSummarySnapshotRejectsDuplicateSymbolIntervalWindowTypeAndWindowEndTime() {
+        Instant windowEndTime = Instant.parse("2026-03-10T00:59:59Z");
+
+        marketWindowSummarySnapshotRepository.saveAndFlush(windowSummary(windowEndTime, "87500.12"));
+
+        assertThatThrownBy(() -> marketWindowSummarySnapshotRepository.saveAndFlush(
+                windowSummary(windowEndTime, "87510.12")
         )).isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -215,5 +231,30 @@ class RawTableConstraintTest {
                                           .nextFundingTime(Instant.parse("2026-03-10T08:00:00Z"))
                                           .markIndexBasisRate(new BigDecimal("0.02297893"))
                                           .build();
+    }
+
+    private MarketWindowSummarySnapshotEntity windowSummary(Instant windowEndTime, String currentPrice) {
+        return MarketWindowSummarySnapshotEntity.builder()
+                                                .symbol("BTCUSDT")
+                                                .intervalValue("1h")
+                                                .windowType(MarketWindowType.LAST_7D.name())
+                                                .windowStartTime(windowEndTime.minusSeconds(7L * 24L * 3600L))
+                                                .windowEndTime(windowEndTime)
+                                                .sampleCount(168)
+                                                .currentPrice(new BigDecimal(currentPrice))
+                                                .windowHigh(new BigDecimal("91000.00"))
+                                                .windowLow(new BigDecimal("83000.00"))
+                                                .windowRange(new BigDecimal("8000.00"))
+                                                .currentPositionInRange(new BigDecimal("0.68750000"))
+                                                .distanceFromWindowHigh(new BigDecimal("0.03846154"))
+                                                .reboundFromWindowLow(new BigDecimal("0.05421687"))
+                                                .averageVolume(new BigDecimal("100.00000000"))
+                                                .averageAtr(new BigDecimal("1450.00000000"))
+                                                .currentVolume(new BigDecimal("122.00000000"))
+                                                .currentAtr(new BigDecimal("1500.00000000"))
+                                                .currentVolumeVsAverage(new BigDecimal("0.22000000"))
+                                                .currentAtrVsAverage(new BigDecimal("0.03448276"))
+                                                .sourceDataVersion("basis-key;windowType=LAST_7D")
+                                                .build();
     }
 }
