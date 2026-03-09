@@ -9,11 +9,13 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFactSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
@@ -23,8 +25,10 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisConfidenceLevel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryKeyMessagePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
@@ -154,7 +158,11 @@ class AnalysisReportPersistenceServiceTest {
                         "SHORT_TERM view",
                         AnalysisOutlookType.CONSTRUCTIVE,
                         AnalysisConfidenceLevel.HIGH,
-                        summary,
+                        new AnalysisSummaryKeyMessagePayload(
+                                summary,
+                                List.of("signal detail"),
+                                "continuity"
+                        ),
                         List.of(
                                 new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison", "detail", AnalysisContextHeadlineImportance.HIGH),
                                 new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.WINDOW, "LAST_7D position", "detail", AnalysisContextHeadlineImportance.MEDIUM),
@@ -172,15 +180,28 @@ class AnalysisReportPersistenceServiceTest {
                         ),
                         new AnalysisComparisonContextPayload(
                                 new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison", "detail", AnalysisContextHeadlineImportance.HIGH),
-                                "PREV_BATCH price +0.5747%, RSI Δ +2, MACD hist Δ +5.",
+                                new AnalysisComparisonFactSummaryPayload(
+                                        "PREV_BATCH price +0.5747%, RSI Δ +2, MACD hist Δ +5.",
+                                        List.of("D1 price +1.7442%, RSI Δ +7, MACD hist Δ +10.")
+                                ),
                                 List.of("PREV_BATCH confirms the latest impulse with MACD histogram Δ +5.")
                         ),
                         new AnalysisWindowContextPayload(
                                 new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.WINDOW, "LAST_7D position", "detail", AnalysisContextHeadlineImportance.MEDIUM),
-                                "LAST_7D range 82000 to 90000.",
+                                new AnalysisWindowContextSummaryPayload(
+                                        "LAST_7D range 82000 to 90000.",
+                                        "LAST_7D price is at 68.75% of the range.",
+                                        "ATR vs average +3.45%."
+                                ),
                                 List.of("LAST_7D volume vs average +22%, ATR vs average +3.45%, distance from range high 2.78%.")
                         ),
-                        "Funding +0.045%, basis +0.12%.",
+                        new AnalysisDerivativeContextSummaryPayload(
+                                "Funding +0.045%, basis +0.12%.",
+                                "LAST_7D OI vs average +12.23%, funding vs average +80.00%, basis vs average +71.43%.",
+                                List.of("D1 keeps OI +4.6244%, funding Δ +0.014%, basis Δ +0.035%."),
+                                List.of("Macro volatility"),
+                                7L
+                        ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.DERIVATIVE, "D1 derivative shift", "detail", AnalysisContextHeadlineImportance.MEDIUM),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_SHORT_REPORT,

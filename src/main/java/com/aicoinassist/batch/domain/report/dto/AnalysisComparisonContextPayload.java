@@ -4,7 +4,7 @@ import java.util.List;
 
 public record AnalysisComparisonContextPayload(
         AnalysisContextHeadlinePayload headline,
-        String factSummary,
+        AnalysisComparisonFactSummaryPayload factSummary,
         List<String> highlightDetails
 ) {
 }

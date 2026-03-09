@@ -4,7 +4,7 @@ import java.util.List;
 
 public record AnalysisWindowContextPayload(
         AnalysisContextHeadlinePayload headline,
-        String summary,
+        AnalysisWindowContextSummaryPayload summary,
         List<String> highlightDetails
 ) {
 }

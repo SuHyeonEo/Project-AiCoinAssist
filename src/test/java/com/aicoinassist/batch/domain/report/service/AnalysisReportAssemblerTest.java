@@ -5,9 +5,11 @@ import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFactSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
@@ -15,8 +17,10 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryKeyMessagePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
@@ -61,8 +65,9 @@ class AnalysisReportAssemblerTest {
                         AnalysisSummaryPayload::confidence
                 )
                 .containsExactly("SHORT_TERM view", AnalysisOutlookType.CONSTRUCTIVE, AnalysisConfidenceLevel.HIGH);
-        assertThat(payload.summary().keyMessage()).contains("bullish");
-        assertThat(payload.summary().keyMessage()).contains("PREV_BATCH confirms the latest impulse");
+        assertThat(payload.summary().keyMessage().primaryMessage()).contains("bullish");
+        assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("PREV_BATCH confirms the latest impulse"));
+        assertThat(payload.summary().keyMessage().continuityMessage()).contains("Previous short-term report");
         assertThat(payload.summary().signalHeadlines()).extracting(
                         AnalysisContextHeadlinePayload::category,
                         AnalysisContextHeadlinePayload::title
@@ -84,23 +89,27 @@ class AnalysisReportAssemblerTest {
                         AnalysisContextHeadlinePayload::title
                 )
                 .containsExactly(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison");
-        assertThat(payload.marketContext().comparisonContext().factSummary()).contains("D1 price");
+        assertThat(payload.marketContext().comparisonContext().factSummary().primaryFact()).contains("PREV_BATCH price");
+        assertThat(payload.marketContext().comparisonContext().factSummary().referenceBreakdown()).anySatisfy(detail -> assertThat(detail).contains("D1 price"));
         assertThat(payload.marketContext().comparisonContext().highlightDetails()).isNotEmpty();
         assertThat(payload.marketContext().windowContext().headline()).extracting(
                         AnalysisContextHeadlinePayload::category,
                         AnalysisContextHeadlinePayload::title
                 )
                 .containsExactly(AnalysisContextHeadlineCategory.WINDOW, "LAST_7D position");
-        assertThat(payload.marketContext().windowContext().summary()).contains("Window summary:");
+        assertThat(payload.marketContext().windowContext().summary().rangeSummary()).contains("LAST_7D range");
+        assertThat(payload.marketContext().windowContext().summary().rangePositionSummary()).contains("position");
+        assertThat(payload.marketContext().windowContext().summary().volatilitySummary()).contains("ATR vs average");
         assertThat(payload.marketContext().windowContext().highlightDetails()).isNotEmpty();
-        assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative context:");
+        assertThat(payload.marketContext().derivativeContextSummary().currentStateSummary()).contains("Open interest");
         assertThat(payload.marketContext().derivativeHeadline()).extracting(
                         AnalysisContextHeadlinePayload::category,
                         AnalysisContextHeadlinePayload::title
                 )
                 .containsExactly(AnalysisContextHeadlineCategory.DERIVATIVE, "PREV_BATCH derivative shift");
-        assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative window summary:");
-        assertThat(payload.marketContext().derivativeContextSummary()).contains("Derivative highlights:");
+        assertThat(payload.marketContext().derivativeContextSummary().windowSummary()).contains("LAST_7D");
+        assertThat(payload.marketContext().derivativeContextSummary().highlightDetails()).isNotEmpty();
+        assertThat(payload.marketContext().derivativeContextSummary().riskSignals()).isNotEmpty();
         assertThat(payload.marketContext().continuityContext()).extracting(
                         AnalysisContinuityContextPayload::reference,
                         AnalysisContinuityContextPayload::summary
@@ -190,7 +199,7 @@ class AnalysisReportAssemblerTest {
                                                          AnalysisComparisonReference.Y52_LOW,
                                                          AnalysisComparisonReference.D180
                                                  );
-        assertThat(payload.summary().keyMessage()).contains("Previous long-term");
+        assertThat(payload.summary().keyMessage().continuityMessage()).contains("Previous long-term");
         assertThat(payload.summary().signalHeadlines()).extracting(
                         AnalysisContextHeadlinePayload::category,
                         AnalysisContextHeadlinePayload::title
