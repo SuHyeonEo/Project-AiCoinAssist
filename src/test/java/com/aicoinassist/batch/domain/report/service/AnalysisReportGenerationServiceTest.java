@@ -30,11 +30,16 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisConfidenceLevel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -143,8 +148,8 @@ class AnalysisReportGenerationServiceTest {
         AnalysisReportPayload payload = new AnalysisReportPayload(
                 new AnalysisSummaryPayload(
                         "MID_TERM view",
-                        "constructive",
-                        "high",
+                        AnalysisOutlookType.CONSTRUCTIVE,
+                        AnalysisConfidenceLevel.HIGH,
                         "summary",
                         List.of(
                                 new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.COMPARISON, "D7 comparison", "detail", AnalysisContextHeadlineImportance.MEDIUM),
@@ -155,9 +160,9 @@ class AnalysisReportGenerationServiceTest {
                 new AnalysisMarketContextPayload(
                         new AnalysisCurrentStatePayload(
                                 new BigDecimal("87500"),
-                                "bullish",
-                                "moderate",
-                                "upper-range",
+                                AnalysisTrendLabel.BULLISH,
+                                AnalysisVolatilityLabel.MODERATE,
+                                AnalysisRangePositionLabel.UPPER_RANGE,
                                 "above MA20, above MA60, above MA120",
                                 "RSI14 62, MACD histogram 20"
                         ),

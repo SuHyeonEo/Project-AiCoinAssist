@@ -19,6 +19,7 @@ import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisConfidenceLevel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
@@ -29,6 +30,10 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCate
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -144,8 +149,8 @@ class AnalysisReportPersistenceServiceTest {
         return new AnalysisReportPayload(
                 new AnalysisSummaryPayload(
                         "SHORT_TERM view",
-                        "constructive",
-                        "high",
+                        AnalysisOutlookType.CONSTRUCTIVE,
+                        AnalysisConfidenceLevel.HIGH,
                         summary,
                         List.of(
                                 new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison", "detail", AnalysisContextHeadlineImportance.HIGH),
@@ -156,9 +161,9 @@ class AnalysisReportPersistenceServiceTest {
                 new AnalysisMarketContextPayload(
                         new AnalysisCurrentStatePayload(
                                 new BigDecimal("87500.00"),
-                                "bullish",
-                                "moderate",
-                                "upper-range",
+                                AnalysisTrendLabel.BULLISH,
+                                AnalysisVolatilityLabel.MODERATE,
+                                AnalysisRangePositionLabel.UPPER_RANGE,
                                 "above MA20, above MA60, above MA120",
                                 "RSI14 62, MACD histogram 20"
                         ),

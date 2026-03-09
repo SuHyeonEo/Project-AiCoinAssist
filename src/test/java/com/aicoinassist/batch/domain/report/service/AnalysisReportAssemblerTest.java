@@ -20,10 +20,15 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisConfidenceLevel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -52,7 +57,7 @@ class AnalysisReportAssemblerTest {
                         AnalysisSummaryPayload::outlook,
                         AnalysisSummaryPayload::confidence
                 )
-                .containsExactly("SHORT_TERM view", "constructive", "high");
+                .containsExactly("SHORT_TERM view", AnalysisOutlookType.CONSTRUCTIVE, AnalysisConfidenceLevel.HIGH);
         assertThat(payload.summary().keyMessage()).contains("bullish");
         assertThat(payload.summary().keyMessage()).contains("PREV_BATCH confirms the latest impulse");
         assertThat(payload.summary().signalHeadlines()).extracting(
@@ -69,7 +74,7 @@ class AnalysisReportAssemblerTest {
                         AnalysisCurrentStatePayload::volatilityLabel,
                         AnalysisCurrentStatePayload::rangePositionLabel
                 )
-                .containsExactly("bullish", "moderate", "mid-range");
+                .containsExactly(AnalysisTrendLabel.BULLISH, AnalysisVolatilityLabel.MODERATE, AnalysisRangePositionLabel.MID_RANGE);
         assertThat(payload.marketContext().currentState().maPositionSummary()).contains("above MA20");
         assertThat(payload.marketContext().comparisonContext().headline()).extracting(
                         AnalysisContextHeadlinePayload::category,
