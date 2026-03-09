@@ -1,13 +1,16 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
+import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
@@ -42,6 +45,9 @@ class AnalysisReportGenerationServiceTest {
     private AnalysisComparisonService analysisComparisonService;
 
     @Mock
+    private MarketContextSnapshotPersistenceService marketContextSnapshotPersistenceService;
+
+    @Mock
     private MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
 
     @Mock
@@ -57,6 +63,7 @@ class AnalysisReportGenerationServiceTest {
     void generateAndSaveBuildsDraftFromLatestMappedSnapshot() {
         AnalysisReportGenerationService service = new AnalysisReportGenerationService(
                 marketIndicatorSnapshotRepository,
+                marketContextSnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
                 analysisComparisonService,
                 analysisReportContinuityService,
@@ -111,11 +118,36 @@ class AnalysisReportGenerationServiceTest {
                         new BigDecimal("0.22000000"),
                         new BigDecimal("0.03448276")
                 )),
+                new AnalysisDerivativeContext(
+                        Instant.parse("2026-03-09T00:59:30Z"),
+                        Instant.parse("2026-03-09T00:59:00Z"),
+                        Instant.parse("2026-03-09T00:59:30Z"),
+                        "context-basis-key",
+                        new BigDecimal("12345.67890000"),
+                        new BigDecimal("87500.12000000"),
+                        new BigDecimal("87480.02000000"),
+                        new BigDecimal("0.00045000"),
+                        Instant.parse("2026-03-09T08:00:00Z"),
+                        new BigDecimal("0.12000000")
+                ),
                 List.of(),
                 List.of(),
                 List.of(),
                 List.of(new AnalysisScenario("Base case", "bullish", "description"))
         );
+        MarketContextSnapshotEntity marketContextSnapshotEntity = MarketContextSnapshotEntity.builder()
+                                                                                             .symbol("BTCUSDT")
+                                                                                             .snapshotTime(Instant.parse("2026-03-09T00:59:30Z"))
+                                                                                             .openInterestSourceEventTime(Instant.parse("2026-03-09T00:59:00Z"))
+                                                                                             .premiumIndexSourceEventTime(Instant.parse("2026-03-09T00:59:30Z"))
+                                                                                             .sourceDataVersion("context-basis-key")
+                                                                                             .openInterest(new BigDecimal("12345.67890000"))
+                                                                                             .markPrice(new BigDecimal("87500.12000000"))
+                                                                                             .indexPrice(new BigDecimal("87480.02000000"))
+                                                                                             .lastFundingRate(new BigDecimal("0.00045000"))
+                                                                                             .nextFundingTime(Instant.parse("2026-03-09T08:00:00Z"))
+                                                                                             .markIndexBasisRate(new BigDecimal("0.12000000"))
+                                                                                             .build();
         List<MarketWindowSummarySnapshotEntity> windowSummaryEntities = List.of(
                 MarketWindowSummarySnapshotEntity.builder()
                                                  .symbol("BTCUSDT")
@@ -158,6 +190,8 @@ class AnalysisReportGenerationServiceTest {
                 AnalysisReportType.MID_TERM,
                 snapshot.getSnapshotTime()
         )).thenReturn(payload.continuityNotes());
+        when(marketContextSnapshotPersistenceService.createAndSave("BTCUSDT"))
+                .thenReturn(marketContextSnapshotEntity);
         when(marketWindowSummarySnapshotPersistenceService.createAndSaveForReportType(snapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(windowSummaryEntities);
         when(analysisComparisonService.buildFacts(snapshot, AnalysisReportType.MID_TERM)).thenReturn(comparisonFacts);
@@ -166,6 +200,7 @@ class AnalysisReportGenerationServiceTest {
                 AnalysisReportType.MID_TERM,
                 comparisonFacts,
                 payload.windowSummaries(),
+                payload.derivativeContext(),
                 payload.continuityNotes()
         )).thenReturn(payload);
         when(analysisReportPersistenceService.save(org.mockito.ArgumentMatchers.any(AnalysisReportDraft.class)))
@@ -197,6 +232,7 @@ class AnalysisReportGenerationServiceTest {
     void generateAndSaveFailsWhenNoSnapshotExistsForMappedInterval() {
         AnalysisReportGenerationService service = new AnalysisReportGenerationService(
                 marketIndicatorSnapshotRepository,
+                marketContextSnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
                 analysisComparisonService,
                 analysisReportContinuityService,

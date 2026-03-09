@@ -1,10 +1,13 @@
 package com.aicoinassist.batch.domain.report.service;
 
+import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
+import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
@@ -24,6 +27,7 @@ import java.util.List;
 public class AnalysisReportGenerationService {
 
     private final MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
+    private final MarketContextSnapshotPersistenceService marketContextSnapshotPersistenceService;
     private final MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
     private final AnalysisComparisonService analysisComparisonService;
     private final AnalysisReportContinuityService analysisReportContinuityService;
@@ -49,6 +53,9 @@ public class AnalysisReportGenerationService {
                 reportType,
                 snapshot.getSnapshotTime()
         );
+        AnalysisDerivativeContext derivativeContext = toDerivativeContext(
+                marketContextSnapshotPersistenceService.createAndSave(symbol)
+        );
         List<AnalysisWindowSummary> windowSummaries = marketWindowSummarySnapshotPersistenceService
                 .createAndSaveForReportType(snapshot, reportType)
                 .stream()
@@ -59,6 +66,7 @@ public class AnalysisReportGenerationService {
                 reportType,
                 comparisonFacts,
                 windowSummaries,
+                derivativeContext,
                 continuityNotes
         );
         AnalysisReportDraft draft = new AnalysisReportDraft(
@@ -99,6 +107,21 @@ public class AnalysisReportGenerationService {
                 entity.getAverageAtr(),
                 entity.getCurrentVolumeVsAverage(),
                 entity.getCurrentAtrVsAverage()
+        );
+    }
+
+    private AnalysisDerivativeContext toDerivativeContext(MarketContextSnapshotEntity entity) {
+        return new AnalysisDerivativeContext(
+                entity.getSnapshotTime(),
+                entity.getOpenInterestSourceEventTime(),
+                entity.getPremiumIndexSourceEventTime(),
+                entity.getSourceDataVersion(),
+                entity.getOpenInterest(),
+                entity.getMarkPrice(),
+                entity.getIndexPrice(),
+                entity.getLastFundingRate(),
+                entity.getNextFundingTime(),
+                entity.getMarkIndexBasisRate()
         );
     }
 }

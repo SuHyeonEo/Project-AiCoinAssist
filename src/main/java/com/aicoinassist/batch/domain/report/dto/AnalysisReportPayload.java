@@ -10,6 +10,7 @@ public record AnalysisReportPayload(
         List<AnalysisWindowHighlight> windowHighlights,
         List<AnalysisContinuityNote> continuityNotes,
         List<AnalysisWindowSummary> windowSummaries,
+        AnalysisDerivativeContext derivativeContext,
         List<AnalysisPriceLevel> supportLevels,
         List<AnalysisPriceLevel> resistanceLevels,
         List<AnalysisRiskFactor> riskFactors,

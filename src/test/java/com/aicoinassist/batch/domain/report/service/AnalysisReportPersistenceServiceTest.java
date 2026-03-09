@@ -3,6 +3,7 @@ package com.aicoinassist.batch.domain.report.service;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
@@ -178,6 +179,18 @@ class AnalysisReportPersistenceServiceTest {
                                 new BigDecimal("0.22000000"),
                                 new BigDecimal("0.03448276")
                         )
+                ),
+                new AnalysisDerivativeContext(
+                        Instant.parse("2026-03-09T00:59:30Z"),
+                        Instant.parse("2026-03-09T00:59:00Z"),
+                        Instant.parse("2026-03-09T00:59:30Z"),
+                        "context-basis-key",
+                        new BigDecimal("12345.67890000"),
+                        new BigDecimal("87500.12000000"),
+                        new BigDecimal("87480.02000000"),
+                        new BigDecimal("0.00045000"),
+                        Instant.parse("2026-03-09T08:00:00Z"),
+                        new BigDecimal("0.12000000")
                 ),
                 List.of(new AnalysisPriceLevel("S1", new BigDecimal("84500.00"), "Recent pullback low")),
                 List.of(new AnalysisPriceLevel("R1", new BigDecimal("88500.00"), "Recent swing high")),
