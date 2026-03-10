@@ -4,6 +4,7 @@ public record AnalysisLlmPromptComposition(
         String systemPrompt,
         String userPrompt,
         String inputPayloadJson,
-        String outputSchemaJson
+        String outputSchemaJson,
+        String outputLengthPolicyJson
 ) {
 }
