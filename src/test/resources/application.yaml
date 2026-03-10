@@ -51,6 +51,8 @@ logging:
 external:
   alternative-me:
     base-url: https://api.alternative.me
+  coinmetrics:
+    base-url: https://community-api.coinmetrics.io/v4
   fred:
     base-url: https://api.stlouisfed.org
     api-key: test-fred-api-key
