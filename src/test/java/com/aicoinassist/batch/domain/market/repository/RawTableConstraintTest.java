@@ -1,12 +1,16 @@
 package com.aicoinassist.batch.domain.market.repository;
 
 import com.aicoinassist.batch.domain.market.entity.MarketCandleRawEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketOpenInterestRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketPremiumIndexRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketPriceRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
+import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelLabel;
+import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelSourceType;
+import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelType;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus;
 import org.junit.jupiter.api.Test;
@@ -42,6 +46,9 @@ class RawTableConstraintTest {
 
     @Autowired
     private MarketWindowSummarySnapshotRepository marketWindowSummarySnapshotRepository;
+
+    @Autowired
+    private MarketCandidateLevelSnapshotRepository marketCandidateLevelSnapshotRepository;
 
     @Test
     void marketPriceRawRejectsDuplicateSourceSymbolAndSourceEventTime() {
@@ -116,6 +123,17 @@ class RawTableConstraintTest {
 
         assertThatThrownBy(() -> marketWindowSummarySnapshotRepository.saveAndFlush(
                 windowSummary(windowEndTime, "87510.12")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketCandidateLevelSnapshotRejectsDuplicateSymbolIntervalSnapshotLevelTypeAndLabel() {
+        Instant snapshotTime = Instant.parse("2026-03-10T00:59:59Z");
+
+        marketCandidateLevelSnapshotRepository.saveAndFlush(candidateLevelSnapshot(snapshotTime, "87000.00"));
+
+        assertThatThrownBy(() -> marketCandidateLevelSnapshotRepository.saveAndFlush(
+                candidateLevelSnapshot(snapshotTime, "86900.00")
         )).isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -256,5 +274,23 @@ class RawTableConstraintTest {
                                                 .currentAtrVsAverage(new BigDecimal("0.03448276"))
                                                 .sourceDataVersion("basis-key;windowType=LAST_7D")
                                                 .build();
+    }
+
+    private MarketCandidateLevelSnapshotEntity candidateLevelSnapshot(Instant snapshotTime, String levelPrice) {
+        return MarketCandidateLevelSnapshotEntity.builder()
+                                                 .symbol("BTCUSDT")
+                                                 .intervalValue("1h")
+                                                 .snapshotTime(snapshotTime)
+                                                 .levelType(MarketCandidateLevelType.SUPPORT.name())
+                                                 .levelLabel(MarketCandidateLevelLabel.MA20.name())
+                                                 .sourceType(MarketCandidateLevelSourceType.MOVING_AVERAGE.name())
+                                                 .currentPrice(new BigDecimal("87500.00"))
+                                                 .levelPrice(new BigDecimal(levelPrice))
+                                                 .distanceFromCurrent(new BigDecimal("0.00571429"))
+                                                 .strengthScore(new BigDecimal("0.64428571"))
+                                                 .rationale("Short-term average support")
+                                                 .triggerFactsPayload("[\"Current price 87500 vs MA20 87000\"]")
+                                                 .sourceDataVersion("basis-key;levelType=SUPPORT;levelLabel=MA20")
+                                                 .build();
     }
 }

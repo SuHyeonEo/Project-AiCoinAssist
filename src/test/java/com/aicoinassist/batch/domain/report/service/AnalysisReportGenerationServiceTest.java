@@ -1,11 +1,13 @@
 package com.aicoinassist.batch.domain.report.service;
 
+import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
+import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
@@ -25,6 +27,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
@@ -43,6 +46,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlight
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
@@ -54,6 +58,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -73,6 +78,9 @@ class AnalysisReportGenerationServiceTest {
 
     @Mock
     private AnalysisComparisonService analysisComparisonService;
+
+    @Mock
+    private MarketCandidateLevelSnapshotPersistenceService marketCandidateLevelSnapshotPersistenceService;
 
     @Mock
     private MarketContextSnapshotPersistenceService marketContextSnapshotPersistenceService;
@@ -99,6 +107,7 @@ class AnalysisReportGenerationServiceTest {
     void generateAndSaveBuildsDraftFromLatestMappedSnapshot() {
         AnalysisReportGenerationService service = new AnalysisReportGenerationService(
                 marketIndicatorSnapshotRepository,
+                marketCandidateLevelSnapshotPersistenceService,
                 marketContextSnapshotPersistenceService,
                 marketContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
@@ -106,7 +115,8 @@ class AnalysisReportGenerationServiceTest {
                 analysisDerivativeComparisonService,
                 analysisReportContinuityService,
                 analysisReportAssembler,
-                analysisReportPersistenceService
+                analysisReportPersistenceService,
+                new ObjectMapper()
         );
 
         MarketIndicatorSnapshotEntity snapshot = snapshot("4h");
@@ -153,6 +163,37 @@ class AnalysisReportGenerationServiceTest {
                         new BigDecimal("0.71428571")
                 )),
                 List.of()
+        );
+        List<AnalysisPriceLevel> supportLevels = List.of(
+                new AnalysisPriceLevel(
+                        AnalysisPriceLevelLabel.MA20,
+                        AnalysisPriceLevelSourceType.MOVING_AVERAGE,
+                        new BigDecimal("87000"),
+                        new BigDecimal("0.00571429"),
+                        new BigDecimal("0.64428571"),
+                        "Short-term average support",
+                        List.of("Current price 87500 vs MA20 87000", "SUPPORT distance 0.57%")
+                ),
+                new AnalysisPriceLevel(
+                        AnalysisPriceLevelLabel.MA60,
+                        AnalysisPriceLevelSourceType.MOVING_AVERAGE,
+                        new BigDecimal("86000"),
+                        new BigDecimal("0.01714286"),
+                        new BigDecimal("0.78285714"),
+                        "Mid-trend average support",
+                        List.of("Current price 87500 vs MA60 86000", "SUPPORT distance 1.71%")
+                )
+        );
+        List<AnalysisPriceLevel> resistanceLevels = List.of(
+                new AnalysisPriceLevel(
+                        AnalysisPriceLevelLabel.BB_UPPER,
+                        AnalysisPriceLevelSourceType.BOLLINGER_BAND,
+                        new BigDecimal("88500"),
+                        new BigDecimal("0.01142857"),
+                        new BigDecimal("0.63857143"),
+                        "Upper Bollinger band resistance",
+                        List.of("Current price 87500 vs BB_UPPER 88500", "RESISTANCE distance 1.14%")
+                )
         );
         AnalysisReportPayload payload = new AnalysisReportPayload(
                 new AnalysisSummaryPayload(
@@ -273,8 +314,8 @@ class AnalysisReportGenerationServiceTest {
                                 null
                         ))
                 ),
-                List.of(),
-                List.of(),
+                supportLevels,
+                resistanceLevels,
                 List.of(),
                 List.of(new AnalysisScenario(
                         "Base case",
@@ -340,6 +381,11 @@ class AnalysisReportGenerationServiceTest {
                                                        .sourceDataVersion("context-basis-key;windowType=LAST_30D")
                                                        .build()
         );
+        List<MarketCandidateLevelSnapshotEntity> candidateLevelEntities = List.of(
+                candidateLevelEntity("SUPPORT", "MA20", "MOVING_AVERAGE", "87000", "0.00571429", "0.64428571", "Short-term average support", "[\"Current price 87500 vs MA20 87000\",\"SUPPORT distance 0.57%\"]"),
+                candidateLevelEntity("SUPPORT", "MA60", "MOVING_AVERAGE", "86000", "0.01714286", "0.78285714", "Mid-trend average support", "[\"Current price 87500 vs MA60 86000\",\"SUPPORT distance 1.71%\"]"),
+                candidateLevelEntity("RESISTANCE", "BB_UPPER", "BOLLINGER_BAND", "88500", "0.01142857", "0.63857143", "Upper Bollinger band resistance", "[\"Current price 87500 vs BB_UPPER 88500\",\"RESISTANCE distance 1.14%\"]")
+        );
         AnalysisReportEntity savedEntity = AnalysisReportEntity.builder()
                                                                .symbol("BTCUSDT")
                                                                .reportType(AnalysisReportType.MID_TERM)
@@ -368,6 +414,8 @@ class AnalysisReportGenerationServiceTest {
         )).thenReturn(derivativeWindowSummaryEntities);
         when(marketWindowSummarySnapshotPersistenceService.createAndSaveForReportType(snapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(windowSummaryEntities);
+        when(marketCandidateLevelSnapshotPersistenceService.createAndSaveAll(snapshot))
+                .thenReturn(candidateLevelEntities);
         when(analysisComparisonService.buildFacts(snapshot, AnalysisReportType.MID_TERM)).thenReturn(comparisonFacts);
         when(analysisReportAssembler.assemble(
                 snapshot,
@@ -375,7 +423,9 @@ class AnalysisReportGenerationServiceTest {
                 comparisonFacts,
                 payload.windowSummaries(),
                 derivativeContextInput,
-                payload.continuityNotes()
+                payload.continuityNotes(),
+                payload.supportLevels(),
+                payload.resistanceLevels()
         )).thenReturn(payload);
         when(analysisReportPersistenceService.save(org.mockito.ArgumentMatchers.any(AnalysisReportDraft.class)))
                 .thenReturn(savedEntity);
@@ -406,6 +456,7 @@ class AnalysisReportGenerationServiceTest {
     void generateAndSaveFailsWhenNoSnapshotExistsForMappedInterval() {
         AnalysisReportGenerationService service = new AnalysisReportGenerationService(
                 marketIndicatorSnapshotRepository,
+                marketCandidateLevelSnapshotPersistenceService,
                 marketContextSnapshotPersistenceService,
                 marketContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
@@ -413,7 +464,8 @@ class AnalysisReportGenerationServiceTest {
                 analysisDerivativeComparisonService,
                 analysisReportContinuityService,
                 analysisReportAssembler,
-                analysisReportPersistenceService
+                analysisReportPersistenceService,
+                new ObjectMapper()
         );
 
         when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueOrderBySnapshotTimeDescIdDesc("BTCUSDT", "1d"))
@@ -450,5 +502,32 @@ class AnalysisReportGenerationServiceTest {
                                             .bollingerMiddleBand(new BigDecimal("87000"))
                                             .bollingerLowerBand(new BigDecimal("85500"))
                                             .build();
+    }
+
+    private MarketCandidateLevelSnapshotEntity candidateLevelEntity(
+            String levelType,
+            String levelLabel,
+            String sourceType,
+            String levelPrice,
+            String distanceFromCurrent,
+            String strengthScore,
+            String rationale,
+            String triggerFactsPayload
+    ) {
+        return MarketCandidateLevelSnapshotEntity.builder()
+                                                 .symbol("BTCUSDT")
+                                                 .intervalValue("4h")
+                                                 .snapshotTime(Instant.parse("2026-03-09T00:59:59Z"))
+                                                 .levelType(levelType)
+                                                 .levelLabel(levelLabel)
+                                                 .sourceType(sourceType)
+                                                 .currentPrice(new BigDecimal("87500"))
+                                                 .levelPrice(new BigDecimal(levelPrice))
+                                                 .distanceFromCurrent(new BigDecimal(distanceFromCurrent))
+                                                 .strengthScore(new BigDecimal(strengthScore))
+                                                 .rationale(rationale)
+                                                 .triggerFactsPayload(triggerFactsPayload)
+                                                 .sourceDataVersion("basis-key;" + levelType + ";" + levelLabel)
+                                                 .build();
     }
 }

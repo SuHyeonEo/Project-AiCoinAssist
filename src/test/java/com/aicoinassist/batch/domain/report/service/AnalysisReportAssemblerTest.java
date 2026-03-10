@@ -18,6 +18,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryKeyMessagePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
@@ -59,7 +60,9 @@ class AnalysisReportAssemblerTest {
                 comparisonFacts(),
                 shortWindowSummaries(),
                 derivativeContext(),
-                shortContinuityNotes()
+                shortContinuityNotes(),
+                supportLevels(),
+                resistanceLevels()
         );
 
         assertThat(payload.summary()).extracting(
@@ -204,7 +207,9 @@ class AnalysisReportAssemblerTest {
                 comparisonFacts(),
                 shortWindowSummaries(),
                 derivativeContext(),
-                shortContinuityNotes()
+                shortContinuityNotes(),
+                supportLevels(),
+                resistanceLevels()
         );
 
         assertThat(payload.riskFactors()).extracting("type", "title")
@@ -226,7 +231,9 @@ class AnalysisReportAssemblerTest {
                 longTermComparisonFacts(),
                 longWindowSummaries(),
                 derivativeContext(),
-                longContinuityNotes()
+                longContinuityNotes(),
+                supportLevels(),
+                resistanceLevels()
         );
 
         assertThat(payload.comparisonHighlights()).extracting(AnalysisComparisonHighlight::reference)
@@ -513,6 +520,43 @@ class AnalysisReportAssemblerTest {
                         new BigDecimal("1.50000000"),
                         new BigDecimal("0.04000000"),
                         new BigDecimal("2.00000000")
+                )
+        );
+    }
+
+    private List<AnalysisPriceLevel> supportLevels() {
+        return List.of(
+                new AnalysisPriceLevel(
+                        AnalysisPriceLevelLabel.MA20,
+                        AnalysisPriceLevelSourceType.MOVING_AVERAGE,
+                        new BigDecimal("87000"),
+                        new BigDecimal("0.00571429"),
+                        new BigDecimal("0.64428571"),
+                        "Short-term average support",
+                        List.of("Current price 87500 vs MA20 87000", "SUPPORT distance 0.57%")
+                ),
+                new AnalysisPriceLevel(
+                        AnalysisPriceLevelLabel.MA60,
+                        AnalysisPriceLevelSourceType.MOVING_AVERAGE,
+                        new BigDecimal("86000"),
+                        new BigDecimal("0.01714286"),
+                        new BigDecimal("0.78285714"),
+                        "Mid-trend average support",
+                        List.of("Current price 87500 vs MA60 86000", "SUPPORT distance 1.71%")
+                )
+        );
+    }
+
+    private List<AnalysisPriceLevel> resistanceLevels() {
+        return List.of(
+                new AnalysisPriceLevel(
+                        AnalysisPriceLevelLabel.BB_UPPER,
+                        AnalysisPriceLevelSourceType.BOLLINGER_BAND,
+                        new BigDecimal("88500"),
+                        new BigDecimal("0.01142857"),
+                        new BigDecimal("0.63857143"),
+                        "Upper Bollinger band resistance",
+                        List.of("Current price 87500 vs BB_UPPER 88500", "RESISTANCE distance 1.14%")
                 )
         );
     }

@@ -60,7 +60,9 @@ public class AnalysisReportAssembler {
             List<AnalysisComparisonFact> comparisonFacts,
             List<AnalysisWindowSummary> windowSummaries,
             AnalysisDerivativeContext derivativeContext,
-            List<AnalysisContinuityNote> continuityNotes
+            List<AnalysisContinuityNote> continuityNotes,
+            List<AnalysisPriceLevel> supportLevels,
+            List<AnalysisPriceLevel> resistanceLevels
     ) {
         List<AnalysisComparisonHighlight> comparisonHighlights = comparisonHighlights(reportType, comparisonFacts);
         List<AnalysisWindowHighlight> windowHighlights = windowHighlights(reportType, windowSummaries);
@@ -78,8 +80,8 @@ public class AnalysisReportAssembler {
                 continuityNotes,
                 windowSummaries,
                 enrichedDerivativeContext,
-                supportLevels(snapshot),
-                resistanceLevels(snapshot),
+                supportLevels,
+                resistanceLevels,
                 riskFactors(snapshot, reportType, enrichedDerivativeContext),
                 scenarios(snapshot, trendBias)
         );
