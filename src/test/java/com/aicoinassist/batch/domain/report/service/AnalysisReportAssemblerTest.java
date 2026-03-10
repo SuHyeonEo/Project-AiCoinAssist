@@ -19,6 +19,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
+import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryKeyMessagePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
@@ -62,7 +63,9 @@ class AnalysisReportAssemblerTest {
                 derivativeContext(),
                 shortContinuityNotes(),
                 supportLevels(),
-                resistanceLevels()
+                resistanceLevels(),
+                supportZones(),
+                resistanceZones()
         );
 
         assertThat(payload.summary()).extracting(
@@ -73,6 +76,8 @@ class AnalysisReportAssemblerTest {
                 .containsExactly("SHORT_TERM view", AnalysisOutlookType.CONSTRUCTIVE, AnalysisConfidenceLevel.HIGH);
         assertThat(payload.summary().keyMessage().primaryMessage()).contains("bullish");
         assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("PREV_BATCH confirms the latest impulse"));
+        assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("Nearest support zone"));
+        assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("Nearest resistance zone"));
         assertThat(payload.summary().keyMessage().continuityMessage()).contains("Previous short-term report");
         assertThat(payload.summary().signalHeadlines()).extracting(
                         AnalysisContextHeadlinePayload::category,
@@ -191,6 +196,10 @@ class AnalysisReportAssemblerTest {
             assertThat(level.strengthScore()).isNotNull();
             assertThat(level.triggerFacts()).isNotEmpty();
         });
+        assertThat(payload.supportZones()).hasSize(1);
+        assertThat(payload.supportZones().get(0).includedLevelLabels()).contains(AnalysisPriceLevelLabel.MA20, AnalysisPriceLevelLabel.PIVOT_LOW);
+        assertThat(payload.resistanceZones()).hasSize(1);
+        assertThat(payload.resistanceZones().get(0).strongestLevelLabel()).isEqualTo(AnalysisPriceLevelLabel.PIVOT_HIGH);
         assertThat(payload.scenarios()).extracting("bias").contains(AnalysisScenarioBias.BULLISH, AnalysisScenarioBias.NEUTRAL);
         assertThat(payload.scenarios()).allSatisfy(scenario -> {
             assertThat(scenario.triggerConditions()).isNotEmpty();
@@ -209,7 +218,9 @@ class AnalysisReportAssemblerTest {
                 derivativeContext(),
                 shortContinuityNotes(),
                 supportLevels(),
-                resistanceLevels()
+                resistanceLevels(),
+                supportZones(),
+                resistanceZones()
         );
 
         assertThat(payload.riskFactors()).extracting("type", "title")
@@ -233,7 +244,9 @@ class AnalysisReportAssemblerTest {
                 derivativeContext(),
                 longContinuityNotes(),
                 supportLevels(),
-                resistanceLevels()
+                resistanceLevels(),
+                supportZones(),
+                resistanceZones()
         );
 
         assertThat(payload.comparisonHighlights()).extracting(AnalysisComparisonHighlight::reference)
@@ -566,6 +579,44 @@ class AnalysisReportAssemblerTest {
                         1,
                         "Upper Bollinger band resistance",
                         List.of("Current price 87500 vs BB_UPPER 88500", "RESISTANCE distance 1.14%")
+                )
+        );
+    }
+
+    private List<AnalysisPriceZone> supportZones() {
+        return List.of(
+                new AnalysisPriceZone(
+                        1,
+                        new BigDecimal("86850"),
+                        new BigDecimal("86850"),
+                        new BigDecimal("87000"),
+                        new BigDecimal("0.00742857"),
+                        new BigDecimal("0.89285714"),
+                        AnalysisPriceLevelLabel.PIVOT_LOW,
+                        AnalysisPriceLevelSourceType.PIVOT_LEVEL,
+                        2,
+                        List.of(AnalysisPriceLevelLabel.MA20, AnalysisPriceLevelLabel.PIVOT_LOW),
+                        List.of(AnalysisPriceLevelSourceType.MOVING_AVERAGE, AnalysisPriceLevelSourceType.PIVOT_LEVEL),
+                        List.of("SUPPORT zone spans 86850 to 87000 with 2 candidate levels.")
+                )
+        );
+    }
+
+    private List<AnalysisPriceZone> resistanceZones() {
+        return List.of(
+                new AnalysisPriceZone(
+                        1,
+                        new BigDecimal("88560"),
+                        new BigDecimal("88500"),
+                        new BigDecimal("88620"),
+                        new BigDecimal("0.01211429"),
+                        new BigDecimal("0.86285714"),
+                        AnalysisPriceLevelLabel.PIVOT_HIGH,
+                        AnalysisPriceLevelSourceType.PIVOT_LEVEL,
+                        2,
+                        List.of(AnalysisPriceLevelLabel.BB_UPPER, AnalysisPriceLevelLabel.PIVOT_HIGH),
+                        List.of(AnalysisPriceLevelSourceType.BOLLINGER_BAND, AnalysisPriceLevelSourceType.PIVOT_LEVEL),
+                        List.of("RESISTANCE zone spans 88500 to 88620 with 2 candidate levels.")
                 )
         );
     }

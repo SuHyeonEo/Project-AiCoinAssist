@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
@@ -8,6 +9,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEn
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
 import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelSnapshotPersistenceService;
+import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelZoneSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
@@ -28,6 +30,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
+import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
@@ -85,6 +88,9 @@ class AnalysisReportGenerationServiceTest {
     private MarketCandidateLevelSnapshotPersistenceService marketCandidateLevelSnapshotPersistenceService;
 
     @Mock
+    private MarketCandidateLevelZoneSnapshotPersistenceService marketCandidateLevelZoneSnapshotPersistenceService;
+
+    @Mock
     private MarketContextSnapshotPersistenceService marketContextSnapshotPersistenceService;
 
     @Mock
@@ -110,6 +116,7 @@ class AnalysisReportGenerationServiceTest {
         AnalysisReportGenerationService service = new AnalysisReportGenerationService(
                 marketIndicatorSnapshotRepository,
                 marketCandidateLevelSnapshotPersistenceService,
+                marketCandidateLevelZoneSnapshotPersistenceService,
                 marketContextSnapshotPersistenceService,
                 marketContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
@@ -204,6 +211,38 @@ class AnalysisReportGenerationServiceTest {
                         1,
                         "Upper Bollinger band resistance",
                         List.of("Current price 87500 vs BB_UPPER 88500", "RESISTANCE distance 1.14%")
+                )
+        );
+        List<AnalysisPriceZone> supportZones = List.of(
+                new AnalysisPriceZone(
+                        1,
+                        new BigDecimal("86850"),
+                        new BigDecimal("86850"),
+                        new BigDecimal("87000"),
+                        new BigDecimal("0.00742857"),
+                        new BigDecimal("0.89285714"),
+                        AnalysisPriceLevelLabel.PIVOT_LOW,
+                        AnalysisPriceLevelSourceType.PIVOT_LEVEL,
+                        2,
+                        List.of(AnalysisPriceLevelLabel.MA20, AnalysisPriceLevelLabel.PIVOT_LOW),
+                        List.of(AnalysisPriceLevelSourceType.MOVING_AVERAGE, AnalysisPriceLevelSourceType.PIVOT_LEVEL),
+                        List.of("SUPPORT zone spans 86850 to 87000 with 2 candidate levels.")
+                )
+        );
+        List<AnalysisPriceZone> resistanceZones = List.of(
+                new AnalysisPriceZone(
+                        1,
+                        new BigDecimal("88560"),
+                        new BigDecimal("88500"),
+                        new BigDecimal("88620"),
+                        new BigDecimal("0.01211429"),
+                        new BigDecimal("0.86285714"),
+                        AnalysisPriceLevelLabel.PIVOT_HIGH,
+                        AnalysisPriceLevelSourceType.PIVOT_LEVEL,
+                        2,
+                        List.of(AnalysisPriceLevelLabel.BB_UPPER, AnalysisPriceLevelLabel.PIVOT_HIGH),
+                        List.of(AnalysisPriceLevelSourceType.BOLLINGER_BAND, AnalysisPriceLevelSourceType.PIVOT_LEVEL),
+                        List.of("RESISTANCE zone spans 88500 to 88620 with 2 candidate levels.")
                 )
         );
         AnalysisReportPayload payload = new AnalysisReportPayload(
@@ -327,6 +366,8 @@ class AnalysisReportGenerationServiceTest {
                 ),
                 supportLevels,
                 resistanceLevels,
+                supportZones,
+                resistanceZones,
                 List.of(),
                 List.of(new AnalysisScenario(
                         "Base case",
@@ -397,6 +438,10 @@ class AnalysisReportGenerationServiceTest {
                 candidateLevelEntity("SUPPORT", "MA60", "MOVING_AVERAGE", "86000", "0.01714286", "0.78285714", "Mid-trend average support", "[\"Current price 87500 vs MA60 86000\",\"SUPPORT distance 1.71%\"]"),
                 candidateLevelEntity("RESISTANCE", "BB_UPPER", "BOLLINGER_BAND", "88500", "0.01142857", "0.63857143", "Upper Bollinger band resistance", "[\"Current price 87500 vs BB_UPPER 88500\",\"RESISTANCE distance 1.14%\"]")
         );
+        List<MarketCandidateLevelZoneSnapshotEntity> candidateLevelZoneEntities = List.of(
+                candidateLevelZoneEntity("SUPPORT", 1, "86850", "86850", "87000", "0.00742857", "0.89285714", "PIVOT_LOW", "PIVOT_LEVEL", "[\"MA20\",\"PIVOT_LOW\"]", "[\"MOVING_AVERAGE\",\"PIVOT_LEVEL\"]"),
+                candidateLevelZoneEntity("RESISTANCE", 1, "88560", "88500", "88620", "0.01211429", "0.86285714", "PIVOT_HIGH", "PIVOT_LEVEL", "[\"BB_UPPER\",\"PIVOT_HIGH\"]", "[\"BOLLINGER_BAND\",\"PIVOT_LEVEL\"]")
+        );
         AnalysisReportEntity savedEntity = AnalysisReportEntity.builder()
                                                                .symbol("BTCUSDT")
                                                                .reportType(AnalysisReportType.MID_TERM)
@@ -427,6 +472,8 @@ class AnalysisReportGenerationServiceTest {
                 .thenReturn(windowSummaryEntities);
         when(marketCandidateLevelSnapshotPersistenceService.createAndSaveAll(snapshot))
                 .thenReturn(candidateLevelEntities);
+        when(marketCandidateLevelZoneSnapshotPersistenceService.createAndSaveAll(candidateLevelEntities))
+                .thenReturn(candidateLevelZoneEntities);
         when(analysisComparisonService.buildFacts(snapshot, AnalysisReportType.MID_TERM)).thenReturn(comparisonFacts);
         when(analysisReportAssembler.assemble(
                 eq(snapshot),
@@ -435,6 +482,8 @@ class AnalysisReportGenerationServiceTest {
                 eq(payload.windowSummaries()),
                 eq(derivativeContextInput),
                 eq(payload.continuityNotes()),
+                anyList(),
+                anyList(),
                 anyList(),
                 anyList()
         )).thenReturn(payload);
@@ -468,6 +517,7 @@ class AnalysisReportGenerationServiceTest {
         AnalysisReportGenerationService service = new AnalysisReportGenerationService(
                 marketIndicatorSnapshotRepository,
                 marketCandidateLevelSnapshotPersistenceService,
+                marketCandidateLevelZoneSnapshotPersistenceService,
                 marketContextSnapshotPersistenceService,
                 marketContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
@@ -543,5 +593,40 @@ class AnalysisReportGenerationServiceTest {
                                                  .triggerFactsPayload(triggerFactsPayload)
                                                  .sourceDataVersion("basis-key;" + levelType + ";" + levelLabel)
                                                  .build();
+    }
+
+    private MarketCandidateLevelZoneSnapshotEntity candidateLevelZoneEntity(
+            String zoneType,
+            Integer zoneRank,
+            String representativePrice,
+            String zoneLow,
+            String zoneHigh,
+            String distanceFromCurrent,
+            String zoneStrengthScore,
+            String strongestLevelLabel,
+            String strongestSourceType,
+            String includedLevelLabelsPayload,
+            String includedSourceTypesPayload
+    ) {
+        return MarketCandidateLevelZoneSnapshotEntity.builder()
+                                                     .symbol("BTCUSDT")
+                                                     .intervalValue("4h")
+                                                     .snapshotTime(Instant.parse("2026-03-09T00:59:59Z"))
+                                                     .zoneType(zoneType)
+                                                     .zoneRank(zoneRank)
+                                                     .currentPrice(new BigDecimal("87500"))
+                                                     .representativePrice(new BigDecimal(representativePrice))
+                                                     .zoneLow(new BigDecimal(zoneLow))
+                                                     .zoneHigh(new BigDecimal(zoneHigh))
+                                                     .distanceFromCurrent(new BigDecimal(distanceFromCurrent))
+                                                     .zoneStrengthScore(new BigDecimal(zoneStrengthScore))
+                                                     .strongestLevelLabel(strongestLevelLabel)
+                                                     .strongestSourceType(strongestSourceType)
+                                                     .levelCount(2)
+                                                     .includedLevelLabelsPayload(includedLevelLabelsPayload)
+                                                     .includedSourceTypesPayload(includedSourceTypesPayload)
+                                                     .triggerFactsPayload("[\"" + zoneType + " zone spans " + zoneLow + " to " + zoneHigh + " with 2 candidate levels.\"]")
+                                                     .sourceDataVersion("basis-key;" + zoneType + ";rank=" + zoneRank)
+                                                     .build();
     }
 }

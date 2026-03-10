@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySnapshotEntity;
@@ -9,6 +10,7 @@ import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
 import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelSnapshotPersistenceService;
+import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelZoneSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
@@ -18,6 +20,7 @@ import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotP
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
+import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
@@ -40,6 +43,7 @@ public class AnalysisReportGenerationService {
 
     private final MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
     private final MarketCandidateLevelSnapshotPersistenceService marketCandidateLevelSnapshotPersistenceService;
+    private final MarketCandidateLevelZoneSnapshotPersistenceService marketCandidateLevelZoneSnapshotPersistenceService;
     private final MarketContextSnapshotPersistenceService marketContextSnapshotPersistenceService;
     private final MarketContextWindowSummarySnapshotPersistenceService marketContextWindowSummarySnapshotPersistenceService;
     private final MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
@@ -91,8 +95,12 @@ public class AnalysisReportGenerationService {
                 .toList();
         List<MarketCandidateLevelSnapshotEntity> candidateLevelSnapshots = marketCandidateLevelSnapshotPersistenceService
                 .createAndSaveAll(snapshot);
+        List<MarketCandidateLevelZoneSnapshotEntity> candidateLevelZoneSnapshots = marketCandidateLevelZoneSnapshotPersistenceService
+                .createAndSaveAll(candidateLevelSnapshots);
         List<AnalysisPriceLevel> supportLevels = candidateLevels(candidateLevelSnapshots, "SUPPORT", Comparator.comparing(AnalysisPriceLevel::price).reversed());
         List<AnalysisPriceLevel> resistanceLevels = candidateLevels(candidateLevelSnapshots, "RESISTANCE", Comparator.comparing(AnalysisPriceLevel::price));
+        List<AnalysisPriceZone> supportZones = candidateZones(candidateLevelZoneSnapshots, "SUPPORT");
+        List<AnalysisPriceZone> resistanceZones = candidateZones(candidateLevelZoneSnapshots, "RESISTANCE");
         AnalysisReportPayload payload = analysisReportAssembler.assemble(
                 snapshot,
                 reportType,
@@ -101,7 +109,9 @@ public class AnalysisReportGenerationService {
                 derivativeContext,
                 continuityNotes,
                 supportLevels,
-                resistanceLevels
+                resistanceLevels,
+                supportZones,
+                resistanceZones
         );
         AnalysisReportDraft draft = new AnalysisReportDraft(
                 snapshot.getSymbol(),
@@ -208,11 +218,48 @@ public class AnalysisReportGenerationService {
         );
     }
 
+    private List<AnalysisPriceZone> candidateZones(
+            List<MarketCandidateLevelZoneSnapshotEntity> entities,
+            String zoneType
+    ) {
+        return entities.stream()
+                       .filter(entity -> entity.getZoneType().equals(zoneType))
+                       .sorted(Comparator.comparing(MarketCandidateLevelZoneSnapshotEntity::getZoneRank))
+                       .map(this::toPriceZone)
+                       .toList();
+    }
+
+    private AnalysisPriceZone toPriceZone(MarketCandidateLevelZoneSnapshotEntity entity) {
+        return new AnalysisPriceZone(
+                entity.getZoneRank(),
+                entity.getRepresentativePrice(),
+                entity.getZoneLow(),
+                entity.getZoneHigh(),
+                entity.getDistanceFromCurrent(),
+                entity.getZoneStrengthScore(),
+                AnalysisPriceLevelLabel.valueOf(entity.getStrongestLevelLabel()),
+                AnalysisPriceLevelSourceType.valueOf(entity.getStrongestSourceType()),
+                entity.getLevelCount(),
+                enumPayload(entity.getIncludedLevelLabelsPayload(), AnalysisPriceLevelLabel.class),
+                enumPayload(entity.getIncludedSourceTypesPayload(), AnalysisPriceLevelSourceType.class),
+                triggerFacts(entity.getTriggerFactsPayload())
+        );
+    }
+
     private List<String> triggerFacts(String triggerFactsPayload) {
         try {
             return objectMapper.readValue(triggerFactsPayload, new TypeReference<>() {});
         } catch (Exception exception) {
             throw new IllegalStateException("Failed to deserialize market candidate level trigger facts.", exception);
+        }
+    }
+
+    private <T extends Enum<T>> List<T> enumPayload(String payload, Class<T> enumClass) {
+        try {
+            List<String> names = objectMapper.readValue(payload, new TypeReference<>() {});
+            return names.stream().map(name -> Enum.valueOf(enumClass, name)).toList();
+        } catch (Exception exception) {
+            throw new IllegalStateException("Failed to deserialize market candidate level zone enum payload.", exception);
         }
     }
 }

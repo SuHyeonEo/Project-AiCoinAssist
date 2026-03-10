@@ -5,6 +5,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
+import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
@@ -340,6 +341,34 @@ class AnalysisReportPersistenceServiceTest {
                         1,
                         "Recent swing high",
                         List.of("Current price is 1.14% away from R1.")
+                )),
+                List.of(new AnalysisPriceZone(
+                        1,
+                        new BigDecimal("84550.00"),
+                        new BigDecimal("84500.00"),
+                        new BigDecimal("84600.00"),
+                        new BigDecimal("0.03371429"),
+                        new BigDecimal("0.84"),
+                        AnalysisPriceLevelLabel.S1,
+                        AnalysisPriceLevelSourceType.PIVOT_LEVEL,
+                        2,
+                        List.of(AnalysisPriceLevelLabel.S1, AnalysisPriceLevelLabel.PIVOT_LOW),
+                        List.of(AnalysisPriceLevelSourceType.PIVOT_LEVEL),
+                        List.of("SUPPORT zone spans 84500 to 84600 with 2 candidate levels.")
+                )),
+                List.of(new AnalysisPriceZone(
+                        1,
+                        new BigDecimal("88550.00"),
+                        new BigDecimal("88500.00"),
+                        new BigDecimal("88600.00"),
+                        new BigDecimal("0.01200000"),
+                        new BigDecimal("0.82"),
+                        AnalysisPriceLevelLabel.R1,
+                        AnalysisPriceLevelSourceType.PIVOT_LEVEL,
+                        2,
+                        List.of(AnalysisPriceLevelLabel.R1, AnalysisPriceLevelLabel.PIVOT_HIGH),
+                        List.of(AnalysisPriceLevelSourceType.PIVOT_LEVEL),
+                        List.of("RESISTANCE zone spans 88500 to 88600 with 2 candidate levels.")
                 )),
                 List.of(new AnalysisRiskFactor(
                         AnalysisRiskFactorType.MACRO_VOLATILITY,
