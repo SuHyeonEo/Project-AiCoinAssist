@@ -15,6 +15,8 @@ import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersist
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketLevelContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
+import com.aicoinassist.batch.domain.sentiment.entity.SentimentSnapshotEntity;
+import com.aicoinassist.batch.domain.sentiment.service.SentimentSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFactSummaryPayload;
@@ -37,6 +39,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisZoneInteractionFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryKeyMessagePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
@@ -56,6 +61,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractio
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisScenarioBias;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisSentimentHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -95,10 +101,16 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
     protected MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
 
     @Mock
+    protected SentimentSnapshotPersistenceService sentimentSnapshotPersistenceService;
+
+    @Mock
     protected AnalysisReportContinuityService analysisReportContinuityService;
 
     @Mock
     protected AnalysisDerivativeComparisonService analysisDerivativeComparisonService;
+
+    @Mock
+    protected AnalysisSentimentComparisonService analysisSentimentComparisonService;
 
     @Mock
     protected AnalysisReportAssembler analysisReportAssembler;
@@ -118,9 +130,11 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                 marketContextSnapshotPersistenceService,
                 marketContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
+                sentimentSnapshotPersistenceService,
                 analysisComparisonService,
                 analysisLevelContextComparisonService,
                 analysisDerivativeComparisonService,
+                analysisSentimentComparisonService,
                 analysisReportContinuityService,
                 analysisReportAssembler,
                 analysisReportPersistenceService,
@@ -257,6 +271,13 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                 7L
                         ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.DERIVATIVE, "D7 derivative shift", "detail", AnalysisContextHeadlineImportance.MEDIUM),
+                        new AnalysisSentimentContextSummaryPayload(
+                                "Fear & Greed 72 (Greed).",
+                                "Greed regime remains elevated versus recent references.",
+                                List.of("Greed regime", "PREV_BATCH sentiment shift"),
+                                1L
+                        ),
+                        new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime", "detail", AnalysisContextHeadlineImportance.HIGH),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_MID_REPORT,
                                 "continuity summary",
@@ -310,6 +331,23 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                 null
                         ))
                 ),
+                new AnalysisSentimentContext(
+                        generationSentimentSnapshot().getSnapshotTime(),
+                        generationSentimentSnapshot().getSourceEventTime(),
+                        generationSentimentSnapshot().getSourceDataVersion(),
+                        generationSentimentSnapshot().getIndexValue(),
+                        generationSentimentSnapshot().getClassification(),
+                        generationSentimentSnapshot().getTimeUntilUpdateSeconds(),
+                        sentimentComparisonFacts(),
+                        List.of(
+                                new AnalysisSentimentHighlight(
+                                        "Greed regime",
+                                        "Fear & Greed is at 72 (Greed), which points to risk appetite staying elevated.",
+                                        AnalysisSentimentHighlightImportance.HIGH,
+                                        null
+                                )
+                        )
+                ),
                 supportLevels,
                 resistanceLevels,
                 supportZones,
@@ -317,7 +355,12 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                 supportZones.get(0),
                 resistanceZones.get(0),
                 List.<AnalysisZoneInteractionFact>of(),
-                List.<AnalysisRiskFactor>of(),
+                List.of(new AnalysisRiskFactor(
+                        com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType.SENTIMENT_GREED_EXTREME,
+                        "Sentiment greed extreme",
+                        "Fear & Greed is at 72 (Greed), so chase risk can rise near resistance.",
+                        List.of("Fear & Greed classification is Greed.")
+                )),
                 List.of(new AnalysisScenario(
                         "Base case",
                         AnalysisScenarioBias.BULLISH,
@@ -326,6 +369,23 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                         List.of("invalidation")
                 ))
         );
+    }
+
+    protected SentimentSnapshotEntity generationSentimentSnapshot() {
+        return SentimentSnapshotEntity.builder()
+                                      .metricType(com.aicoinassist.batch.domain.sentiment.enumtype.SentimentMetricType.FEAR_GREED_INDEX)
+                                      .snapshotTime(Instant.parse("2026-03-09T00:00:00Z"))
+                                      .sourceEventTime(Instant.parse("2026-03-09T00:00:00Z"))
+                                      .sourceDataVersion("metricType=FEAR_GREED_INDEX;sourceEventTime=2026-03-09T00:00:00Z")
+                                      .indexValue(new BigDecimal("72.00000000"))
+                                      .classification("Greed")
+                                      .timeUntilUpdateSeconds(3600L)
+                                      .previousSnapshotTime(Instant.parse("2026-03-08T00:00:00Z"))
+                                      .previousIndexValue(new BigDecimal("68.00000000"))
+                                      .valueChange(new BigDecimal("4.00000000"))
+                                      .valueChangeRate(new BigDecimal("0.05882353"))
+                                      .classificationChanged(true)
+                                      .build();
     }
 
     protected MarketContextSnapshotEntity marketContextSnapshotEntity() {

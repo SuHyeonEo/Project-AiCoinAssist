@@ -7,6 +7,8 @@ import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySna
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
@@ -20,6 +22,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractionType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneType;
+import com.aicoinassist.batch.domain.sentiment.entity.SentimentSnapshotEntity;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -90,6 +93,22 @@ public class AnalysisReportMarketDataMapper {
                 entity.getCurrentFundingVsAverage(),
                 entity.getAverageBasisRate(),
                 entity.getCurrentBasisVsAverage()
+        );
+    }
+
+    public AnalysisSentimentContext toSentimentContext(
+            SentimentSnapshotEntity entity,
+            List<AnalysisSentimentComparisonFact> comparisonFacts
+    ) {
+        return new AnalysisSentimentContext(
+                entity.getSnapshotTime(),
+                entity.getSourceEventTime(),
+                entity.getSourceDataVersion(),
+                entity.getIndexValue(),
+                entity.getClassification(),
+                entity.getTimeUntilUpdateSeconds(),
+                comparisonFacts,
+                List.of()
         );
     }
 

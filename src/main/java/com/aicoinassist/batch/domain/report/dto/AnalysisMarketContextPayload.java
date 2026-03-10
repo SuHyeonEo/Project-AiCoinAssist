@@ -7,6 +7,8 @@ public record AnalysisMarketContextPayload(
         AnalysisLevelContextPayload levelContext,
         AnalysisDerivativeContextSummaryPayload derivativeContextSummary,
         AnalysisContextHeadlinePayload derivativeHeadline,
+        AnalysisSentimentContextSummaryPayload sentimentContextSummary,
+        AnalysisContextHeadlinePayload sentimentHeadline,
         AnalysisContinuityContextPayload continuityContext
 ) {
 }

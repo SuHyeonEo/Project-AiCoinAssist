@@ -23,6 +23,7 @@ class AnalysisReportAssemblerLongTermTest extends AnalysisReportServiceFixtures 
                 longTermComparisonFacts(),
                 longWindowSummaries(),
                 derivativeContext(),
+                sentimentContext(),
                 longContinuityNotes(),
                 levelContext(),
                 supportLevels(),
@@ -45,7 +46,8 @@ class AnalysisReportAssemblerLongTermTest extends AnalysisReportServiceFixtures 
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.COMPARISON, "Y52_HIGH comparison"),
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.WINDOW, "LAST_52W position"),
-                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.DERIVATIVE, "D180 derivative shift")
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.DERIVATIVE, "D180 derivative shift"),
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime")
                 );
         assertThat(payload.marketContext().currentState().rangePositionLabel()).isEqualTo(AnalysisRangePositionLabel.UPPER_RANGE);
         assertThat(payload.marketContext().windowContext().headline().title()).isEqualTo("LAST_52W position");

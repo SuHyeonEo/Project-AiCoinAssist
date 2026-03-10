@@ -13,6 +13,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFa
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisZoneInteractionFact;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
@@ -20,6 +23,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractionType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisSentimentHighlightImportance;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -240,6 +244,19 @@ abstract class AnalysisReportServiceFixtures {
         );
     }
 
+    protected AnalysisSentimentContext sentimentContext() {
+        return new AnalysisSentimentContext(
+                Instant.parse("2026-03-09T00:00:00Z"),
+                Instant.parse("2026-03-09T00:00:00Z"),
+                "metricType=FEAR_GREED_INDEX;sourceEventTime=2026-03-09T00:00:00Z",
+                new BigDecimal("72.00000000"),
+                "Greed",
+                3600L,
+                sentimentComparisonFacts(),
+                List.of()
+        );
+    }
+
     protected List<AnalysisDerivativeComparisonFact> derivativeComparisonFacts() {
         return List.of(
                 new AnalysisDerivativeComparisonFact(
@@ -294,6 +311,55 @@ abstract class AnalysisReportServiceFixtures {
                         new BigDecimal("1.50000000"),
                         new BigDecimal("0.04000000"),
                         new BigDecimal("2.00000000")
+                )
+        );
+    }
+
+    protected List<AnalysisSentimentComparisonFact> sentimentComparisonFacts() {
+        return List.of(
+                new AnalysisSentimentComparisonFact(
+                        AnalysisComparisonReference.PREV_BATCH,
+                        Instant.parse("2026-03-08T00:00:00Z"),
+                        new BigDecimal("68.00000000"),
+                        "Neutral",
+                        new BigDecimal("4.00000000"),
+                        new BigDecimal("0.05882353"),
+                        true
+                ),
+                new AnalysisSentimentComparisonFact(
+                        AnalysisComparisonReference.D7,
+                        Instant.parse("2026-03-02T00:00:00Z"),
+                        new BigDecimal("55.00000000"),
+                        "Neutral",
+                        new BigDecimal("17.00000000"),
+                        new BigDecimal("0.30909091"),
+                        true
+                ),
+                new AnalysisSentimentComparisonFact(
+                        AnalysisComparisonReference.D30,
+                        Instant.parse("2026-02-07T00:00:00Z"),
+                        new BigDecimal("38.00000000"),
+                        "Fear",
+                        new BigDecimal("34.00000000"),
+                        new BigDecimal("0.89473684"),
+                        true
+                )
+        );
+    }
+
+    protected List<AnalysisSentimentHighlight> sentimentHighlights() {
+        return List.of(
+                new AnalysisSentimentHighlight(
+                        "Greed regime",
+                        "Fear & Greed is at 72 (Greed), which points to risk appetite staying elevated.",
+                        AnalysisSentimentHighlightImportance.HIGH,
+                        null
+                ),
+                new AnalysisSentimentHighlight(
+                        "PREV_BATCH sentiment shift",
+                        "PREV_BATCH changes Fear & Greed by 4 (5.882353%) with classification switching from Neutral to Greed.",
+                        AnalysisSentimentHighlightImportance.HIGH,
+                        AnalysisComparisonReference.PREV_BATCH
                 )
         );
     }
