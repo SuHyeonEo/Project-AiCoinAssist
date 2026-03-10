@@ -51,3 +51,10 @@ logging:
 external:
   alternative-me:
     base-url: https://api.alternative.me
+  fred:
+    base-url: https://api.stlouisfed.org
+    api-key: test-fred-api-key
+    series:
+      dxy-proxy: DTWEXBGS
+      us10y-yield: DGS10
+      usd-krw: DEXKOUS

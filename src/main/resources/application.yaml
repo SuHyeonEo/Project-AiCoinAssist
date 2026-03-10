@@ -51,6 +51,13 @@ batch:
 external:
   alternative-me:
     base-url: https://api.alternative.me
+  fred:
+    base-url: https://api.stlouisfed.org
+    api-key: ${FRED_API_KEY:}
+    series:
+      dxy-proxy: DTWEXBGS
+      us10y-yield: DGS10
+      usd-krw: DEXKOUS
   binance:
     base-url: https://api.binance.com
     futures-base-url: https://fapi.binance.com
