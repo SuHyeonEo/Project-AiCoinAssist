@@ -52,12 +52,15 @@ class AnalysisLlmPromptComposerTest extends AnalysisReportPayloadTestFixtures {
 
         assertThat(composition.systemPrompt()).contains("You are a structured crypto market analysis writer.");
         assertThat(composition.systemPrompt()).contains("Do not provide investment advice");
+        assertThat(composition.userPrompt()).contains("Length policy:");
         assertThat(composition.userPrompt()).contains("executive_conclusion");
         assertThat(composition.userPrompt()).contains("domain_analyses");
         assertThat(composition.userPrompt()).contains("Input JSON:");
         assertThat(composition.inputPayloadJson()).contains("\"metadata\"");
-        assertThat(composition.inputPayloadJson()).contains("\"optionalReferenceNews\"");
+        assertThat(composition.inputPayloadJson()).contains("\"executive_summary\"");
+        assertThat(composition.inputPayloadJson()).contains("\"optional_reference_news\"");
         assertThat(composition.outputSchemaJson()).contains("\"reference_news\"");
+        assertThat(composition.outputLengthPolicyJson()).contains("\"executiveConclusionSummaryMaxChars\"");
         assertThat(composition.userPrompt()).contains("ETF delay headline");
     }
 }

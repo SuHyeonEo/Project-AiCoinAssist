@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeInputPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLlmOutputLengthPolicy;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmPromptComposition;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmPromptInputPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmPromptMetadata;
@@ -106,6 +107,7 @@ public class AnalysisLlmPromptComposer {
             AnalysisLlmNarrativeInputPayload input,
             List<AnalysisLlmReferenceNewsItem> optionalReferenceNews
     ) {
+        AnalysisLlmOutputLengthPolicy lengthPolicy = AnalysisLlmOutputLengthPolicy.defaultPolicy();
         AnalysisLlmPromptInputPayload promptInput = new AnalysisLlmPromptInputPayload(
                 new AnalysisLlmPromptMetadata(
                         input.symbol(),
@@ -127,8 +129,17 @@ public class AnalysisLlmPromptComposer {
         );
 
         String inputJson = serialize(promptInput);
+        String lengthPolicyJson = serialize(lengthPolicy);
         String userPrompt = """
                 Generate output in the required JSON schema.
+
+                Length policy:
+                - executive_conclusion.summary should stay concise and within %d characters.
+                - top supporting/risk factors should stay within %d items each.
+                - domain_analyses should stay within %d domains, with up to %d key facts and %d caveats per domain.
+                - cross_signal_integration lists should stay within %d items each.
+                - scenario_map should stay within %d scenarios, with up to %d triggers, confirming signals, and invalidation signals per scenario.
+                - reference_news should stay within %d items, only when clearly relevant.
 
                 Section requirements:
 
@@ -169,13 +180,30 @@ public class AnalysisLlmPromptComposer {
 
                 Required output JSON schema:
                 %s
-                """.formatted(inputJson, OUTPUT_SCHEMA_JSON);
+
+                Output length policy JSON:
+                %s
+                """.formatted(
+                lengthPolicy.executiveConclusionSummaryMaxChars(),
+                lengthPolicy.executiveConclusionFactorMaxItems(),
+                lengthPolicy.domainAnalysisMaxItems(),
+                lengthPolicy.domainKeyFactsMaxItems(),
+                lengthPolicy.domainCaveatsMaxItems(),
+                lengthPolicy.crossSignalListMaxItems(),
+                lengthPolicy.scenarioMaxItems(),
+                lengthPolicy.scenarioListMaxItems(),
+                lengthPolicy.referenceNewsMaxItems(),
+                inputJson,
+                OUTPUT_SCHEMA_JSON,
+                lengthPolicyJson
+        );
 
         return new AnalysisLlmPromptComposition(
                 SYSTEM_PROMPT,
                 userPrompt,
                 inputJson,
-                OUTPUT_SCHEMA_JSON
+                OUTPUT_SCHEMA_JSON,
+                lengthPolicyJson
         );
     }
 
