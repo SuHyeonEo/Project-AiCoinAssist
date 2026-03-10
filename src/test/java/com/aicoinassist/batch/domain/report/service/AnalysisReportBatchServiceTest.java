@@ -1,11 +1,15 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
+import com.aicoinassist.batch.domain.market.enumtype.AssetType;
 import com.aicoinassist.batch.domain.market.service.MarketIndicatorSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchProperties;
+import com.aicoinassist.batch.domain.report.config.AnalysisLlmNarrativeProperties;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchResult;
+import com.aicoinassist.batch.domain.report.entity.AnalysisReportNarrativeEntity;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmNarrativeFailureType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmNarrativeGenerationStatus;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
-import com.aicoinassist.batch.domain.market.enumtype.AssetType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -34,6 +38,9 @@ class AnalysisReportBatchServiceTest {
     @Mock
     private AnalysisReportGenerationService analysisReportGenerationService;
 
+    @Mock
+    private AnalysisReportNarrativeGenerationFlowService analysisReportNarrativeGenerationFlowService;
+
     @Test
     void generateForAssetCreatesSnapshotsBeforeReportsForAllHorizons() {
         AnalysisReportBatchProperties properties = new AnalysisReportBatchProperties(
@@ -49,7 +56,9 @@ class AnalysisReportBatchServiceTest {
         AnalysisReportBatchService service = new AnalysisReportBatchService(
                 marketIndicatorSnapshotPersistenceService,
                 analysisReportGenerationService,
+                analysisReportNarrativeGenerationFlowService,
                 properties,
+                new AnalysisLlmNarrativeProperties(false, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1"),
                 FIXED_CLOCK
         );
 
@@ -89,7 +98,9 @@ class AnalysisReportBatchServiceTest {
         AnalysisReportBatchService service = new AnalysisReportBatchService(
                 marketIndicatorSnapshotPersistenceService,
                 analysisReportGenerationService,
+                analysisReportNarrativeGenerationFlowService,
                 properties,
+                new AnalysisLlmNarrativeProperties(false, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1"),
                 FIXED_CLOCK
         );
 
@@ -139,7 +150,9 @@ class AnalysisReportBatchServiceTest {
         AnalysisReportBatchService service = new AnalysisReportBatchService(
                 marketIndicatorSnapshotPersistenceService,
                 analysisReportGenerationService,
+                analysisReportNarrativeGenerationFlowService,
                 properties,
+                new AnalysisLlmNarrativeProperties(false, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1"),
                 FIXED_CLOCK
         );
 
@@ -182,5 +195,66 @@ class AnalysisReportBatchServiceTest {
         assertThat(result.reportFailureCount()).isEqualTo(1);
         assertThat(result.snapshotResults().get(1).errorMessage()).contains("4h snapshot failed");
         assertThat(result.reportResults().get(1).errorMessage()).contains("mid report failed");
+    }
+
+    @Test
+    void generateForAssetCapturesNarrativeFallbackAsPartialFailure() {
+        AnalysisReportBatchProperties properties = new AnalysisReportBatchProperties(
+                "report-assembler-v4",
+                java.util.List.of(AssetType.BTC),
+                java.util.List.of(AnalysisReportType.SHORT_TERM),
+                300000L
+        );
+        AnalysisReportBatchService service = new AnalysisReportBatchService(
+                marketIndicatorSnapshotPersistenceService,
+                analysisReportGenerationService,
+                analysisReportNarrativeGenerationFlowService,
+                properties,
+                new AnalysisLlmNarrativeProperties(true, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1"),
+                FIXED_CLOCK
+        );
+
+        when(analysisReportNarrativeGenerationFlowService.generateAndStoreLatest("BTCUSDT", AnalysisReportType.SHORT_TERM))
+                .thenReturn(AnalysisReportNarrativeEntity.builder()
+                        .analysisReport(null)
+                        .symbol("BTCUSDT")
+                        .reportType(AnalysisReportType.SHORT_TERM)
+                        .analysisBasisTime(Instant.parse("2026-03-09T00:59:59Z"))
+                        .sourceDataVersion("basis-key")
+                        .analysisEngineVersion("report-assembler-v4")
+                        .llmProvider("openai")
+                        .llmModel("gpt-5.4")
+                        .promptTemplateVersion("llm-prompt-v1")
+                        .inputSchemaVersion("llm-input-v1")
+                        .outputSchemaVersion("llm-output-v1")
+                        .inputPayloadHash("hash")
+                        .inputPayloadJson("{}")
+                        .promptSystemText("system")
+                        .promptUserText("user")
+                        .outputLengthPolicyJson("{}")
+                        .referenceNewsJson("[]")
+                        .outputJson("{}")
+                        .fallbackUsed(true)
+                        .generationStatus(AnalysisLlmNarrativeGenerationStatus.FALLBACK)
+                        .failureType(AnalysisLlmNarrativeFailureType.CONTENT)
+                        .validationIssuesJson("[]")
+                        .requestedAt(Instant.parse("2026-03-09T01:00:30Z"))
+                        .completedAt(Instant.parse("2026-03-09T01:00:30Z"))
+                        .storedAt(Instant.parse("2026-03-09T01:00:30Z"))
+                        .build());
+
+        AnalysisReportBatchResult result = service.generateForAsset(
+                AssetType.BTC,
+                "run-004",
+                "report-assembler-v4",
+                Instant.parse("2026-03-09T01:00:30Z")
+        );
+
+        assertThat(result.reportResults()).hasSize(1);
+        assertThat(result.reportResults().get(0).success()).isTrue();
+        assertThat(result.reportResults().get(0).narrativeGenerationStatus()).isEqualTo(AnalysisLlmNarrativeGenerationStatus.FALLBACK);
+        assertThat(result.reportResults().get(0).narrativeFallbackUsed()).isTrue();
+        assertThat(result.reportResults().get(0).narrativeFailureType()).isEqualTo(AnalysisLlmNarrativeFailureType.CONTENT);
+        assertThat(result.status()).isEqualTo(com.aicoinassist.batch.domain.report.enumtype.BatchExecutionStatus.PARTIAL_FAILURE);
     }
 }
