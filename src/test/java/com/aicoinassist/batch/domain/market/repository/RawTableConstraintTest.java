@@ -12,6 +12,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEn
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelLabel;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelSourceType;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelType;
+import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelZoneInteractionType;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus;
 import org.junit.jupiter.api.Test;
@@ -328,10 +329,15 @@ class RawTableConstraintTest {
                                                      .zoneLow(new BigDecimal("86000.00"))
                                                      .zoneHigh(new BigDecimal("87000.00"))
                                                      .distanceFromCurrent(new BigDecimal("0.01142857"))
+                                                     .distanceToZone(new BigDecimal("0.00571429"))
                                                      .zoneStrengthScore(new BigDecimal("0.84428571"))
+                                                     .interactionType(MarketCandidateLevelZoneInteractionType.ABOVE_ZONE.name())
                                                      .strongestLevelLabel(MarketCandidateLevelLabel.MA20.name())
                                                      .strongestSourceType(MarketCandidateLevelSourceType.MOVING_AVERAGE.name())
                                                      .levelCount(2)
+                                                     .recentTestCount(4)
+                                                     .recentRejectionCount(3)
+                                                     .recentBreakCount(1)
                                                      .includedLevelLabelsPayload("[\"MA20\",\"PIVOT_LOW\"]")
                                                      .includedSourceTypesPayload("[\"MOVING_AVERAGE\",\"PIVOT_LEVEL\"]")
                                                      .triggerFactsPayload("[\"SUPPORT zone spans 86000 to 87000 with 2 candidate levels.\"]")

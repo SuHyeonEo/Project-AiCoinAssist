@@ -50,6 +50,8 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricTyp
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractionType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
@@ -215,34 +217,46 @@ class AnalysisReportGenerationServiceTest {
         );
         List<AnalysisPriceZone> supportZones = List.of(
                 new AnalysisPriceZone(
+                        AnalysisPriceZoneType.SUPPORT,
                         1,
                         new BigDecimal("86850"),
                         new BigDecimal("86850"),
                         new BigDecimal("87000"),
                         new BigDecimal("0.00742857"),
+                        new BigDecimal("0.00514286"),
                         new BigDecimal("0.89285714"),
+                        AnalysisPriceZoneInteractionType.ABOVE_ZONE,
                         AnalysisPriceLevelLabel.PIVOT_LOW,
                         AnalysisPriceLevelSourceType.PIVOT_LEVEL,
                         2,
+                        5,
+                        4,
+                        1,
                         List.of(AnalysisPriceLevelLabel.MA20, AnalysisPriceLevelLabel.PIVOT_LOW),
                         List.of(AnalysisPriceLevelSourceType.MOVING_AVERAGE, AnalysisPriceLevelSourceType.PIVOT_LEVEL),
-                        List.of("SUPPORT zone spans 86850 to 87000 with 2 candidate levels.")
+                        List.of("SUPPORT zone spans 86850 to 87000 with 2 candidate levels.", "Recent tests=5, rejections=4, breaks=1 within 14 days.")
                 )
         );
         List<AnalysisPriceZone> resistanceZones = List.of(
                 new AnalysisPriceZone(
+                        AnalysisPriceZoneType.RESISTANCE,
                         1,
                         new BigDecimal("88560"),
                         new BigDecimal("88500"),
                         new BigDecimal("88620"),
                         new BigDecimal("0.01211429"),
+                        new BigDecimal("0.01165714"),
                         new BigDecimal("0.86285714"),
+                        AnalysisPriceZoneInteractionType.BELOW_ZONE,
                         AnalysisPriceLevelLabel.PIVOT_HIGH,
                         AnalysisPriceLevelSourceType.PIVOT_LEVEL,
                         2,
+                        3,
+                        2,
+                        0,
                         List.of(AnalysisPriceLevelLabel.BB_UPPER, AnalysisPriceLevelLabel.PIVOT_HIGH),
                         List.of(AnalysisPriceLevelSourceType.BOLLINGER_BAND, AnalysisPriceLevelSourceType.PIVOT_LEVEL),
-                        List.of("RESISTANCE zone spans 88500 to 88620 with 2 candidate levels.")
+                        List.of("RESISTANCE zone spans 88500 to 88620 with 2 candidate levels.", "Recent tests=3, rejections=2, breaks=0 within 14 days.")
                 )
         );
         AnalysisReportPayload payload = new AnalysisReportPayload(
@@ -368,6 +382,9 @@ class AnalysisReportGenerationServiceTest {
                 resistanceLevels,
                 supportZones,
                 resistanceZones,
+                supportZones.get(0),
+                resistanceZones.get(0),
+                List.of(),
                 List.of(),
                 List.of(new AnalysisScenario(
                         "Base case",
@@ -439,8 +456,8 @@ class AnalysisReportGenerationServiceTest {
                 candidateLevelEntity("RESISTANCE", "BB_UPPER", "BOLLINGER_BAND", "88500", "0.01142857", "0.63857143", "Upper Bollinger band resistance", "[\"Current price 87500 vs BB_UPPER 88500\",\"RESISTANCE distance 1.14%\"]")
         );
         List<MarketCandidateLevelZoneSnapshotEntity> candidateLevelZoneEntities = List.of(
-                candidateLevelZoneEntity("SUPPORT", 1, "86850", "86850", "87000", "0.00742857", "0.89285714", "PIVOT_LOW", "PIVOT_LEVEL", "[\"MA20\",\"PIVOT_LOW\"]", "[\"MOVING_AVERAGE\",\"PIVOT_LEVEL\"]"),
-                candidateLevelZoneEntity("RESISTANCE", 1, "88560", "88500", "88620", "0.01211429", "0.86285714", "PIVOT_HIGH", "PIVOT_LEVEL", "[\"BB_UPPER\",\"PIVOT_HIGH\"]", "[\"BOLLINGER_BAND\",\"PIVOT_LEVEL\"]")
+                candidateLevelZoneEntity("SUPPORT", 1, "86850", "86850", "87000", "0.00742857", "0.00514286", "0.89285714", "ABOVE_ZONE", "PIVOT_LOW", "PIVOT_LEVEL", "[\"MA20\",\"PIVOT_LOW\"]", "[\"MOVING_AVERAGE\",\"PIVOT_LEVEL\"]"),
+                candidateLevelZoneEntity("RESISTANCE", 1, "88560", "88500", "88620", "0.01211429", "0.01165714", "0.86285714", "BELOW_ZONE", "PIVOT_HIGH", "PIVOT_LEVEL", "[\"BB_UPPER\",\"PIVOT_HIGH\"]", "[\"BOLLINGER_BAND\",\"PIVOT_LEVEL\"]")
         );
         AnalysisReportEntity savedEntity = AnalysisReportEntity.builder()
                                                                .symbol("BTCUSDT")
@@ -602,7 +619,9 @@ class AnalysisReportGenerationServiceTest {
             String zoneLow,
             String zoneHigh,
             String distanceFromCurrent,
+            String distanceToZone,
             String zoneStrengthScore,
+            String interactionType,
             String strongestLevelLabel,
             String strongestSourceType,
             String includedLevelLabelsPayload,
@@ -619,10 +638,15 @@ class AnalysisReportGenerationServiceTest {
                                                      .zoneLow(new BigDecimal(zoneLow))
                                                      .zoneHigh(new BigDecimal(zoneHigh))
                                                      .distanceFromCurrent(new BigDecimal(distanceFromCurrent))
+                                                     .distanceToZone(new BigDecimal(distanceToZone))
                                                      .zoneStrengthScore(new BigDecimal(zoneStrengthScore))
+                                                     .interactionType(interactionType)
                                                      .strongestLevelLabel(strongestLevelLabel)
                                                      .strongestSourceType(strongestSourceType)
                                                      .levelCount(2)
+                                                     .recentTestCount(4)
+                                                     .recentRejectionCount(3)
+                                                     .recentBreakCount(1)
                                                      .includedLevelLabelsPayload(includedLevelLabelsPayload)
                                                      .includedSourceTypesPayload(includedSourceTypesPayload)
                                                      .triggerFactsPayload("[\"" + zoneType + " zone spans " + zoneLow + " to " + zoneHigh + " with 2 candidate levels.\"]")

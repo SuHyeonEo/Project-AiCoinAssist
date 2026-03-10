@@ -28,6 +28,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisZoneInteractionFact;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
@@ -38,6 +39,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisScenarioBias;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
@@ -68,6 +70,9 @@ public class AnalysisReportAssembler {
         List<AnalysisComparisonHighlight> comparisonHighlights = comparisonHighlights(reportType, comparisonFacts);
         List<AnalysisWindowHighlight> windowHighlights = windowHighlights(reportType, windowSummaries);
         AnalysisDerivativeContext enrichedDerivativeContext = enrichDerivativeContext(reportType, derivativeContext);
+        AnalysisPriceZone nearestSupportZone = supportZones.isEmpty() ? null : supportZones.get(0);
+        AnalysisPriceZone nearestResistanceZone = resistanceZones.isEmpty() ? null : resistanceZones.get(0);
+        List<AnalysisZoneInteractionFact> zoneInteractionFacts = zoneInteractionFacts(nearestSupportZone, nearestResistanceZone);
         AnalysisTrendLabel trendBias = determineTrendBias(snapshot);
         AnalysisSummaryPayload summary = buildSummary(
                 snapshot,
@@ -79,9 +84,21 @@ public class AnalysisReportAssembler {
                 enrichedDerivativeContext,
                 continuityNotes,
                 supportZones,
-                resistanceZones
+                resistanceZones,
+                zoneInteractionFacts
         );
-        AnalysisMarketContextPayload marketContext = buildMarketContext(snapshot, trendBias, reportType, comparisonFacts, comparisonHighlights, windowHighlights, windowSummaries, enrichedDerivativeContext, continuityNotes);
+        AnalysisMarketContextPayload marketContext = buildMarketContext(
+                snapshot,
+                trendBias,
+                reportType,
+                comparisonFacts,
+                comparisonHighlights,
+                windowHighlights,
+                windowSummaries,
+                enrichedDerivativeContext,
+                continuityNotes,
+                zoneInteractionFacts
+        );
 
         return new AnalysisReportPayload(
                 summary,
@@ -96,6 +113,9 @@ public class AnalysisReportAssembler {
                 resistanceLevels,
                 supportZones,
                 resistanceZones,
+                nearestSupportZone,
+                nearestResistanceZone,
+                zoneInteractionFacts,
                 riskFactors(snapshot, reportType, enrichedDerivativeContext),
                 scenarios(snapshot, trendBias)
         );
@@ -111,7 +131,8 @@ public class AnalysisReportAssembler {
             AnalysisDerivativeContext derivativeContext,
             List<AnalysisContinuityNote> continuityNotes,
             List<AnalysisPriceZone> supportZones,
-            List<AnalysisPriceZone> resistanceZones
+            List<AnalysisPriceZone> resistanceZones,
+            List<AnalysisZoneInteractionFact> zoneInteractionFacts
     ) {
         String headline = reportType.name() + " view";
         AnalysisContextHeadlinePayload comparisonHeadline = comparisonContextHeadline(reportType, comparisonFacts, comparisonHighlights);
@@ -136,7 +157,7 @@ public class AnalysisReportAssembler {
                         + ", and MACD histogram at "
                         + snapshot.getMacdHistogram().stripTrailingZeros().toPlainString()
                         + ".",
-                summarySignalDetails(signalHeadlines, supportZones, resistanceZones),
+                summarySignalDetails(signalHeadlines, supportZones, resistanceZones, zoneInteractionFacts),
                 continuityNotes.isEmpty()
                         ? null
                         : continuityNotes.get(0).summary()
@@ -162,7 +183,8 @@ public class AnalysisReportAssembler {
     private List<String> summarySignalDetails(
             List<AnalysisContextHeadlinePayload> signalHeadlines,
             List<AnalysisPriceZone> supportZones,
-            List<AnalysisPriceZone> resistanceZones
+            List<AnalysisPriceZone> resistanceZones,
+            List<AnalysisZoneInteractionFact> zoneInteractionFacts
     ) {
         List<String> details = new java.util.ArrayList<>(signalHeadlines.stream()
                                                                         .map(AnalysisContextHeadlinePayload::detail)
@@ -185,6 +207,9 @@ public class AnalysisReportAssembler {
                                         resistanceZone.levelCount()
                                 ));
         }
+        zoneInteractionFacts.stream()
+                            .map(AnalysisZoneInteractionFact::summary)
+                            .forEach(details::add);
         return details;
     }
 
@@ -197,7 +222,8 @@ public class AnalysisReportAssembler {
             List<AnalysisWindowHighlight> windowHighlights,
             List<AnalysisWindowSummary> windowSummaries,
             AnalysisDerivativeContext derivativeContext,
-            List<AnalysisContinuityNote> continuityNotes
+            List<AnalysisContinuityNote> continuityNotes,
+            List<AnalysisZoneInteractionFact> zoneInteractionFacts
     ) {
         List<AnalysisMovingAveragePositionPayload> movingAveragePositions = List.of(
                 movingAveragePosition(snapshot.getCurrentPrice(), snapshot.getMa20(), "MA20"),
@@ -239,7 +265,10 @@ public class AnalysisReportAssembler {
         }
         List<String> windowHighlightDetails = windowHighlights.stream()
                                                               .map(AnalysisWindowHighlight::detail)
-                                                              .toList();
+                                                              .collect(Collectors.toCollection(java.util.ArrayList::new));
+        zoneInteractionFacts.stream()
+                            .map(AnalysisZoneInteractionFact::summary)
+                            .forEach(windowHighlightDetails::add);
         AnalysisContextHeadlinePayload windowHeadline = windowContextHeadline(reportType, windowSummaries);
 
         AnalysisDerivativeContextSummaryPayload derivativeContextSummary = null;
@@ -974,6 +1003,46 @@ public class AnalysisReportAssembler {
             return null;
         }
         return windowSummaries.get(windowSummaries.size() - 1);
+    }
+
+    private List<AnalysisZoneInteractionFact> zoneInteractionFacts(
+            AnalysisPriceZone nearestSupportZone,
+            AnalysisPriceZone nearestResistanceZone
+    ) {
+        List<AnalysisZoneInteractionFact> facts = new java.util.ArrayList<>();
+        if (nearestSupportZone != null) {
+            facts.add(new AnalysisZoneInteractionFact(
+                    AnalysisPriceZoneType.SUPPORT,
+                    nearestSupportZone.zoneRank(),
+                    nearestSupportZone.interactionType(),
+                    "Nearest support zone is %s to %s, currently %s with %d tests and %d breaks."
+                            .formatted(
+                                    nearestSupportZone.zoneLow().stripTrailingZeros().toPlainString(),
+                                    nearestSupportZone.zoneHigh().stripTrailingZeros().toPlainString(),
+                                    nearestSupportZone.interactionType().name().toLowerCase().replace('_', ' '),
+                                    nearestSupportZone.recentTestCount(),
+                                    nearestSupportZone.recentBreakCount()
+                            ),
+                    nearestSupportZone.triggerFacts()
+            ));
+        }
+        if (nearestResistanceZone != null) {
+            facts.add(new AnalysisZoneInteractionFact(
+                    AnalysisPriceZoneType.RESISTANCE,
+                    nearestResistanceZone.zoneRank(),
+                    nearestResistanceZone.interactionType(),
+                    "Nearest resistance zone is %s to %s, currently %s with %d tests and %d rejections."
+                            .formatted(
+                                    nearestResistanceZone.zoneLow().stripTrailingZeros().toPlainString(),
+                                    nearestResistanceZone.zoneHigh().stripTrailingZeros().toPlainString(),
+                                    nearestResistanceZone.interactionType().name().toLowerCase().replace('_', ' '),
+                                    nearestResistanceZone.recentTestCount(),
+                                    nearestResistanceZone.recentRejectionCount()
+                            ),
+                    nearestResistanceZone.triggerFacts()
+            ));
+        }
+        return facts;
     }
 
     private String percentage(BigDecimal value) {

@@ -40,6 +40,8 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricTyp
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractionType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
@@ -343,33 +345,48 @@ class AnalysisReportPersistenceServiceTest {
                         List.of("Current price is 1.14% away from R1.")
                 )),
                 List.of(new AnalysisPriceZone(
+                        AnalysisPriceZoneType.SUPPORT,
                         1,
                         new BigDecimal("84550.00"),
                         new BigDecimal("84500.00"),
                         new BigDecimal("84600.00"),
                         new BigDecimal("0.03371429"),
+                        new BigDecimal("0.02100000"),
                         new BigDecimal("0.84"),
+                        AnalysisPriceZoneInteractionType.ABOVE_ZONE,
                         AnalysisPriceLevelLabel.S1,
                         AnalysisPriceLevelSourceType.PIVOT_LEVEL,
                         2,
+                        4,
+                        3,
+                        1,
                         List.of(AnalysisPriceLevelLabel.S1, AnalysisPriceLevelLabel.PIVOT_LOW),
                         List.of(AnalysisPriceLevelSourceType.PIVOT_LEVEL),
                         List.of("SUPPORT zone spans 84500 to 84600 with 2 candidate levels.")
                 )),
                 List.of(new AnalysisPriceZone(
+                        AnalysisPriceZoneType.RESISTANCE,
                         1,
                         new BigDecimal("88550.00"),
                         new BigDecimal("88500.00"),
                         new BigDecimal("88600.00"),
                         new BigDecimal("0.01200000"),
+                        new BigDecimal("0.01120000"),
                         new BigDecimal("0.82"),
+                        AnalysisPriceZoneInteractionType.BELOW_ZONE,
                         AnalysisPriceLevelLabel.R1,
                         AnalysisPriceLevelSourceType.PIVOT_LEVEL,
                         2,
+                        3,
+                        2,
+                        0,
                         List.of(AnalysisPriceLevelLabel.R1, AnalysisPriceLevelLabel.PIVOT_HIGH),
                         List.of(AnalysisPriceLevelSourceType.PIVOT_LEVEL),
                         List.of("RESISTANCE zone spans 88500 to 88600 with 2 candidate levels.")
                 )),
+                null,
+                null,
+                List.of(),
                 List.of(new AnalysisRiskFactor(
                         AnalysisRiskFactorType.MACRO_VOLATILITY,
                         "Macro volatility",

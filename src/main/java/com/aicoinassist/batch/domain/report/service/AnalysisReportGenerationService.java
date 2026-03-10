@@ -26,6 +26,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractionType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneType;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -231,15 +233,21 @@ public class AnalysisReportGenerationService {
 
     private AnalysisPriceZone toPriceZone(MarketCandidateLevelZoneSnapshotEntity entity) {
         return new AnalysisPriceZone(
+                AnalysisPriceZoneType.valueOf(entity.getZoneType()),
                 entity.getZoneRank(),
                 entity.getRepresentativePrice(),
                 entity.getZoneLow(),
                 entity.getZoneHigh(),
                 entity.getDistanceFromCurrent(),
+                entity.getDistanceToZone(),
                 entity.getZoneStrengthScore(),
+                AnalysisPriceZoneInteractionType.valueOf(entity.getInteractionType()),
                 AnalysisPriceLevelLabel.valueOf(entity.getStrongestLevelLabel()),
                 AnalysisPriceLevelSourceType.valueOf(entity.getStrongestSourceType()),
                 entity.getLevelCount(),
+                entity.getRecentTestCount(),
+                entity.getRecentRejectionCount(),
+                entity.getRecentBreakCount(),
                 enumPayload(entity.getIncludedLevelLabelsPayload(), AnalysisPriceLevelLabel.class),
                 enumPayload(entity.getIncludedSourceTypesPayload(), AnalysisPriceLevelSourceType.class),
                 triggerFacts(entity.getTriggerFactsPayload())

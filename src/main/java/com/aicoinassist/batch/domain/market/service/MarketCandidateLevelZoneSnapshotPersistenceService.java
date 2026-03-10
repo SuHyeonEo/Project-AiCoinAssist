@@ -57,10 +57,15 @@ public class MarketCandidateLevelZoneSnapshotPersistenceService {
                                                                                                   .zoneLow(snapshot.zoneLow())
                                                                                                   .zoneHigh(snapshot.zoneHigh())
                                                                                                   .distanceFromCurrent(snapshot.distanceFromCurrent())
+                                                                                                  .distanceToZone(snapshot.distanceToZone())
                                                                                                   .zoneStrengthScore(snapshot.zoneStrengthScore())
+                                                                                                  .interactionType(snapshot.interactionType().name())
                                                                                                   .strongestLevelLabel(snapshot.strongestLevelLabel().name())
                                                                                                   .strongestSourceType(snapshot.strongestSourceType().name())
                                                                                                   .levelCount(snapshot.levelCount())
+                                                                                                  .recentTestCount(snapshot.recentTestCount())
+                                                                                                  .recentRejectionCount(snapshot.recentRejectionCount())
+                                                                                                  .recentBreakCount(snapshot.recentBreakCount())
                                                                                                   .includedLevelLabelsPayload(includedLevelLabelsPayload)
                                                                                                   .includedSourceTypesPayload(includedSourceTypesPayload)
                                                                                                   .triggerFactsPayload(triggerFactsPayload)
@@ -75,10 +80,15 @@ public class MarketCandidateLevelZoneSnapshotPersistenceService {
                 snapshot.zoneLow(),
                 snapshot.zoneHigh(),
                 snapshot.distanceFromCurrent(),
+                snapshot.distanceToZone(),
                 snapshot.zoneStrengthScore(),
+                snapshot.interactionType().name(),
                 snapshot.strongestLevelLabel().name(),
                 snapshot.strongestSourceType().name(),
                 snapshot.levelCount(),
+                snapshot.recentTestCount(),
+                snapshot.recentRejectionCount(),
+                snapshot.recentBreakCount(),
                 includedLevelLabelsPayload,
                 includedSourceTypesPayload,
                 triggerFactsPayload,
