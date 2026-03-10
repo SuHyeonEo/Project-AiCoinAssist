@@ -40,7 +40,7 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                 sentimentContext(),
                 onchainContext(),
                 shortContinuityNotes(),
-                externalContextComposite(),
+                richExternalContextComposite(),
                 levelContext(),
                 supportLevels(),
                 resistanceLevels(),
@@ -73,7 +73,7 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.MACRO, "Dollar strength regime"),
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime"),
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion"),
-                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.EXTERNAL, "External regime direction changed")
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.EXTERNAL, "TRANSITION_TO_HEADWIND")
                 );
 
         assertThat(payload.marketContext().currentState()).extracting(
@@ -151,6 +151,10 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
         assertThat(payload.marketContext().externalContextComposite().compositeRiskScore()).isEqualByComparingTo("1.33333333");
         assertThat(payload.marketContext().externalContextComposite().comparisonFacts()).hasSize(1);
         assertThat(payload.marketContext().externalContextComposite().highlights()).hasSize(1);
+        assertThat(payload.marketContext().externalContextComposite().windowSummaries()).hasSize(1);
+        assertThat(payload.marketContext().externalContextComposite().transitions()).hasSize(1);
+        assertThat(payload.marketContext().externalContextComposite().persistence()).isNotNull();
+        assertThat(payload.marketContext().externalContextComposite().state()).isNotNull();
         assertThat(payload.marketContext().externalRegimeSignals()).extracting(
                         signal -> signal.category().name(),
                         signal -> signal.title()
@@ -194,5 +198,8 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
         assertThat(payload.onchainContext().highlights()).isNotEmpty();
         assertThat(payload.riskFactors()).extracting(risk -> risk.type().name())
                                          .contains("SENTIMENT_GREED_EXTREME", "MACRO_VOLATILITY", "EXTERNAL_RISK_CONFLUENCE");
+        assertThat(payload.summary().signalHeadlines()).anySatisfy(
+                headline -> assertThat(headline.detail()).contains("headwind")
+        );
     }
 }

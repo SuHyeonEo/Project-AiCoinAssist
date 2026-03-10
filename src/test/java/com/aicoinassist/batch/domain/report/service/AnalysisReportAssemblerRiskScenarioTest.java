@@ -24,7 +24,7 @@ class AnalysisReportAssemblerRiskScenarioTest extends AnalysisReportServiceFixtu
                 sentimentContext(),
                 onchainContext(),
                 shortContinuityNotes(),
-                externalContextComposite(),
+                richExternalContextComposite(),
                 levelContext(),
                 supportLevels(),
                 resistanceLevels(),
@@ -53,8 +53,15 @@ class AnalysisReportAssemblerRiskScenarioTest extends AnalysisReportServiceFixtu
         assertThat(payload.marketContext().externalRegimeSignals()).isNotEmpty();
         assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("macro backdrop"));
         assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("sentiment remains"));
-        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("external regime direction"));
+        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("external regime"));
+        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("reversal risk"));
         assertThat(payload.scenarios().get(0).pathSummary()).contains("Sentiment remains");
         assertThat(payload.scenarios().get(0).pathSummary()).contains("external regime focus");
+        assertThat(payload.riskFactors()).anySatisfy(riskFactor -> {
+            if (riskFactor.type() == AnalysisRiskFactorType.EXTERNAL_RISK_CONFLUENCE) {
+                assertThat(riskFactor.triggerFacts()).anySatisfy(trigger -> assertThat(trigger).contains("reversal risk score"));
+                assertThat(riskFactor.triggerFacts()).anySatisfy(trigger -> assertThat(trigger).contains("headwind"));
+            }
+        });
     }
 }

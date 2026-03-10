@@ -300,6 +300,16 @@ class AnalysisRiskScenarioFactory {
                                     windowSummaryDetail == null
                                             ? java.util.stream.Stream.<String>empty()
                                             : java.util.stream.Stream.of(windowSummaryDetail),
+                                    externalContextComposite.persistence() == null
+                                            ? java.util.stream.Stream.<String>empty()
+                                            : java.util.stream.Stream.of(externalContextComposite.persistence().summary()),
+                                    externalContextComposite.state() == null
+                                            ? java.util.stream.Stream.<String>empty()
+                                            : java.util.stream.Stream.of(
+                                            "External reversal risk score is "
+                                                    + externalContextComposite.state().reversalRiskScore().setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
+                                                    + "."
+                                    ),
                                     externalContextComposite.highlights() == null
                                             ? java.util.stream.Stream.<String>empty()
                                             : externalContextComposite.highlights().stream()
@@ -480,6 +490,12 @@ class AnalysisRiskScenarioFactory {
                                     .map(AnalysisExternalContextHighlight::summary)
                                     .forEach(triggers::add);
         }
+        if (externalContextComposite != null && externalContextComposite.transitions() != null) {
+            externalContextComposite.transitions().stream()
+                                    .limit(1)
+                                    .map(transition -> transition.summary())
+                                    .forEach(triggers::add);
+        }
         if (externalContextComposite != null
                 && externalContextComposite.windowSummaries() != null
                 && !externalContextComposite.windowSummaries().isEmpty()
@@ -489,6 +505,13 @@ class AnalysisRiskScenarioFactory {
                     + " composite external risk stays "
                     + formattingSupport.signedRatio(externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage())
                     + " versus average.");
+        }
+        if (externalContextComposite != null
+                && externalContextComposite.state() != null
+                && externalContextComposite.state().reversalRiskScore().compareTo(new BigDecimal("0.55")) >= 0) {
+            triggers.add("External regime reversal risk remains elevated at "
+                    + externalContextComposite.state().reversalRiskScore().setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
+                    + ".");
         }
 
         return triggers;
@@ -528,6 +551,9 @@ class AnalysisRiskScenarioFactory {
         if (externalContextComposite != null && externalContextComposite.primarySignalTitle() != null) {
             clauses.add("external regime focus stays on " + externalContextComposite.primarySignalTitle());
         }
+        if (externalContextComposite != null && externalContextComposite.persistence() != null) {
+            clauses.add(externalContextComposite.persistence().summary());
+        }
         if (externalContextComposite != null
                 && externalContextComposite.windowSummaries() != null
                 && !externalContextComposite.windowSummaries().isEmpty()
@@ -535,6 +561,10 @@ class AnalysisRiskScenarioFactory {
             clauses.add("external composite risk remains "
                     + formattingSupport.signedRatio(externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage())
                     + " versus its representative average");
+        }
+        if (externalContextComposite != null && externalContextComposite.state() != null) {
+            clauses.add("reversal risk stays at "
+                    + externalContextComposite.state().reversalRiskScore().setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString());
         }
 
         return clauses.isEmpty() ? "External context stays mixed." : String.join(", ", clauses) + ".";
@@ -582,11 +612,21 @@ class AnalysisRiskScenarioFactory {
             clauses.add("external regime confluence keeps risk skew elevated");
         }
         if (externalContextComposite != null
+                && externalContextComposite.persistence() != null
+                && externalContextComposite.persistence().persistenceScore().compareTo(new BigDecimal("0.60")) >= 0) {
+            clauses.add("external regime persistence keeps the same bias entrenched");
+        }
+        if (externalContextComposite != null
                 && externalContextComposite.windowSummaries() != null
                 && !externalContextComposite.windowSummaries().isEmpty()
                 && externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage() != null
                 && externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage().compareTo(new BigDecimal("0.15")) >= 0) {
             clauses.add("external composite risk remains above its representative average");
+        }
+        if (externalContextComposite != null
+                && externalContextComposite.state() != null
+                && externalContextComposite.state().reversalRiskScore().compareTo(new BigDecimal("0.55")) >= 0) {
+            clauses.add("external regime reversal risk remains elevated");
         }
 
         return clauses.isEmpty() ? "External context does not add a strong risk skew." : String.join(", ", clauses) + ".";
@@ -634,6 +674,12 @@ class AnalysisRiskScenarioFactory {
             signals.add("Composite external regime score cools back toward neutral.");
             if (externalContextComposite.windowSummaries() != null && !externalContextComposite.windowSummaries().isEmpty()) {
                 signals.add("Composite external risk normalizes back toward its representative window average.");
+            }
+            if (externalContextComposite.persistence() != null) {
+                signals.add("External regime persistence weakens and stops reinforcing the current bias.");
+            }
+            if (externalContextComposite.state() != null) {
+                signals.add("External reversal risk score cools back to a lower regime.");
             }
         }
 

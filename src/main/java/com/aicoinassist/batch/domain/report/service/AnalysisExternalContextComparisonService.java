@@ -1,11 +1,18 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextWindowSummary;
 import com.aicoinassist.batch.domain.market.repository.MarketExternalContextSnapshotRepository;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimePersistence;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeStatePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeTransition;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeDirection;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeSeverity;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeTransitionType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -52,6 +59,79 @@ public class AnalysisExternalContextComparisonService {
                     .limit(3)
                     .map(fact -> toHighlight(currentSnapshot, fact))
                     .toList();
+    }
+
+    public List<AnalysisExternalRegimeTransition> buildTransitions(
+            MarketExternalContextSnapshotEntity currentSnapshot,
+            List<AnalysisExternalContextComparisonFact> facts
+    ) {
+        return facts.stream()
+                .map(fact -> toTransition(currentSnapshot, fact))
+                .toList();
+    }
+
+    public AnalysisExternalRegimePersistence buildPersistence(
+            MarketExternalContextSnapshotEntity currentSnapshot,
+            List<AnalysisExternalContextWindowSummary> windowSummaries
+    ) {
+        if (windowSummaries == null || windowSummaries.isEmpty()) {
+            return null;
+        }
+
+        AnalysisExternalContextWindowSummary primaryWindowSummary = windowSummaries.get(windowSummaries.size() - 1);
+        BigDecimal dominantDirectionShare = dominantDirectionShare(
+                currentSnapshot.getDominantDirection(),
+                primaryWindowSummary
+        );
+        BigDecimal highSeverityShare = ratio(
+                primaryWindowSummary.highSeveritySampleCount(),
+                primaryWindowSummary.sampleCount()
+        );
+        BigDecimal persistenceScore = dominantDirectionShare.multiply(new BigDecimal("0.70"))
+                .add(highSeverityShare.multiply(new BigDecimal("0.30")))
+                .setScale(8, RoundingMode.HALF_UP);
+
+        return new AnalysisExternalRegimePersistence(
+                primaryWindowSummary.windowType(),
+                enumValue(currentSnapshot.getDominantDirection(), AnalysisExternalRegimeDirection.class),
+                dominantDirectionShare,
+                highSeverityShare,
+                persistenceScore,
+                primaryWindowSummary.windowType().name()
+                        + " keeps "
+                        + label(currentSnapshot.getDominantDirection())
+                        + " dominance for "
+                        + ratioLabel(dominantDirectionShare)
+                        + " of samples with high severity on "
+                        + ratioLabel(highSeverityShare)
+                        + " of observations."
+        );
+    }
+
+    public AnalysisExternalRegimeStatePayload buildState(
+            MarketExternalContextSnapshotEntity currentSnapshot,
+            List<AnalysisExternalRegimeTransition> transitions,
+            AnalysisExternalRegimePersistence persistence,
+            List<AnalysisExternalContextWindowSummary> windowSummaries
+    ) {
+        BigDecimal reversalRiskScore = reversalRiskScore(transitions, persistence, windowSummaries);
+        return new AnalysisExternalRegimeStatePayload(
+                enumValue(currentSnapshot.getDominantDirection(), AnalysisExternalRegimeDirection.class),
+                enumValue(currentSnapshot.getHighestSeverity(), AnalysisExternalRegimeSeverity.class),
+                enumValue(currentSnapshot.getPrimarySignalCategory(), com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeCategory.class),
+                currentSnapshot.getPrimarySignalTitle(),
+                currentSnapshot.getCompositeRiskScore(),
+                reversalRiskScore,
+                "External regime is "
+                        + label(currentSnapshot.getDominantDirection())
+                        + " with "
+                        + label(currentSnapshot.getHighestSeverity())
+                        + " severity, primary signal "
+                        + nullSafe(currentSnapshot.getPrimarySignalTitle())
+                        + ", and reversal risk "
+                        + reversalRiskScore.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
+                        + "."
+        );
     }
 
     private List<AnalysisComparisonReference> references(AnalysisReportType reportType) {
@@ -196,8 +276,128 @@ public class AnalysisExternalContextComparisonService {
         );
     }
 
+    private AnalysisExternalRegimeTransition toTransition(
+            MarketExternalContextSnapshotEntity currentSnapshot,
+            AnalysisExternalContextComparisonFact fact
+    ) {
+        AnalysisExternalRegimeTransitionType transitionType = transitionType(currentSnapshot, fact);
+        return new AnalysisExternalRegimeTransition(
+                fact.reference(),
+                fact.referenceTime(),
+                transitionType,
+                enumValue(currentSnapshot.getDominantDirection(), AnalysisExternalRegimeDirection.class),
+                enumValue(currentSnapshot.getHighestSeverity(), AnalysisExternalRegimeSeverity.class),
+                fact.compositeRiskScoreDelta(),
+                transitionSummary(currentSnapshot, fact, transitionType)
+        );
+    }
+
+    private AnalysisExternalRegimeTransitionType transitionType(
+            MarketExternalContextSnapshotEntity currentSnapshot,
+            AnalysisExternalContextComparisonFact fact
+    ) {
+        if (Boolean.TRUE.equals(fact.dominantDirectionChanged())) {
+            return switch (currentSnapshot.getDominantDirection()) {
+                case "SUPPORTIVE" -> AnalysisExternalRegimeTransitionType.TRANSITION_TO_SUPPORTIVE;
+                case "CAUTIONARY" -> AnalysisExternalRegimeTransitionType.TRANSITION_TO_CAUTIONARY;
+                case "HEADWIND" -> AnalysisExternalRegimeTransitionType.TRANSITION_TO_HEADWIND;
+                default -> AnalysisExternalRegimeTransitionType.STABLE;
+            };
+        }
+        if (fact.compositeRiskScoreDelta().compareTo(BigDecimal.ZERO) > 0) {
+            return AnalysisExternalRegimeTransitionType.INTENSIFYING;
+        }
+        if (fact.compositeRiskScoreDelta().compareTo(BigDecimal.ZERO) < 0) {
+            return AnalysisExternalRegimeTransitionType.EASING;
+        }
+        return AnalysisExternalRegimeTransitionType.STABLE;
+    }
+
+    private String transitionSummary(
+            MarketExternalContextSnapshotEntity currentSnapshot,
+            AnalysisExternalContextComparisonFact fact,
+            AnalysisExternalRegimeTransitionType transitionType
+    ) {
+        return switch (transitionType) {
+            case TRANSITION_TO_SUPPORTIVE, TRANSITION_TO_CAUTIONARY, TRANSITION_TO_HEADWIND ->
+                    fact.reference().name() + " 대비 external regime가 "
+                            + label(currentSnapshot.getDominantDirection())
+                            + "로 전이되었습니다.";
+            case INTENSIFYING ->
+                    fact.reference().name() + " 대비 composite external risk가 "
+                            + signed(fact.compositeRiskScoreDelta()) + "p 확대되었습니다.";
+            case EASING ->
+                    fact.reference().name() + " 대비 composite external risk가 "
+                            + signed(fact.compositeRiskScoreDelta()) + "p 완화되었습니다.";
+            case STABLE ->
+                    fact.reference().name() + " 대비 external regime는 대체로 안정적입니다.";
+        };
+    }
+
+    private BigDecimal reversalRiskScore(
+            List<AnalysisExternalRegimeTransition> transitions,
+            AnalysisExternalRegimePersistence persistence,
+            List<AnalysisExternalContextWindowSummary> windowSummaries
+    ) {
+        BigDecimal transitionComponent = transitions == null || transitions.isEmpty()
+                ? BigDecimal.ZERO
+                : transitions.stream()
+                .filter(transition -> transition.transitionType() == AnalysisExternalRegimeTransitionType.TRANSITION_TO_SUPPORTIVE
+                        || transition.transitionType() == AnalysisExternalRegimeTransitionType.TRANSITION_TO_CAUTIONARY
+                        || transition.transitionType() == AnalysisExternalRegimeTransitionType.TRANSITION_TO_HEADWIND)
+                .findFirst()
+                .map(transition -> new BigDecimal("0.30"))
+                .orElse(BigDecimal.ZERO);
+        BigDecimal persistenceComponent = persistence == null
+                ? new BigDecimal("0.50")
+                : BigDecimal.ONE.subtract(persistence.persistenceScore()).max(BigDecimal.ZERO);
+        BigDecimal windowDeviationComponent = windowSummaries == null || windowSummaries.isEmpty()
+                || windowSummaries.get(windowSummaries.size() - 1).currentCompositeRiskVsAverage() == null
+                ? BigDecimal.ZERO
+                : windowSummaries.get(windowSummaries.size() - 1).currentCompositeRiskVsAverage().abs()
+                        .min(BigDecimal.ONE)
+                        .multiply(new BigDecimal("0.40"));
+
+        return transitionComponent
+                .add(persistenceComponent.multiply(new BigDecimal("0.40")))
+                .add(windowDeviationComponent)
+                .min(BigDecimal.ONE)
+                .setScale(8, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal dominantDirectionShare(
+            String dominantDirection,
+            AnalysisExternalContextWindowSummary primaryWindowSummary
+    ) {
+        if (primaryWindowSummary.sampleCount() == null || primaryWindowSummary.sampleCount() == 0) {
+            return BigDecimal.ZERO;
+        }
+        int dominantSampleCount = switch (dominantDirection) {
+            case "SUPPORTIVE" -> primaryWindowSummary.supportiveDominanceSampleCount();
+            case "CAUTIONARY" -> primaryWindowSummary.cautionaryDominanceSampleCount();
+            case "HEADWIND" -> primaryWindowSummary.headwindDominanceSampleCount();
+            default -> 0;
+        };
+        return ratio(dominantSampleCount, primaryWindowSummary.sampleCount());
+    }
+
+    private BigDecimal ratio(Integer numerator, Integer denominator) {
+        if (numerator == null || denominator == null || denominator == 0) {
+            return BigDecimal.ZERO;
+        }
+        return BigDecimal.valueOf(numerator.longValue())
+                .divide(BigDecimal.valueOf(denominator.longValue()), 8, RoundingMode.HALF_UP);
+    }
+
     private String signed(BigDecimal value) {
         return value.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
+    }
+
+    private String ratioLabel(BigDecimal value) {
+        return value.multiply(new BigDecimal("100"))
+                .setScale(2, RoundingMode.HALF_UP)
+                .stripTrailingZeros()
+                .toPlainString() + "%";
     }
 
     private String label(String value) {
@@ -206,5 +406,9 @@ public class AnalysisExternalContextComparisonService {
 
     private String nullSafe(String value) {
         return value == null ? "unknown signal" : value;
+    }
+
+    private <T extends Enum<T>> T enumValue(String value, Class<T> enumClass) {
+        return value == null ? null : Enum.valueOf(enumClass, value);
     }
 }
