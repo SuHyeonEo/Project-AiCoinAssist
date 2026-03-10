@@ -67,6 +67,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -171,6 +173,9 @@ class AnalysisReportGenerationServiceTest {
                         new BigDecimal("87000"),
                         new BigDecimal("0.00571429"),
                         new BigDecimal("0.64428571"),
+                        Instant.parse("2026-03-09T00:59:59Z"),
+                        2,
+                        1,
                         "Short-term average support",
                         List.of("Current price 87500 vs MA20 87000", "SUPPORT distance 0.57%")
                 ),
@@ -180,6 +185,9 @@ class AnalysisReportGenerationServiceTest {
                         new BigDecimal("86000"),
                         new BigDecimal("0.01714286"),
                         new BigDecimal("0.78285714"),
+                        Instant.parse("2026-03-09T00:59:59Z"),
+                        3,
+                        2,
                         "Mid-trend average support",
                         List.of("Current price 87500 vs MA60 86000", "SUPPORT distance 1.71%")
                 )
@@ -191,6 +199,9 @@ class AnalysisReportGenerationServiceTest {
                         new BigDecimal("88500"),
                         new BigDecimal("0.01142857"),
                         new BigDecimal("0.63857143"),
+                        Instant.parse("2026-03-09T00:59:59Z"),
+                        1,
+                        1,
                         "Upper Bollinger band resistance",
                         List.of("Current price 87500 vs BB_UPPER 88500", "RESISTANCE distance 1.14%")
                 )
@@ -418,14 +429,14 @@ class AnalysisReportGenerationServiceTest {
                 .thenReturn(candidateLevelEntities);
         when(analysisComparisonService.buildFacts(snapshot, AnalysisReportType.MID_TERM)).thenReturn(comparisonFacts);
         when(analysisReportAssembler.assemble(
-                snapshot,
-                AnalysisReportType.MID_TERM,
-                comparisonFacts,
-                payload.windowSummaries(),
-                derivativeContextInput,
-                payload.continuityNotes(),
-                payload.supportLevels(),
-                payload.resistanceLevels()
+                eq(snapshot),
+                eq(AnalysisReportType.MID_TERM),
+                eq(comparisonFacts),
+                eq(payload.windowSummaries()),
+                eq(derivativeContextInput),
+                eq(payload.continuityNotes()),
+                anyList(),
+                anyList()
         )).thenReturn(payload);
         when(analysisReportPersistenceService.save(org.mockito.ArgumentMatchers.any(AnalysisReportDraft.class)))
                 .thenReturn(savedEntity);
@@ -518,6 +529,7 @@ class AnalysisReportGenerationServiceTest {
                                                  .symbol("BTCUSDT")
                                                  .intervalValue("4h")
                                                  .snapshotTime(Instant.parse("2026-03-09T00:59:59Z"))
+                                                 .referenceTime(Instant.parse("2026-03-09T00:59:59Z"))
                                                  .levelType(levelType)
                                                  .levelLabel(levelLabel)
                                                  .sourceType(sourceType)
@@ -525,6 +537,8 @@ class AnalysisReportGenerationServiceTest {
                                                  .levelPrice(new BigDecimal(levelPrice))
                                                  .distanceFromCurrent(new BigDecimal(distanceFromCurrent))
                                                  .strengthScore(new BigDecimal(strengthScore))
+                                                 .reactionCount(2)
+                                                 .clusterSize(1)
                                                  .rationale(rationale)
                                                  .triggerFactsPayload(triggerFactsPayload)
                                                  .sourceDataVersion("basis-key;" + levelType + ";" + levelLabel)

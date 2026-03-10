@@ -53,6 +53,9 @@ public class MarketCandidateLevelSnapshotEntity {
     @Column(nullable = false)
     private Instant snapshotTime;
 
+    @Column(nullable = false)
+    private Instant referenceTime;
+
     @Column(nullable = false, length = 20)
     private String levelType;
 
@@ -74,6 +77,12 @@ public class MarketCandidateLevelSnapshotEntity {
     @Column(precision = 19, scale = 8)
     private BigDecimal strengthScore;
 
+    @Column(nullable = false)
+    private Integer reactionCount;
+
+    @Column(nullable = false)
+    private Integer clusterSize;
+
     @Column(nullable = false, length = 200)
     private String rationale;
 
@@ -88,6 +97,7 @@ public class MarketCandidateLevelSnapshotEntity {
             String symbol,
             String intervalValue,
             Instant snapshotTime,
+            Instant referenceTime,
             String levelType,
             String levelLabel,
             String sourceType,
@@ -95,6 +105,8 @@ public class MarketCandidateLevelSnapshotEntity {
             BigDecimal levelPrice,
             BigDecimal distanceFromCurrent,
             BigDecimal strengthScore,
+            Integer reactionCount,
+            Integer clusterSize,
             String rationale,
             String triggerFactsPayload,
             String sourceDataVersion
@@ -102,6 +114,7 @@ public class MarketCandidateLevelSnapshotEntity {
         this.symbol = symbol;
         this.intervalValue = intervalValue;
         this.snapshotTime = snapshotTime;
+        this.referenceTime = referenceTime;
         this.levelType = levelType;
         this.levelLabel = levelLabel;
         this.sourceType = sourceType;
@@ -109,24 +122,32 @@ public class MarketCandidateLevelSnapshotEntity {
         this.levelPrice = levelPrice;
         this.distanceFromCurrent = distanceFromCurrent;
         this.strengthScore = strengthScore;
+        this.reactionCount = reactionCount;
+        this.clusterSize = clusterSize;
         this.rationale = rationale;
         this.triggerFactsPayload = triggerFactsPayload;
         this.sourceDataVersion = sourceDataVersion;
     }
 
     public void refreshFromSnapshot(
+            Instant referenceTime,
             BigDecimal currentPrice,
             BigDecimal levelPrice,
             BigDecimal distanceFromCurrent,
             BigDecimal strengthScore,
+            Integer reactionCount,
+            Integer clusterSize,
             String rationale,
             String triggerFactsPayload,
             String sourceDataVersion
     ) {
+        this.referenceTime = referenceTime;
         this.currentPrice = currentPrice;
         this.levelPrice = levelPrice;
         this.distanceFromCurrent = distanceFromCurrent;
         this.strengthScore = strengthScore;
+        this.reactionCount = reactionCount;
+        this.clusterSize = clusterSize;
         this.rationale = rationale;
         this.triggerFactsPayload = triggerFactsPayload;
         this.sourceDataVersion = sourceDataVersion;

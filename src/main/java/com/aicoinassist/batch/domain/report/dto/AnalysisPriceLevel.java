@@ -4,6 +4,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 public record AnalysisPriceLevel(
@@ -12,6 +13,9 @@ public record AnalysisPriceLevel(
         BigDecimal price,
         BigDecimal distanceFromCurrent,
         BigDecimal strengthScore,
+        Instant referenceTime,
+        Integer reactionCount,
+        Integer clusterSize,
         String rationale,
         List<String> triggerFacts
 ) {

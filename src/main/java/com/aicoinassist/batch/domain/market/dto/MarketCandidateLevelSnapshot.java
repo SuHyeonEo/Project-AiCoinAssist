@@ -12,6 +12,7 @@ public record MarketCandidateLevelSnapshot(
         String symbol,
         String intervalValue,
         Instant snapshotTime,
+        Instant referenceTime,
         MarketCandidateLevelType levelType,
         MarketCandidateLevelLabel levelLabel,
         MarketCandidateLevelSourceType sourceType,
@@ -19,6 +20,8 @@ public record MarketCandidateLevelSnapshot(
         BigDecimal levelPrice,
         BigDecimal distanceFromCurrent,
         BigDecimal strengthScore,
+        Integer reactionCount,
+        Integer clusterSize,
         String rationale,
         List<String> triggerFacts,
         String sourceDataVersion

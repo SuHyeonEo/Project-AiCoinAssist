@@ -34,8 +34,6 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisConfidenceLevel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
-import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
-import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
@@ -273,45 +271,6 @@ public class AnalysisReportAssembler {
         );
     }
 
-    private List<AnalysisPriceLevel> supportLevels(MarketIndicatorSnapshotEntity snapshot) {
-        List<AnalysisPriceLevel> candidates = List.of(
-                toPriceLevel(snapshot, AnalysisPriceLevelLabel.MA20, snapshot.getMa20(), "Short-term average support"),
-                toPriceLevel(snapshot, AnalysisPriceLevelLabel.MA60, snapshot.getMa60(), "Mid-trend average support"),
-                toPriceLevel(snapshot, AnalysisPriceLevelLabel.MA120, snapshot.getMa120(), "Longer trend average support"),
-                toPriceLevel(snapshot, AnalysisPriceLevelLabel.BB_LOWER, snapshot.getBollingerLowerBand(), "Lower Bollinger band support")
-        );
-
-        return candidates.stream()
-                         .filter(level -> level.price().compareTo(snapshot.getCurrentPrice()) <= 0)
-                         .sorted(Comparator.comparing(AnalysisPriceLevel::price).reversed())
-                         .limit(2)
-                         .toList();
-    }
-
-    private List<AnalysisPriceLevel> resistanceLevels(MarketIndicatorSnapshotEntity snapshot) {
-        List<AnalysisPriceLevel> candidates = List.of(
-                toPriceLevel(snapshot, AnalysisPriceLevelLabel.MA20, snapshot.getMa20(), "Short-term average resistance"),
-                toPriceLevel(snapshot, AnalysisPriceLevelLabel.MA60, snapshot.getMa60(), "Mid-trend average resistance"),
-                toPriceLevel(snapshot, AnalysisPriceLevelLabel.MA120, snapshot.getMa120(), "Longer trend average resistance"),
-                toPriceLevel(snapshot, AnalysisPriceLevelLabel.BB_UPPER, snapshot.getBollingerUpperBand(), "Upper Bollinger band resistance")
-        );
-
-        List<AnalysisPriceLevel> levels = candidates.stream()
-                                                    .filter(level -> level.price().compareTo(snapshot.getCurrentPrice()) >= 0)
-                                                    .sorted(Comparator.comparing(AnalysisPriceLevel::price))
-                                                    .limit(2)
-                                                    .toList();
-
-        if (!levels.isEmpty()) {
-            return levels;
-        }
-
-        return candidates.stream()
-                         .sorted(Comparator.comparing(AnalysisPriceLevel::price).reversed())
-                         .limit(2)
-                         .toList();
-    }
-
     private List<AnalysisRiskFactor> riskFactors(
             MarketIndicatorSnapshotEntity snapshot,
             AnalysisReportType reportType,
@@ -542,63 +501,6 @@ public class AnalysisReportAssembler {
                 movingAverageName,
                 movingAverage,
                 currentPrice.compareTo(movingAverage) >= 0
-        );
-    }
-
-    private AnalysisPriceLevel toPriceLevel(
-            MarketIndicatorSnapshotEntity snapshot,
-            AnalysisPriceLevelLabel label,
-            BigDecimal levelPrice,
-            String rationale
-    ) {
-        AnalysisPriceLevelSourceType sourceType = switch (label) {
-            case MA20, MA60, MA120 -> AnalysisPriceLevelSourceType.MOVING_AVERAGE;
-            case BB_UPPER, BB_LOWER -> AnalysisPriceLevelSourceType.BOLLINGER_BAND;
-            case S1, R1 -> AnalysisPriceLevelSourceType.PIVOT_LEVEL;
-        };
-
-        return new AnalysisPriceLevel(
-                label,
-                sourceType,
-                levelPrice,
-                distanceFromCurrent(snapshot.getCurrentPrice(), levelPrice),
-                strengthScore(label),
-                rationale,
-                levelTriggerFacts(snapshot, label, levelPrice, sourceType)
-        );
-    }
-
-    private BigDecimal distanceFromCurrent(BigDecimal currentPrice, BigDecimal levelPrice) {
-        return levelPrice.subtract(currentPrice)
-                         .abs()
-                         .divide(currentPrice, 8, RoundingMode.HALF_UP);
-    }
-
-    private BigDecimal strengthScore(AnalysisPriceLevelLabel label) {
-        return switch (label) {
-            case MA20 -> new BigDecimal("0.60");
-            case MA60 -> new BigDecimal("0.72");
-            case MA120 -> new BigDecimal("0.82");
-            case BB_UPPER, BB_LOWER -> new BigDecimal("0.58");
-            case S1, R1 -> new BigDecimal("0.75");
-        };
-    }
-
-    private List<String> levelTriggerFacts(
-            MarketIndicatorSnapshotEntity snapshot,
-            AnalysisPriceLevelLabel label,
-            BigDecimal levelPrice,
-            AnalysisPriceLevelSourceType sourceType
-    ) {
-        String relation = snapshot.getCurrentPrice().compareTo(levelPrice) >= 0 ? "above" : "below";
-        return List.of(
-                "Current price is "
-                        + percentage(distanceFromCurrent(snapshot.getCurrentPrice(), levelPrice))
-                        + " away from "
-                        + label.name()
-                        + ".",
-                label.name() + " is a " + sourceType.name() + " derived level.",
-                "Current price is trading " + relation + " " + label.name() + "."
         );
     }
 

@@ -47,6 +47,7 @@ class MarketCandidateLevelSnapshotPersistenceServiceTest {
                                                                                               .symbol("BTCUSDT")
                                                                                               .intervalValue("1h")
                                                                                               .snapshotTime(snapshot.snapshotTime())
+                                                                                              .referenceTime(snapshot.referenceTime())
                                                                                               .levelType(MarketCandidateLevelType.SUPPORT.name())
                                                                                               .levelLabel(MarketCandidateLevelLabel.MA20.name())
                                                                                               .sourceType(MarketCandidateLevelSourceType.MOVING_AVERAGE.name())
@@ -54,6 +55,8 @@ class MarketCandidateLevelSnapshotPersistenceServiceTest {
                                                                                               .levelPrice(new BigDecimal("86500"))
                                                                                               .distanceFromCurrent(new BigDecimal("0.00500000"))
                                                                                               .strengthScore(new BigDecimal("0.62000000"))
+                                                                                              .reactionCount(1)
+                                                                                              .clusterSize(1)
                                                                                               .rationale("Old support")
                                                                                               .triggerFactsPayload("[\"old\"]")
                                                                                               .sourceDataVersion("old")
@@ -74,6 +77,7 @@ class MarketCandidateLevelSnapshotPersistenceServiceTest {
         assertThat(result).containsExactly(existingEntity);
         assertThat(existingEntity.getLevelPrice()).isEqualByComparingTo("87000.00000000");
         assertThat(existingEntity.getStrengthScore()).isEqualByComparingTo("0.64428571");
+        assertThat(existingEntity.getReactionCount()).isEqualTo(2);
         assertThat(existingEntity.getTriggerFactsPayload()).contains("MA20");
     }
 
@@ -135,6 +139,7 @@ class MarketCandidateLevelSnapshotPersistenceServiceTest {
                 "BTCUSDT",
                 "1h",
                 Instant.parse("2026-03-10T00:59:59Z"),
+                Instant.parse("2026-03-10T00:59:59Z"),
                 MarketCandidateLevelType.SUPPORT,
                 MarketCandidateLevelLabel.MA20,
                 MarketCandidateLevelSourceType.MOVING_AVERAGE,
@@ -142,6 +147,8 @@ class MarketCandidateLevelSnapshotPersistenceServiceTest {
                 new BigDecimal("87000.00000000"),
                 new BigDecimal("0.00571429"),
                 new BigDecimal("0.64428571"),
+                2,
+                1,
                 "Short-term average support",
                 List.of("Current price 87500 vs MA20 87000", "SUPPORT distance 0.57%"),
                 "basis-key;levelType=SUPPORT;levelLabel=MA20"
