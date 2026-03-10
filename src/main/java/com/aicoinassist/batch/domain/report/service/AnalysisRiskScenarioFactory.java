@@ -4,11 +4,14 @@ import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisScenarioBias;
@@ -22,15 +25,24 @@ class AnalysisRiskScenarioFactory {
     private final AnalysisReportFormattingSupport formattingSupport;
     private final AnalysisIndicatorStateSupport indicatorStateSupport;
     private final AnalysisDerivativeContextSupport derivativeContextSupport;
+    private final AnalysisMacroContextSupport macroContextSupport;
+    private final AnalysisSentimentContextSupport sentimentContextSupport;
+    private final AnalysisOnchainContextSupport onchainContextSupport;
 
     AnalysisRiskScenarioFactory(
             AnalysisReportFormattingSupport formattingSupport,
             AnalysisIndicatorStateSupport indicatorStateSupport,
-            AnalysisDerivativeContextSupport derivativeContextSupport
+            AnalysisDerivativeContextSupport derivativeContextSupport,
+            AnalysisMacroContextSupport macroContextSupport,
+            AnalysisSentimentContextSupport sentimentContextSupport,
+            AnalysisOnchainContextSupport onchainContextSupport
     ) {
         this.formattingSupport = formattingSupport;
         this.indicatorStateSupport = indicatorStateSupport;
         this.derivativeContextSupport = derivativeContextSupport;
+        this.macroContextSupport = macroContextSupport;
+        this.sentimentContextSupport = sentimentContextSupport;
+        this.onchainContextSupport = onchainContextSupport;
     }
 
     List<AnalysisRiskFactor> riskFactors(
@@ -115,30 +127,66 @@ class AnalysisRiskScenarioFactory {
             ));
         }
 
-        if (sentimentContext != null && sentimentContext.indexValue().compareTo(new BigDecimal("70")) >= 0) {
+        AnalysisSentimentWindowSummary primarySentimentWindowSummary = sentimentContext == null
+                ? null
+                : sentimentContextSupport.primaryWindowSummary(reportType, sentimentContext);
+        if (sentimentContext != null && (
+                sentimentContext.indexValue().compareTo(new BigDecimal("70")) >= 0
+                        || (primarySentimentWindowSummary != null
+                        && primarySentimentWindowSummary.currentIndexVsAverage() != null
+                        && primarySentimentWindowSummary.currentIndexVsAverage().compareTo(new BigDecimal("0.15")) >= 0)
+        )) {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.SENTIMENT_GREED_EXTREME,
                     "Sentiment greed extreme",
                     "Fear & Greed is at " + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
                             + " (" + sentimentContext.classification() + "), so chase risk can rise near resistance.",
-                    List.of("Fear & Greed classification is " + sentimentContext.classification() + ".")
+                    List.of(
+                            "Fear & Greed classification is " + sentimentContext.classification() + ".",
+                            primarySentimentWindowSummary == null || primarySentimentWindowSummary.currentIndexVsAverage() == null
+                                    ? "Current sentiment is elevated."
+                                    : primarySentimentWindowSummary.windowType().name()
+                                    + " sentiment vs average is "
+                                    + formattingSupport.signedRatio(primarySentimentWindowSummary.currentIndexVsAverage()) + "."
+                    )
             ));
         }
 
-        if (sentimentContext != null && sentimentContext.indexValue().compareTo(new BigDecimal("30")) <= 0) {
+        if (sentimentContext != null && (
+                sentimentContext.indexValue().compareTo(new BigDecimal("30")) <= 0
+                        || (primarySentimentWindowSummary != null
+                        && primarySentimentWindowSummary.currentIndexVsAverage() != null
+                        && primarySentimentWindowSummary.currentIndexVsAverage().compareTo(new BigDecimal("-0.15")) <= 0)
+        )) {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.SENTIMENT_FEAR_EXTREME,
                     "Sentiment fear extreme",
                     "Fear & Greed is at " + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
                             + " (" + sentimentContext.classification() + "), so reactive selloffs and whipsaws can expand.",
-                    List.of("Fear & Greed classification is " + sentimentContext.classification() + ".")
+                    List.of(
+                            "Fear & Greed classification is " + sentimentContext.classification() + ".",
+                            primarySentimentWindowSummary == null || primarySentimentWindowSummary.currentIndexVsAverage() == null
+                                    ? "Current sentiment is depressed."
+                                    : primarySentimentWindowSummary.windowType().name()
+                                    + " sentiment vs average is "
+                                    + formattingSupport.signedRatio(primarySentimentWindowSummary.currentIndexVsAverage()) + "."
+                    )
             ));
         }
 
+        AnalysisMacroWindowSummary primaryMacroWindowSummary = macroContext == null
+                ? null
+                : macroContextSupport.primaryWindowSummary(reportType, macroContext);
         if (macroContext != null && (
                 macroContext.dxyProxyValue().compareTo(new BigDecimal("120")) >= 0
                         || macroContext.us10yYieldValue().compareTo(new BigDecimal("4.50")) >= 0
                         || macroContext.usdKrwValue().compareTo(new BigDecimal("1450")) >= 0
+                        || (primaryMacroWindowSummary != null
+                        && (
+                        primaryMacroWindowSummary.currentDxyProxyVsAverage().compareTo(new BigDecimal("0.01")) >= 0
+                                || primaryMacroWindowSummary.currentUs10yYieldVsAverage().compareTo(new BigDecimal("0.03")) >= 0
+                                || primaryMacroWindowSummary.currentUsdKrwVsAverage().compareTo(new BigDecimal("0.01")) >= 0
+                ))
         )) {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.MACRO_VOLATILITY,
@@ -153,7 +201,16 @@ class AnalysisRiskScenarioFactory {
                     List.of(
                             "DXY proxy is " + macroContext.dxyProxyValue().stripTrailingZeros().toPlainString() + ".",
                             "US10Y yield is " + macroContext.us10yYieldValue().stripTrailingZeros().toPlainString() + ".",
-                            "USD/KRW is " + macroContext.usdKrwValue().stripTrailingZeros().toPlainString() + "."
+                            "USD/KRW is " + macroContext.usdKrwValue().stripTrailingZeros().toPlainString() + ".",
+                            primaryMacroWindowSummary == null
+                                    ? "Macro backdrop is firm."
+                                    : primaryMacroWindowSummary.windowType().name()
+                                    + " DXY vs average "
+                                    + formattingSupport.signedRatio(primaryMacroWindowSummary.currentDxyProxyVsAverage())
+                                    + ", US10Y vs average "
+                                    + formattingSupport.signedRatio(primaryMacroWindowSummary.currentUs10yYieldVsAverage())
+                                    + ", USD/KRW vs average "
+                                    + formattingSupport.signedRatio(primaryMacroWindowSummary.currentUsdKrwVsAverage()) + "."
                     )
             ));
         }
@@ -163,24 +220,48 @@ class AnalysisRiskScenarioFactory {
                 || onchainContext.comparisonFacts().isEmpty()
                 ? null
                 : onchainContext.comparisonFacts().get(0);
-        if (primaryOnchainFact != null
+        AnalysisOnchainWindowSummary primaryOnchainWindowSummary = onchainContext == null
+                ? null
+                : onchainContextSupport.primaryWindowSummary(reportType, onchainContext);
+        boolean anchorContraction = primaryOnchainFact != null
                 && primaryOnchainFact.activeAddressChangeRate() != null
                 && primaryOnchainFact.transactionCountChangeRate() != null
                 && primaryOnchainFact.activeAddressChangeRate().compareTo(new BigDecimal("-0.10")) <= 0
-                && primaryOnchainFact.transactionCountChangeRate().compareTo(new BigDecimal("-0.10")) <= 0) {
+                && primaryOnchainFact.transactionCountChangeRate().compareTo(new BigDecimal("-0.10")) <= 0;
+        boolean windowContraction = primaryOnchainWindowSummary != null
+                && primaryOnchainWindowSummary.currentActiveAddressVsAverage() != null
+                && primaryOnchainWindowSummary.currentTransactionCountVsAverage() != null
+                && primaryOnchainWindowSummary.currentActiveAddressVsAverage().compareTo(new BigDecimal("-0.10")) <= 0
+                && primaryOnchainWindowSummary.currentTransactionCountVsAverage().compareTo(new BigDecimal("-0.10")) <= 0;
+        if (anchorContraction || windowContraction) {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.ONCHAIN_ACTIVITY_CONTRACTION,
                     "On-chain activity contraction",
-                    primaryOnchainFact.reference().name()
+                    primaryOnchainFact != null
+                            ? primaryOnchainFact.reference().name()
                             + " keeps active addresses "
                             + formattingSupport.signedRatio(primaryOnchainFact.activeAddressChangeRate())
                             + " and transactions "
                             + formattingSupport.signedRatio(primaryOnchainFact.transactionCountChangeRate())
-                            + ", which can signal weaker underlying network participation.",
+                            + ", which can signal weaker underlying network participation."
+                            : primaryOnchainWindowSummary.windowType().name()
+                            + " keeps active addresses "
+                            + formattingSupport.signedRatio(primaryOnchainWindowSummary.currentActiveAddressVsAverage())
+                            + " and transactions "
+                            + formattingSupport.signedRatio(primaryOnchainWindowSummary.currentTransactionCountVsAverage())
+                            + " versus average, which can signal weaker network participation.",
                     List.of(
-                            "Active addresses vs " + primaryOnchainFact.reference().name() + " are "
+                            primaryOnchainFact == null
+                                    ? primaryOnchainWindowSummary.windowType().name()
+                                    + " active addresses vs average are "
+                                    + formattingSupport.signedRatio(primaryOnchainWindowSummary.currentActiveAddressVsAverage()) + "."
+                                    : "Active addresses vs " + primaryOnchainFact.reference().name() + " are "
                                     + formattingSupport.signedRatio(primaryOnchainFact.activeAddressChangeRate()) + ".",
-                            "Transactions vs " + primaryOnchainFact.reference().name() + " are "
+                            primaryOnchainFact == null
+                                    ? primaryOnchainWindowSummary.windowType().name()
+                                    + " transactions vs average are "
+                                    + formattingSupport.signedRatio(primaryOnchainWindowSummary.currentTransactionCountVsAverage()) + "."
+                                    : "Transactions vs " + primaryOnchainFact.reference().name() + " are "
                                     + formattingSupport.signedRatio(primaryOnchainFact.transactionCountChangeRate()) + "."
                     )
             ));
@@ -198,56 +279,251 @@ class AnalysisRiskScenarioFactory {
         return candidates;
     }
 
-    List<AnalysisScenario> scenarios(MarketIndicatorSnapshotEntity snapshot, AnalysisTrendLabel trendBias) {
+    List<AnalysisScenario> scenarios(
+            MarketIndicatorSnapshotEntity snapshot,
+            AnalysisTrendLabel trendBias,
+            AnalysisReportType reportType,
+            AnalysisDerivativeContext derivativeContext,
+            AnalysisMacroContext macroContext,
+            AnalysisSentimentContext sentimentContext,
+            AnalysisOnchainContext onchainContext
+    ) {
+        List<String> externalTriggers = externalTriggerConditions(reportType, derivativeContext, macroContext, sentimentContext, onchainContext);
+        List<String> externalInvalidations = externalInvalidationSignals(reportType, derivativeContext, macroContext, sentimentContext, onchainContext);
+        String externalPath = externalPathSummary(reportType, derivativeContext, macroContext, sentimentContext, onchainContext);
+
         return switch (trendBias) {
             case BULLISH -> List.of(
                     new AnalysisScenario(
                             "Base case",
                             AnalysisScenarioBias.BULLISH,
-                            List.of("Price holds above MA20.", "Momentum remains constructive."),
-                            "Price holds above MA20 and extends toward " + snapshot.getBollingerUpperBand().stripTrailingZeros().toPlainString() + ".",
-                            List.of("A loss of MA20 weakens the bullish continuation path.")
+                            appendAll(List.of("Price holds above MA20.", "Momentum remains constructive."), externalTriggers),
+                            "Price holds above MA20 and extends toward "
+                                    + snapshot.getBollingerUpperBand().stripTrailingZeros().toPlainString()
+                                    + ". " + externalPath,
+                            appendAll(List.of("A loss of MA20 weakens the bullish continuation path."), externalInvalidations)
                     ),
                     new AnalysisScenario(
                             "Risk case",
                             AnalysisScenarioBias.NEUTRAL,
-                            List.of("Price loses MA20 support."),
-                            "A loss of MA20 can trigger a pullback toward " + snapshot.getMa60().stripTrailingZeros().toPlainString() + ".",
-                            List.of("A fast recovery above MA20 invalidates the pullback case.")
+                            appendAll(List.of("Price loses MA20 support."), externalTriggers),
+                            "A loss of MA20 can trigger a pullback toward "
+                                    + snapshot.getMa60().stripTrailingZeros().toPlainString()
+                                    + ". " + externalRiskPathSummary(reportType, macroContext, sentimentContext, onchainContext),
+                            appendAll(List.of("A fast recovery above MA20 invalidates the pullback case."), externalInvalidations)
                     )
             );
             case BEARISH -> List.of(
                     new AnalysisScenario(
                             "Base case",
                             AnalysisScenarioBias.BEARISH,
-                            List.of("Price stays below MA20.", "Momentum remains weak."),
-                            "Price stays below MA20 and can probe " + snapshot.getBollingerLowerBand().stripTrailingZeros().toPlainString() + ".",
-                            List.of("A recovery above MA20 weakens the bearish continuation case.")
+                            appendAll(List.of("Price stays below MA20.", "Momentum remains weak."), externalTriggers),
+                            "Price stays below MA20 and can probe "
+                                    + snapshot.getBollingerLowerBand().stripTrailingZeros().toPlainString()
+                                    + ". " + externalRiskPathSummary(reportType, macroContext, sentimentContext, onchainContext),
+                            appendAll(List.of("A recovery above MA20 weakens the bearish continuation case."), externalInvalidations)
                     ),
                     new AnalysisScenario(
                             "Risk case",
                             AnalysisScenarioBias.NEUTRAL,
-                            List.of("Price reclaims MA20."),
-                            "A recovery above MA20 can force short-covering toward " + snapshot.getMa60().stripTrailingZeros().toPlainString() + ".",
-                            List.of("Failure back below MA20 invalidates the squeeze scenario.")
+                            appendAll(List.of("Price reclaims MA20."), externalTriggers),
+                            "A recovery above MA20 can force short-covering toward "
+                                    + snapshot.getMa60().stripTrailingZeros().toPlainString()
+                                    + ". " + externalPath,
+                            appendAll(List.of("Failure back below MA20 invalidates the squeeze scenario."), externalInvalidations)
                     )
             );
             case NEUTRAL -> List.of(
                     new AnalysisScenario(
                             "Base case",
                             AnalysisScenarioBias.NEUTRAL,
-                            List.of("Price remains inside the active range.", "Trend strength stays mixed."),
-                            "Price oscillates between support and resistance while waiting for directional confirmation.",
-                            List.of("A decisive break beyond range extremes invalidates the range case.")
+                            appendAll(List.of("Price remains inside the active range.", "Trend strength stays mixed."), externalTriggers),
+                            "Price oscillates between support and resistance while waiting for directional confirmation. " + externalPath,
+                            appendAll(List.of("A decisive break beyond range extremes invalidates the range case."), externalInvalidations)
                     ),
                     new AnalysisScenario(
                             "Breakout case",
                             AnalysisScenarioBias.DIRECTIONAL,
-                            List.of("Price breaks beyond the current band extremes."),
-                            "A decisive move beyond the current band extremes can set the next short-term direction.",
-                            List.of("Failure to hold the breakout level invalidates the directional case.")
+                            appendAll(List.of("Price breaks beyond the current band extremes."), externalTriggers),
+                            "A decisive move beyond the current band extremes can set the next short-term direction. " + externalPath,
+                            appendAll(List.of("Failure to hold the breakout level invalidates the directional case."), externalInvalidations)
                     )
             );
         };
+    }
+
+    private List<String> externalTriggerConditions(
+            AnalysisReportType reportType,
+            AnalysisDerivativeContext derivativeContext,
+            AnalysisMacroContext macroContext,
+            AnalysisSentimentContext sentimentContext,
+            AnalysisOnchainContext onchainContext
+    ) {
+        java.util.ArrayList<String> triggers = new java.util.ArrayList<>();
+
+        AnalysisDerivativeWindowSummary derivativeWindowSummary = derivativeContext == null
+                ? null
+                : derivativeContextSupport.primaryDerivativeWindowSummary(reportType, derivativeContext);
+        if (derivativeWindowSummary != null && derivativeWindowSummary.currentOpenInterestVsAverage() != null
+                && derivativeWindowSummary.currentOpenInterestVsAverage().abs().compareTo(new BigDecimal("0.20")) >= 0) {
+            triggers.add(derivativeWindowSummary.windowType().name() + " open interest remains "
+                    + formattingSupport.signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage())
+                    + " versus average.");
+        }
+
+        AnalysisMacroWindowSummary macroWindowSummary = macroContext == null
+                ? null
+                : macroContextSupport.primaryWindowSummary(reportType, macroContext);
+        if (macroWindowSummary != null && (
+                macroWindowSummary.currentDxyProxyVsAverage().compareTo(new BigDecimal("0.01")) >= 0
+                        || macroWindowSummary.currentUs10yYieldVsAverage().compareTo(new BigDecimal("0.03")) >= 0
+                        || macroWindowSummary.currentUsdKrwVsAverage().compareTo(new BigDecimal("0.01")) >= 0
+        )) {
+            triggers.add(macroWindowSummary.windowType().name() + " macro backdrop still shows firm dollar/yield pressure.");
+        }
+
+        AnalysisSentimentWindowSummary sentimentWindowSummary = sentimentContext == null
+                ? null
+                : sentimentContextSupport.primaryWindowSummary(reportType, sentimentContext);
+        if (sentimentWindowSummary != null && sentimentWindowSummary.currentIndexVsAverage() != null
+                && sentimentWindowSummary.currentIndexVsAverage().abs().compareTo(new BigDecimal("0.15")) >= 0) {
+            triggers.add(sentimentWindowSummary.windowType().name() + " sentiment remains "
+                    + formattingSupport.signedRatio(sentimentWindowSummary.currentIndexVsAverage())
+                    + " versus average.");
+        }
+
+        AnalysisOnchainWindowSummary onchainWindowSummary = onchainContext == null
+                ? null
+                : onchainContextSupport.primaryWindowSummary(reportType, onchainContext);
+        if (onchainWindowSummary != null
+                && onchainWindowSummary.currentActiveAddressVsAverage() != null
+                && onchainWindowSummary.currentTransactionCountVsAverage() != null) {
+            if (onchainWindowSummary.currentActiveAddressVsAverage().compareTo(new BigDecimal("0.10")) >= 0
+                    && onchainWindowSummary.currentTransactionCountVsAverage().compareTo(new BigDecimal("0.10")) >= 0) {
+                triggers.add(onchainWindowSummary.windowType().name() + " on-chain activity remains above average.");
+            } else if (onchainWindowSummary.currentActiveAddressVsAverage().compareTo(new BigDecimal("-0.10")) <= 0
+                    && onchainWindowSummary.currentTransactionCountVsAverage().compareTo(new BigDecimal("-0.10")) <= 0) {
+                triggers.add(onchainWindowSummary.windowType().name() + " on-chain activity remains below average.");
+            }
+        }
+
+        return triggers;
+    }
+
+    private String externalPathSummary(
+            AnalysisReportType reportType,
+            AnalysisDerivativeContext derivativeContext,
+            AnalysisMacroContext macroContext,
+            AnalysisSentimentContext sentimentContext,
+            AnalysisOnchainContext onchainContext
+    ) {
+        java.util.ArrayList<String> clauses = new java.util.ArrayList<>();
+
+        AnalysisSentimentWindowSummary sentimentWindowSummary = sentimentContext == null
+                ? null
+                : sentimentContextSupport.primaryWindowSummary(reportType, sentimentContext);
+        if (sentimentContext != null && sentimentWindowSummary != null && sentimentWindowSummary.currentIndexVsAverage() != null) {
+            clauses.add("Sentiment remains " + formattingSupport.signedRatio(sentimentWindowSummary.currentIndexVsAverage()) + " versus average");
+        }
+
+        AnalysisMacroWindowSummary macroWindowSummary = macroContext == null
+                ? null
+                : macroContextSupport.primaryWindowSummary(reportType, macroContext);
+        if (macroWindowSummary != null) {
+            clauses.add("macro backdrop keeps DXY " + formattingSupport.signedRatio(macroWindowSummary.currentDxyProxyVsAverage()) + " versus average");
+        }
+
+        AnalysisOnchainWindowSummary onchainWindowSummary = onchainContext == null
+                ? null
+                : onchainContextSupport.primaryWindowSummary(reportType, onchainContext);
+        if (onchainWindowSummary != null) {
+            clauses.add("on-chain activity sits " + formattingSupport.signedRatio(onchainWindowSummary.currentActiveAddressVsAverage()) + " versus average");
+        }
+
+        return clauses.isEmpty() ? "External context stays mixed." : String.join(", ", clauses) + ".";
+    }
+
+    private String externalRiskPathSummary(
+            AnalysisReportType reportType,
+            AnalysisMacroContext macroContext,
+            AnalysisSentimentContext sentimentContext,
+            AnalysisOnchainContext onchainContext
+    ) {
+        java.util.ArrayList<String> clauses = new java.util.ArrayList<>();
+
+        AnalysisMacroWindowSummary macroWindowSummary = macroContext == null
+                ? null
+                : macroContextSupport.primaryWindowSummary(reportType, macroContext);
+        if (macroWindowSummary != null && (
+                macroWindowSummary.currentDxyProxyVsAverage().compareTo(new BigDecimal("0.01")) >= 0
+                        || macroWindowSummary.currentUs10yYieldVsAverage().compareTo(new BigDecimal("0.03")) >= 0
+        )) {
+            clauses.add("Firm macro conditions can amplify downside volatility");
+        }
+
+        AnalysisSentimentWindowSummary sentimentWindowSummary = sentimentContext == null
+                ? null
+                : sentimentContextSupport.primaryWindowSummary(reportType, sentimentContext);
+        if (sentimentWindowSummary != null && sentimentWindowSummary.currentIndexVsAverage() != null
+                && sentimentWindowSummary.currentIndexVsAverage().compareTo(new BigDecimal("0.15")) >= 0) {
+            clauses.add("elevated greed can unwind quickly");
+        }
+
+        AnalysisOnchainWindowSummary onchainWindowSummary = onchainContext == null
+                ? null
+                : onchainContextSupport.primaryWindowSummary(reportType, onchainContext);
+        if (onchainWindowSummary != null
+                && onchainWindowSummary.currentActiveAddressVsAverage().compareTo(new BigDecimal("-0.10")) <= 0
+                && onchainWindowSummary.currentTransactionCountVsAverage().compareTo(new BigDecimal("-0.10")) <= 0) {
+            clauses.add("soft on-chain activity can weaken follow-through");
+        }
+
+        return clauses.isEmpty() ? "External context does not add a strong risk skew." : String.join(", ", clauses) + ".";
+    }
+
+    private List<String> externalInvalidationSignals(
+            AnalysisReportType reportType,
+            AnalysisDerivativeContext derivativeContext,
+            AnalysisMacroContext macroContext,
+            AnalysisSentimentContext sentimentContext,
+            AnalysisOnchainContext onchainContext
+    ) {
+        java.util.ArrayList<String> signals = new java.util.ArrayList<>();
+
+        AnalysisDerivativeWindowSummary derivativeWindowSummary = derivativeContext == null
+                ? null
+                : derivativeContextSupport.primaryDerivativeWindowSummary(reportType, derivativeContext);
+        if (derivativeWindowSummary != null && derivativeWindowSummary.currentFundingVsAverage() != null) {
+            signals.add("Funding and open interest normalize closer to representative averages.");
+        }
+
+        AnalysisMacroWindowSummary macroWindowSummary = macroContext == null
+                ? null
+                : macroContextSupport.primaryWindowSummary(reportType, macroContext);
+        if (macroWindowSummary != null) {
+            signals.add("Dollar/yield pressure cools back toward window averages.");
+        }
+
+        AnalysisSentimentWindowSummary sentimentWindowSummary = sentimentContext == null
+                ? null
+                : sentimentContextSupport.primaryWindowSummary(reportType, sentimentContext);
+        if (sentimentWindowSummary != null) {
+            signals.add("Fear & Greed mean-reverts toward its recent average.");
+        }
+
+        AnalysisOnchainWindowSummary onchainWindowSummary = onchainContext == null
+                ? null
+                : onchainContextSupport.primaryWindowSummary(reportType, onchainContext);
+        if (onchainWindowSummary != null) {
+            signals.add("On-chain activity stabilizes around its recent average.");
+        }
+
+        return signals;
+    }
+
+    private List<String> appendAll(List<String> base, List<String> extras) {
+        java.util.ArrayList<String> merged = new java.util.ArrayList<>(base);
+        merged.addAll(extras);
+        return merged;
     }
 }

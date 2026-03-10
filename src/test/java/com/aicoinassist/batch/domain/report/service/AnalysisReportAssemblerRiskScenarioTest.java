@@ -37,7 +37,9 @@ class AnalysisReportAssemblerRiskScenarioTest extends AnalysisReportServiceFixtu
                                                  org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.BAND_EXTENSION, "Band extension"),
                                                  org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.ELEVATED_VOLATILITY, "Elevated volatility"),
                                                  org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.FUNDING_SKEW, "Funding skew"),
-                                                 org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.BASIS_EXPANSION, "Basis expansion")
+                                                 org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.BASIS_EXPANSION, "Basis expansion"),
+                                                 org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.SENTIMENT_GREED_EXTREME, "Sentiment greed extreme"),
+                                                 org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.MACRO_VOLATILITY, "Macro volatility")
                                          );
         assertThat(payload.riskFactors()).allSatisfy(riskFactor -> assertThat(riskFactor.triggerFacts()).isNotEmpty());
         assertThat(payload.scenarios()).extracting("bias").contains(AnalysisScenarioBias.BULLISH, AnalysisScenarioBias.NEUTRAL);
@@ -46,5 +48,8 @@ class AnalysisReportAssemblerRiskScenarioTest extends AnalysisReportServiceFixtu
             assertThat(scenario.pathSummary()).isNotBlank();
             assertThat(scenario.invalidationSignals()).isNotEmpty();
         });
+        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("macro backdrop"));
+        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("sentiment remains"));
+        assertThat(payload.scenarios().get(0).pathSummary()).contains("Sentiment remains");
     }
 }
