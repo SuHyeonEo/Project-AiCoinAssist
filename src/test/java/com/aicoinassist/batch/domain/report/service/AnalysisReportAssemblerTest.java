@@ -15,6 +15,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload
 import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
@@ -133,6 +135,12 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.marketContext().levelContext().supportBreakRisk()).isEqualByComparingTo("0.18000000");
         assertThat(payload.marketContext().levelContext().resistanceBreakRisk()).isEqualByComparingTo("0.05000000");
         assertThat(payload.marketContext().levelContext().zoneInteractionFacts()).hasSize(2);
+        assertThat(payload.marketContext().levelContext().comparisonFacts()).hasSize(2);
+        assertThat(payload.marketContext().levelContext().highlights()).extracting(AnalysisLevelContextHighlight::reference)
+                                                                       .containsExactly(
+                                                                               AnalysisComparisonReference.PREV_BATCH,
+                                                                               AnalysisComparisonReference.D1
+                                                                       );
         assertThat(payload.marketContext().derivativeContextSummary().currentStateSummary()).contains("Open interest");
         assertThat(payload.marketContext().derivativeHeadline()).extracting(
                         AnalysisContextHeadlinePayload::category,
@@ -675,7 +683,38 @@ class AnalysisReportAssemblerTest {
                         )
                 ),
                 new BigDecimal("0.18000000"),
-                new BigDecimal("0.05000000")
+                new BigDecimal("0.05000000"),
+                List.of(
+                        new AnalysisLevelContextComparisonFact(
+                                AnalysisComparisonReference.PREV_BATCH,
+                                Instant.parse("2026-03-08T23:59:59Z"),
+                                new BigDecimal("0.00288684"),
+                                new BigDecimal("0.00158371"),
+                                new BigDecimal("0.04285714"),
+                                new BigDecimal("0.03285714"),
+                                new BigDecimal("0.04000000"),
+                                new BigDecimal("-0.02000000"),
+                                AnalysisPriceZoneInteractionType.ABOVE_ZONE,
+                                AnalysisPriceZoneInteractionType.INSIDE_ZONE,
+                                AnalysisPriceZoneInteractionType.BELOW_ZONE,
+                                AnalysisPriceZoneInteractionType.BELOW_ZONE
+                        ),
+                        new AnalysisLevelContextComparisonFact(
+                                AnalysisComparisonReference.D1,
+                                Instant.parse("2026-03-08T00:59:59Z"),
+                                new BigDecimal("0.00988372"),
+                                new BigDecimal("-0.00492611"),
+                                new BigDecimal("0.08285714"),
+                                new BigDecimal("-0.03714286"),
+                                new BigDecimal("0.08000000"),
+                                new BigDecimal("-0.04000000"),
+                                AnalysisPriceZoneInteractionType.ABOVE_ZONE,
+                                AnalysisPriceZoneInteractionType.ABOVE_ZONE,
+                                AnalysisPriceZoneInteractionType.BELOW_ZONE,
+                                AnalysisPriceZoneInteractionType.INSIDE_ZONE
+                        )
+                ),
+                List.of()
         );
     }
 }

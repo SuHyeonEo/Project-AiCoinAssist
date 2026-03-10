@@ -14,6 +14,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
@@ -41,6 +43,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractionType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisScenarioBias;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
@@ -74,7 +77,7 @@ public class AnalysisReportAssembler {
         AnalysisDerivativeContext enrichedDerivativeContext = enrichDerivativeContext(reportType, derivativeContext);
         AnalysisLevelContextPayload effectiveLevelContext = levelContext == null
                 ? fallbackLevelContext(supportZones, resistanceZones)
-                : levelContext;
+                : enrichLevelContext(levelContext);
         AnalysisTrendLabel trendBias = determineTrendBias(snapshot);
         AnalysisSummaryPayload summary = buildSummary(
                 snapshot,
@@ -206,6 +209,9 @@ public class AnalysisReportAssembler {
         levelContext.zoneInteractionFacts().stream()
                             .map(AnalysisZoneInteractionFact::summary)
                             .forEach(details::add);
+        levelContext.highlights().stream()
+                    .map(AnalysisLevelContextHighlight::detail)
+                    .forEach(details::add);
         return details;
     }
 
@@ -237,7 +243,10 @@ public class AnalysisReportAssembler {
         );
         List<String> comparisonHighlightDetails = comparisonHighlights.stream()
                                                                      .map(AnalysisComparisonHighlight::detail)
-                                                                     .toList();
+                                                                     .collect(Collectors.toCollection(java.util.ArrayList::new));
+        levelContext.highlights().stream()
+                    .map(AnalysisLevelContextHighlight::detail)
+                    .forEach(comparisonHighlightDetails::add);
         AnalysisContextHeadlinePayload comparisonHeadline = comparisonContextHeadline(reportType, comparisonFacts, comparisonHighlights);
 
         AnalysisWindowSummary primaryWindow = primaryWindow(windowSummaries);
@@ -265,6 +274,9 @@ public class AnalysisReportAssembler {
         levelContext.zoneInteractionFacts().stream()
                             .map(AnalysisZoneInteractionFact::summary)
                             .forEach(windowHighlightDetails::add);
+        levelContext.highlights().stream()
+                    .map(AnalysisLevelContextHighlight::detail)
+                    .forEach(windowHighlightDetails::add);
         AnalysisContextHeadlinePayload windowHeadline = windowContextHeadline(reportType, windowSummaries);
 
         AnalysisDerivativeContextSummaryPayload derivativeContextSummary = null;
@@ -995,6 +1007,55 @@ public class AnalysisReportAssembler {
         };
     }
 
+    private AnalysisLevelContextPayload enrichLevelContext(AnalysisLevelContextPayload levelContext) {
+        return new AnalysisLevelContextPayload(
+                levelContext.nearestSupportZone(),
+                levelContext.nearestResistanceZone(),
+                levelContext.zoneInteractionFacts(),
+                levelContext.supportBreakRisk(),
+                levelContext.resistanceBreakRisk(),
+                levelContext.comparisonFacts(),
+                levelContextHighlights(levelContext.comparisonFacts())
+        );
+    }
+
+    private List<AnalysisLevelContextHighlight> levelContextHighlights(
+            List<AnalysisLevelContextComparisonFact> comparisonFacts
+    ) {
+        if (comparisonFacts == null || comparisonFacts.isEmpty()) {
+            return List.of();
+        }
+        return comparisonFacts.stream()
+                              .limit(2)
+                              .map(this::toLevelContextHighlight)
+                              .toList();
+    }
+
+    private AnalysisLevelContextHighlight toLevelContextHighlight(AnalysisLevelContextComparisonFact fact) {
+        return new AnalysisLevelContextHighlight(
+                fact.reference(),
+                fact.reference().name() + " level context",
+                fact.reference().name()
+                        + " keeps support price "
+                        + signedRatio(fact.supportRepresentativePriceChangeRate())
+                        + ", support strength Δ "
+                        + signed(fact.supportStrengthDelta())
+                        + ", support break risk Δ "
+                        + signedRatio(fact.supportBreakRiskDelta())
+                        + ", resistance price "
+                        + signedRatio(fact.resistanceRepresentativePriceChangeRate())
+                        + ", resistance strength Δ "
+                        + signed(fact.resistanceStrengthDelta())
+                        + ", resistance break risk Δ "
+                        + signedRatio(fact.resistanceBreakRiskDelta())
+                        + ", support interaction "
+                        + interactionShift(fact.currentSupportInteractionType(), fact.referenceSupportInteractionType())
+                        + ", resistance interaction "
+                        + interactionShift(fact.currentResistanceInteractionType(), fact.referenceResistanceInteractionType())
+                        + "."
+        );
+    }
+
     private AnalysisLevelContextPayload fallbackLevelContext(
             List<AnalysisPriceZone> supportZones,
             List<AnalysisPriceZone> resistanceZones
@@ -1006,7 +1067,9 @@ public class AnalysisReportAssembler {
                 nearestResistanceZone,
                 zoneInteractionFacts(nearestSupportZone, nearestResistanceZone),
                 null,
-                null
+                null,
+                List.of(),
+                List.of()
         );
     }
 
@@ -1066,6 +1129,27 @@ public class AnalysisReportAssembler {
                     .setScale(2, RoundingMode.HALF_UP)
                     .stripTrailingZeros()
                     .toPlainString() + "%";
+    }
+
+    private String interactionShift(
+            AnalysisPriceZoneInteractionType currentInteractionType,
+            AnalysisPriceZoneInteractionType referenceInteractionType
+    ) {
+        if (currentInteractionType == null && referenceInteractionType == null) {
+            return "unchanged";
+        }
+        if (currentInteractionType == null) {
+            return "from " + referenceInteractionType.name().toLowerCase().replace('_', ' ');
+        }
+        if (referenceInteractionType == null) {
+            return "to " + currentInteractionType.name().toLowerCase().replace('_', ' ');
+        }
+        if (currentInteractionType == referenceInteractionType) {
+            return "unchanged at " + currentInteractionType.name().toLowerCase().replace('_', ' ');
+        }
+        return referenceInteractionType.name().toLowerCase().replace('_', ' ')
+                + " -> "
+                + currentInteractionType.name().toLowerCase().replace('_', ' ');
     }
 
     private String signedRatio(BigDecimal value) {

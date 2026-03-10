@@ -8,6 +8,8 @@ public record AnalysisLevelContextPayload(
         AnalysisPriceZone nearestResistanceZone,
         List<AnalysisZoneInteractionFact> zoneInteractionFacts,
         BigDecimal supportBreakRisk,
-        BigDecimal resistanceBreakRisk
+        BigDecimal resistanceBreakRisk,
+        List<AnalysisLevelContextComparisonFact> comparisonFacts,
+        List<AnalysisLevelContextHighlight> highlights
 ) {
 }
