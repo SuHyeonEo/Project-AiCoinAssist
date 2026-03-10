@@ -34,7 +34,8 @@ import java.util.stream.Collectors;
 public class MarketRawIngestionService {
 
     private static final String BINANCE_SOURCE = "BINANCE";
-    private static final int DEFAULT_CANDLE_LIMIT = 120;
+    private static final int DEFAULT_FULL_CANDLE_LIMIT = 120;
+    private static final int DEFAULT_DELTA_CANDLE_LIMIT = 3;
 
     private final BinanceApiClient binanceApiClient;
     private final BinanceAggregateTradeResponseValidator aggregateTradeResponseValidator;
@@ -45,17 +46,54 @@ public class MarketRawIngestionService {
 
     @Transactional
     public MarketRawIngestionResult ingest(String symbol, CandleInterval interval) {
-        return ingest(symbol, interval, DEFAULT_CANDLE_LIMIT);
+        return ingest(symbol, interval, DEFAULT_FULL_CANDLE_LIMIT);
     }
 
     @Transactional
     public MarketRawIngestionResult ingest(String symbol, CandleInterval interval, int candleLimit) {
         Instant collectedTime = Instant.now();
 
+        RawDataValidationStatus priceValidationStatus = ingestPrice(symbol, collectedTime);
+        MarketRawIngestionResult candleResult = ingestCandles(symbol, interval, candleLimit, collectedTime);
+
+        return new MarketRawIngestionResult(
+                symbol,
+                interval,
+                collectedTime,
+                priceValidationStatus,
+                candleResult.candleCount(),
+                candleResult.invalidCandleCount()
+        );
+    }
+
+    @Transactional
+    public RawDataValidationStatus ingestPrice(String symbol) {
+        return ingestPrice(symbol, Instant.now());
+    }
+
+    @Transactional
+    public MarketRawIngestionResult ingestCandles(String symbol, CandleInterval interval) {
+        return ingestCandles(symbol, interval, DEFAULT_DELTA_CANDLE_LIMIT);
+    }
+
+    @Transactional
+    public MarketRawIngestionResult ingestCandles(String symbol, CandleInterval interval, int candleLimit) {
+        return ingestCandles(symbol, interval, candleLimit, Instant.now());
+    }
+
+    private RawDataValidationStatus ingestPrice(String symbol, Instant collectedTime) {
         BinanceAggregateTradeResponse aggregateTradeResponse = binanceApiClient.getLatestAggregateTrade(symbol);
         RawDataValidationResult priceValidation = aggregateTradeResponseValidator.validate(aggregateTradeResponse);
         persistOrRefreshPriceRaw(symbol, collectedTime, aggregateTradeResponse, priceValidation);
+        return priceValidation.status();
+    }
 
+    private MarketRawIngestionResult ingestCandles(
+            String symbol,
+            CandleInterval interval,
+            int candleLimit,
+            Instant collectedTime
+    ) {
         List<BinanceKlineResponse> klineResponses = binanceApiClient.getKlines(symbol, interval.value(), candleLimit);
         RawDataValidationResult sequenceValidation = klineResponseValidator.validateSequence(klineResponses);
 
@@ -71,7 +109,7 @@ public class MarketRawIngestionService {
                 symbol,
                 interval,
                 collectedTime,
-                priceValidation.status(),
+                null,
                 klineResponses.size(),
                 invalidCandleCount
         );
