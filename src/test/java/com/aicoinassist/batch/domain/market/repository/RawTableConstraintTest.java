@@ -4,6 +4,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketCandleRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketOpenInterestRawEntity;
@@ -46,6 +47,9 @@ class RawTableConstraintTest {
 
     @Autowired
     private MarketContextSnapshotRepository marketContextSnapshotRepository;
+
+    @Autowired
+    private MarketExternalContextSnapshotRepository marketExternalContextSnapshotRepository;
 
     @Autowired
     private MarketWindowSummarySnapshotRepository marketWindowSummarySnapshotRepository;
@@ -121,6 +125,17 @@ class RawTableConstraintTest {
 
         assertThatThrownBy(() -> marketContextSnapshotRepository.saveAndFlush(
                 contextSnapshot(snapshotTime, "12346.67")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketExternalContextSnapshotRejectsDuplicateSymbolAndSnapshotTime() {
+        Instant snapshotTime = Instant.parse("2026-03-10T00:59:30Z");
+
+        marketExternalContextSnapshotRepository.saveAndFlush(externalContextSnapshot(snapshotTime, "0.66666667"));
+
+        assertThatThrownBy(() -> marketExternalContextSnapshotRepository.saveAndFlush(
+                externalContextSnapshot(snapshotTime, "1.33333333")
         )).isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -305,6 +320,30 @@ class RawTableConstraintTest {
                                                 .currentAtrVsAverage(new BigDecimal("0.03448276"))
                                                 .sourceDataVersion("basis-key;windowType=LAST_7D")
                                                 .build();
+    }
+
+    private MarketExternalContextSnapshotEntity externalContextSnapshot(Instant snapshotTime, String compositeRiskScore) {
+        return MarketExternalContextSnapshotEntity.builder()
+                                                  .symbol("BTCUSDT")
+                                                  .snapshotTime(snapshotTime)
+                                                  .derivativeSnapshotTime(snapshotTime.minusSeconds(30))
+                                                  .macroSnapshotTime(snapshotTime.minusSeconds(60))
+                                                  .sentimentSnapshotTime(snapshotTime.minusSeconds(90))
+                                                  .onchainSnapshotTime(snapshotTime.minusSeconds(120))
+                                                  .sourceDataVersion("derivative=v1;macro=v1;sentiment=v1;onchain=v1")
+                                                  .compositeRiskScore(new BigDecimal(compositeRiskScore))
+                                                  .dominantDirection("HEADWIND")
+                                                  .highestSeverity("HIGH")
+                                                  .supportiveSignalCount(1)
+                                                  .cautionarySignalCount(1)
+                                                  .headwindSignalCount(2)
+                                                  .primarySignalCategory("MACRO")
+                                                  .primarySignalTitle("Dollar strength regime")
+                                                  .primarySignalDetail("DXY and yields are firm.")
+                                                  .regimeSignalsPayload("""
+                                                          [{"category":"MACRO","title":"Dollar strength regime","detail":"DXY is above average.","direction":"HEADWIND","severity":"HIGH","basisLabel":"LAST_30D"}]
+                                                          """)
+                                                  .build();
     }
 
     private MarketCandidateLevelSnapshotEntity candidateLevelSnapshot(Instant snapshotTime, String levelPrice) {

@@ -27,6 +27,7 @@ class AnalysisReportAssemblerLongTermTest extends AnalysisReportServiceFixtures 
                 sentimentContext(),
                 onchainContext(),
                 longContinuityNotes(),
+                externalContextComposite(),
                 levelContext(),
                 supportLevels(),
                 resistanceLevels(),

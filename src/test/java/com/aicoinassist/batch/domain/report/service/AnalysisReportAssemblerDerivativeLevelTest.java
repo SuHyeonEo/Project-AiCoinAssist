@@ -32,6 +32,7 @@ class AnalysisReportAssemblerDerivativeLevelTest extends AnalysisReportServiceFi
                 sentimentContext(),
                 onchainContext(),
                 shortContinuityNotes(),
+                externalContextComposite(),
                 levelContext(),
                 supportLevels(),
                 resistanceLevels(),

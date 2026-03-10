@@ -9,6 +9,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
@@ -28,6 +30,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisZoneInteractionFact;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeCategory;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeDirection;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeSeverity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractionType;
@@ -673,6 +678,53 @@ abstract class AnalysisReportServiceFixtures {
                         )
                 ),
                 List.of()
+        );
+    }
+
+    protected AnalysisExternalContextCompositePayload externalContextComposite() {
+        return new AnalysisExternalContextCompositePayload(
+                new BigDecimal("1.33333333"),
+                AnalysisExternalRegimeDirection.HEADWIND,
+                AnalysisExternalRegimeSeverity.HIGH,
+                0,
+                2,
+                2,
+                "Dollar strength regime",
+                "DXY and yields remain firm versus representative averages.",
+                List.of(
+                        new AnalysisExternalRegimeSignal(
+                                AnalysisExternalRegimeCategory.DERIVATIVE,
+                                "Funding crowding regime",
+                                "Funding remains elevated.",
+                                AnalysisExternalRegimeDirection.CAUTIONARY,
+                                AnalysisExternalRegimeSeverity.MEDIUM,
+                                "LAST_7D"
+                        ),
+                        new AnalysisExternalRegimeSignal(
+                                AnalysisExternalRegimeCategory.MACRO,
+                                "Dollar strength regime",
+                                "DXY stays above average.",
+                                AnalysisExternalRegimeDirection.HEADWIND,
+                                AnalysisExternalRegimeSeverity.HIGH,
+                                "LAST_30D"
+                        ),
+                        new AnalysisExternalRegimeSignal(
+                                AnalysisExternalRegimeCategory.SENTIMENT,
+                                "Greed regime",
+                                "Fear & Greed stays above average.",
+                                AnalysisExternalRegimeDirection.CAUTIONARY,
+                                AnalysisExternalRegimeSeverity.HIGH,
+                                "LAST_7D"
+                        ),
+                        new AnalysisExternalRegimeSignal(
+                                AnalysisExternalRegimeCategory.ONCHAIN,
+                                "Activity expansion regime",
+                                "On-chain activity stays above average.",
+                                AnalysisExternalRegimeDirection.SUPPORTIVE,
+                                AnalysisExternalRegimeSeverity.MEDIUM,
+                                "LAST_30D"
+                        )
+                )
         );
     }
 

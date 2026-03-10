@@ -5,6 +5,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
@@ -85,6 +86,7 @@ public class AnalysisReportAssembler {
             AnalysisSentimentContext sentimentContext,
             AnalysisOnchainContext onchainContext,
             List<AnalysisContinuityNote> continuityNotes,
+            AnalysisExternalContextCompositePayload externalContextComposite,
             AnalysisLevelContextPayload levelContext,
             List<AnalysisPriceLevel> supportLevels,
             List<AnalysisPriceLevel> resistanceLevels,
@@ -151,6 +153,7 @@ public class AnalysisReportAssembler {
                 enrichedSentimentContext,
                 enrichedOnchainContext,
                 continuityNotes,
+                externalContextComposite,
                 effectiveLevelContext
         );
         AnalysisMarketContextPayload marketContext = marketContextSectionAssembler.buildMarketContext(
@@ -166,6 +169,7 @@ public class AnalysisReportAssembler {
                 enrichedSentimentContext,
                 enrichedOnchainContext,
                 continuityNotes,
+                externalContextComposite,
                 effectiveLevelContext,
                 riskFactors
         );

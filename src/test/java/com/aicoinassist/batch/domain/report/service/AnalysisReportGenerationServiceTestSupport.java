@@ -4,6 +4,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotE
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
@@ -17,6 +18,7 @@ import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelSnapshot
 import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelZoneSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
+import com.aicoinassist.batch.domain.market.service.MarketExternalContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketLevelContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.onchain.entity.OnchainWindowSummarySnapshotEntity;
@@ -39,6 +41,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
@@ -75,6 +79,9 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisConfidenceLevel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeCategory;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeDirection;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeSeverity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisMacroHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
@@ -121,6 +128,9 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
     protected MarketContextWindowSummarySnapshotPersistenceService marketContextWindowSummarySnapshotPersistenceService;
 
     @Mock
+    protected MarketExternalContextSnapshotPersistenceService marketExternalContextSnapshotPersistenceService;
+
+    @Mock
     protected MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
 
     @Mock
@@ -157,6 +167,9 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
     protected AnalysisOnchainComparisonService analysisOnchainComparisonService;
 
     @Mock
+    protected AnalysisExternalContextSnapshotService analysisExternalContextSnapshotService;
+
+    @Mock
     protected AnalysisReportAssembler analysisReportAssembler;
 
     @Mock
@@ -173,6 +186,7 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                 marketLevelContextSnapshotPersistenceService,
                 marketContextSnapshotPersistenceService,
                 marketContextWindowSummarySnapshotPersistenceService,
+                marketExternalContextSnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
                 macroContextSnapshotPersistenceService,
                 macroContextWindowSummarySnapshotPersistenceService,
@@ -186,6 +200,7 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                 analysisMacroComparisonService,
                 analysisSentimentComparisonService,
                 analysisOnchainComparisonService,
+                analysisExternalContextSnapshotService,
                 analysisReportContinuityService,
                 analysisReportAssembler,
                 analysisReportPersistenceService,
@@ -344,13 +359,42 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                 List.of("D7 keeps active addresses +10%, transactions +9.38%, market cap +1.79%.")
                         ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion", "detail", AnalysisContextHeadlineImportance.MEDIUM),
+                        new AnalysisExternalContextCompositePayload(
+                                new BigDecimal("1.33333333"),
+                                AnalysisExternalRegimeDirection.HEADWIND,
+                                AnalysisExternalRegimeSeverity.HIGH,
+                                0,
+                                2,
+                                2,
+                                "Dollar strength regime",
+                                "DXY and yields remain firm versus representative averages.",
+                                List.of(
+                                        new AnalysisExternalRegimeSignal(
+                                                AnalysisExternalRegimeCategory.MACRO,
+                                                "Dollar strength regime",
+                                                "DXY proxy remains above average.",
+                                                AnalysisExternalRegimeDirection.HEADWIND,
+                                                AnalysisExternalRegimeSeverity.HIGH,
+                                                "LAST_30D"
+                                        )
+                                )
+                        ),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_MID_REPORT,
                                 "continuity summary",
                                 List.of("continuity summary"),
                                 List.of()
                         ),
-                        List.of()
+                        List.of(
+                                new AnalysisExternalRegimeSignal(
+                                        AnalysisExternalRegimeCategory.MACRO,
+                                        "Dollar strength regime",
+                                        "DXY proxy remains above average.",
+                                        AnalysisExternalRegimeDirection.HEADWIND,
+                                        AnalysisExternalRegimeSeverity.HIGH,
+                                        "LAST_30D"
+                                )
+                        )
                 ),
                 generationComparisonFacts(),
                 List.<AnalysisComparisonHighlight>of(),
@@ -789,6 +833,68 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                               .resistanceBreakRisk(new BigDecimal("0.05000000"))
                                               .sourceDataVersion("indicator=basis-key;supportZone=support;resistanceZone=resistance")
                                               .build();
+    }
+
+    protected com.aicoinassist.batch.domain.market.dto.MarketExternalContextSnapshot externalContextSnapshotInput() {
+        return new com.aicoinassist.batch.domain.market.dto.MarketExternalContextSnapshot(
+                "BTCUSDT",
+                Instant.parse("2026-03-09T00:59:30Z"),
+                Instant.parse("2026-03-09T00:59:30Z"),
+                Instant.parse("2026-03-09T00:00:00Z"),
+                Instant.parse("2026-03-09T00:00:00Z"),
+                Instant.parse("2026-03-09T00:00:00Z"),
+                "derivative=context-basis-key;macro=dxyProxyDate=2026-03-09;sentiment=metricType=FEAR_GREED_INDEX;onchain=activeAddressDate=2026-03-09",
+                new BigDecimal("1.33333333"),
+                AnalysisExternalRegimeDirection.HEADWIND,
+                AnalysisExternalRegimeSeverity.HIGH,
+                0,
+                2,
+                2,
+                AnalysisExternalRegimeCategory.MACRO,
+                "Dollar strength regime",
+                "DXY and yields remain firm versus representative averages.",
+                List.of(
+                        new AnalysisExternalRegimeSignal(
+                                AnalysisExternalRegimeCategory.MACRO,
+                                "Dollar strength regime",
+                                "DXY proxy remains above average.",
+                                AnalysisExternalRegimeDirection.HEADWIND,
+                                AnalysisExternalRegimeSeverity.HIGH,
+                                "LAST_30D"
+                        )
+                ).stream()
+                 .map(signal -> new com.aicoinassist.batch.domain.market.dto.MarketExternalRegimeSignalSnapshot(
+                         signal.category(),
+                         signal.title(),
+                         signal.detail(),
+                         signal.direction(),
+                         signal.severity(),
+                         signal.basisLabel()
+                 ))
+                 .toList()
+        );
+    }
+
+    protected MarketExternalContextSnapshotEntity externalContextSnapshotEntity() {
+        return MarketExternalContextSnapshotEntity.builder()
+                                                  .symbol("BTCUSDT")
+                                                  .snapshotTime(Instant.parse("2026-03-09T00:59:30Z"))
+                                                  .derivativeSnapshotTime(Instant.parse("2026-03-09T00:59:30Z"))
+                                                  .macroSnapshotTime(Instant.parse("2026-03-09T00:00:00Z"))
+                                                  .sentimentSnapshotTime(Instant.parse("2026-03-09T00:00:00Z"))
+                                                  .onchainSnapshotTime(Instant.parse("2026-03-09T00:00:00Z"))
+                                                  .sourceDataVersion("derivative=context-basis-key;macro=dxyProxyDate=2026-03-09;sentiment=metricType=FEAR_GREED_INDEX;onchain=activeAddressDate=2026-03-09")
+                                                  .compositeRiskScore(new BigDecimal("1.33333333"))
+                                                  .dominantDirection("HEADWIND")
+                                                  .highestSeverity("HIGH")
+                                                  .supportiveSignalCount(0)
+                                                  .cautionarySignalCount(2)
+                                                  .headwindSignalCount(2)
+                                                  .primarySignalCategory("MACRO")
+                                                  .primarySignalTitle("Dollar strength regime")
+                                                  .primarySignalDetail("DXY and yields remain firm versus representative averages.")
+                                                  .regimeSignalsPayload("[{\"category\":\"MACRO\",\"title\":\"Dollar strength regime\",\"detail\":\"DXY proxy remains above average.\",\"direction\":\"HEADWIND\",\"severity\":\"HIGH\",\"basisLabel\":\"LAST_30D\"}]")
+                                                  .build();
     }
 
     protected AnalysisReportEntity savedReportEntity(MarketIndicatorSnapshotEntity snapshot) {

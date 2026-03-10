@@ -14,6 +14,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContextSummaryPayload;
@@ -54,6 +56,9 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCate
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeCategory;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeDirection;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeSeverity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisMacroHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOnchainHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
@@ -200,13 +205,42 @@ abstract class AnalysisReportPayloadTestFixtures {
                                 List.of("D7 keeps active addresses +10%, transactions +9.38%, market cap +1.79%.")
                         ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion", "detail", AnalysisContextHeadlineImportance.MEDIUM),
+                        new AnalysisExternalContextCompositePayload(
+                                new BigDecimal("1.33333333"),
+                                AnalysisExternalRegimeDirection.HEADWIND,
+                                AnalysisExternalRegimeSeverity.HIGH,
+                                0,
+                                2,
+                                2,
+                                "Dollar strength regime",
+                                "DXY and yields remain firm versus representative averages.",
+                                List.of(
+                                        new AnalysisExternalRegimeSignal(
+                                                AnalysisExternalRegimeCategory.MACRO,
+                                                "Dollar strength regime",
+                                                "DXY proxy remains above average.",
+                                                AnalysisExternalRegimeDirection.HEADWIND,
+                                                AnalysisExternalRegimeSeverity.HIGH,
+                                                "LAST_30D"
+                                        )
+                                )
+                        ),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_SHORT_REPORT,
                                 "Previous short-term report highlighted momentum continuation.",
                                 List.of("Previous short-term report highlighted momentum continuation."),
                                 List.of()
                         ),
-                        List.of()
+                        List.of(
+                                new AnalysisExternalRegimeSignal(
+                                        AnalysisExternalRegimeCategory.MACRO,
+                                        "Dollar strength regime",
+                                        "DXY proxy remains above average.",
+                                        AnalysisExternalRegimeDirection.HEADWIND,
+                                        AnalysisExternalRegimeSeverity.HIGH,
+                                        "LAST_30D"
+                                )
+                        )
                 ),
                 List.of(
                         new AnalysisComparisonFact(

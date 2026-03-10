@@ -6,6 +6,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
@@ -62,6 +63,7 @@ class AnalysisSummarySectionAssembler {
             AnalysisSentimentContext sentimentContext,
             AnalysisOnchainContext onchainContext,
             List<AnalysisContinuityNote> continuityNotes,
+            AnalysisExternalContextCompositePayload externalContextComposite,
             AnalysisLevelContextPayload levelContext
     ) {
         String headline = reportType.name() + " view";
@@ -109,7 +111,7 @@ class AnalysisSummarySectionAssembler {
                         + ", and MACD histogram at "
                         + snapshot.getMacdHistogram().stripTrailingZeros().toPlainString()
                         + ". "
-                        + externalContextSentence(reportType, macroContext, sentimentContext, onchainContext),
+                        + externalContextSentence(reportType, macroContext, sentimentContext, onchainContext, externalContextComposite),
                 summarySignalDetails(signalHeadlines, levelContext),
                 continuityNotes.isEmpty() ? null : continuityNotes.get(0).summary()
         );
@@ -165,7 +167,8 @@ class AnalysisSummarySectionAssembler {
             AnalysisReportType reportType,
             AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
-            AnalysisOnchainContext onchainContext
+            AnalysisOnchainContext onchainContext,
+            AnalysisExternalContextCompositePayload externalContextComposite
     ) {
         List<String> clauses = new ArrayList<>();
 
@@ -194,6 +197,13 @@ class AnalysisSummarySectionAssembler {
                         + formattingSupport.signedRatio(onchainWindowSummary.currentActiveAddressVsAverage())
                         + " versus average");
             }
+        }
+
+        if (externalContextComposite != null && externalContextComposite.primarySignalTitle() != null) {
+            clauses.add("primary external regime is "
+                    + externalContextComposite.primarySignalTitle().toLowerCase()
+                    + " with composite risk score "
+                    + externalContextComposite.compositeRiskScore().setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString());
         }
 
         return clauses.isEmpty() ? "External context stays mixed." : String.join(", ", clauses) + ".";

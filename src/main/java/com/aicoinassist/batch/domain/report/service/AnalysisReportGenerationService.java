@@ -6,6 +6,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
@@ -14,6 +15,7 @@ import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelSnapshot
 import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelZoneSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
+import com.aicoinassist.batch.domain.market.service.MarketExternalContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketLevelContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
@@ -30,6 +32,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentWindowSummary;
@@ -63,6 +66,7 @@ public class AnalysisReportGenerationService {
     private final MarketLevelContextSnapshotPersistenceService marketLevelContextSnapshotPersistenceService;
     private final MarketContextSnapshotPersistenceService marketContextSnapshotPersistenceService;
     private final MarketContextWindowSummarySnapshotPersistenceService marketContextWindowSummarySnapshotPersistenceService;
+    private final MarketExternalContextSnapshotPersistenceService marketExternalContextSnapshotPersistenceService;
     private final MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
     private final MacroContextSnapshotPersistenceService macroContextSnapshotPersistenceService;
     private final MacroContextWindowSummarySnapshotPersistenceService macroContextWindowSummarySnapshotPersistenceService;
@@ -76,6 +80,7 @@ public class AnalysisReportGenerationService {
     private final AnalysisMacroComparisonService analysisMacroComparisonService;
     private final AnalysisSentimentComparisonService analysisSentimentComparisonService;
     private final AnalysisOnchainComparisonService analysisOnchainComparisonService;
+    private final AnalysisExternalContextSnapshotService analysisExternalContextSnapshotService;
     private final AnalysisReportContinuityService analysisReportContinuityService;
     private final AnalysisReportAssembler analysisReportAssembler;
     private final AnalysisReportPersistenceService analysisReportPersistenceService;
@@ -179,6 +184,17 @@ public class AnalysisReportGenerationService {
                 resistanceZones,
                 levelContextComparisonFacts
         );
+        MarketExternalContextSnapshotEntity externalContextSnapshot = marketExternalContextSnapshotPersistenceService
+                .createAndSave(analysisExternalContextSnapshotService.create(
+                        symbol,
+                        reportType,
+                        derivativeContext,
+                        macroContext,
+                        sentimentContext,
+                        onchainContext
+                ));
+        AnalysisExternalContextCompositePayload externalContextComposite = analysisReportMarketDataMapper
+                .toExternalContextComposite(externalContextSnapshot);
         AnalysisReportPayload payload = analysisReportAssembler.assemble(
                 snapshot,
                 reportType,
@@ -189,6 +205,7 @@ public class AnalysisReportGenerationService {
                 sentimentContext,
                 onchainContext,
                 continuityNotes,
+                externalContextComposite,
                 levelContext,
                 supportLevels,
                 resistanceLevels,

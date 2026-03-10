@@ -4,6 +4,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotE
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.macro.entity.MacroContextSnapshotEntity;
@@ -23,6 +24,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
@@ -251,6 +254,31 @@ public class AnalysisReportMarketDataMapper {
         );
     }
 
+    public AnalysisExternalContextCompositePayload toExternalContextComposite(MarketExternalContextSnapshotEntity entity) {
+        return new AnalysisExternalContextCompositePayload(
+                entity.getCompositeRiskScore(),
+                enumValue(entity.getDominantDirection(), com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeDirection.class),
+                enumValue(entity.getHighestSeverity(), com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeSeverity.class),
+                entity.getSupportiveSignalCount(),
+                entity.getCautionarySignalCount(),
+                entity.getHeadwindSignalCount(),
+                entity.getPrimarySignalTitle(),
+                entity.getPrimarySignalDetail(),
+                externalRegimeSignals(entity)
+        );
+    }
+
+    public List<AnalysisExternalRegimeSignal> externalRegimeSignals(MarketExternalContextSnapshotEntity entity) {
+        try {
+            return objectMapper.readValue(
+                    entity.getRegimeSignalsPayload(),
+                    new TypeReference<List<AnalysisExternalRegimeSignal>>() {}
+            );
+        } catch (Exception exception) {
+            throw new IllegalStateException("Failed to deserialize external context regime signals.", exception);
+        }
+    }
+
     private AnalysisPriceLevel toPriceLevel(MarketCandidateLevelSnapshotEntity entity) {
         return new AnalysisPriceLevel(
                 AnalysisPriceLevelLabel.valueOf(entity.getLevelLabel()),
@@ -369,5 +397,9 @@ public class AnalysisReportMarketDataMapper {
         } catch (Exception exception) {
             throw new IllegalStateException("Failed to deserialize market candidate level zone enum payload.", exception);
         }
+    }
+
+    private <T extends Enum<T>> T enumValue(String value, Class<T> enumClass) {
+        return value == null ? null : Enum.valueOf(enumClass, value);
     }
 }
