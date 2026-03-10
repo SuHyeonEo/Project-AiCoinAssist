@@ -7,9 +7,12 @@ import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySna
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.macro.entity.MacroContextSnapshotEntity;
+import com.aicoinassist.batch.domain.onchain.entity.OnchainFactSnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
@@ -110,6 +113,24 @@ public class AnalysisReportMarketDataMapper {
                 entity.getIndexValue(),
                 entity.getClassification(),
                 entity.getTimeUntilUpdateSeconds(),
+                comparisonFacts,
+                List.of()
+        );
+    }
+
+    public AnalysisOnchainContext toOnchainContext(
+            OnchainFactSnapshotEntity entity,
+            List<AnalysisOnchainComparisonFact> comparisonFacts
+    ) {
+        return new AnalysisOnchainContext(
+                entity.getSnapshotTime(),
+                entity.getActiveAddressSourceEventTime(),
+                entity.getTransactionCountSourceEventTime(),
+                entity.getMarketCapSourceEventTime(),
+                entity.getSourceDataVersion(),
+                entity.getActiveAddressCount(),
+                entity.getTransactionCount(),
+                entity.getMarketCapUsd(),
                 comparisonFacts,
                 List.of()
         );

@@ -9,6 +9,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryKeyMessagePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
@@ -28,6 +29,7 @@ class AnalysisSummarySectionAssembler {
     private final AnalysisDerivativeContextSupport derivativeContextSupport;
     private final AnalysisMacroContextSupport macroContextSupport;
     private final AnalysisSentimentContextSupport sentimentContextSupport;
+    private final AnalysisOnchainContextSupport onchainContextSupport;
     private final AnalysisReportFormattingSupport formattingSupport;
 
     AnalysisSummarySectionAssembler(
@@ -36,6 +38,7 @@ class AnalysisSummarySectionAssembler {
             AnalysisDerivativeContextSupport derivativeContextSupport,
             AnalysisMacroContextSupport macroContextSupport,
             AnalysisSentimentContextSupport sentimentContextSupport,
+            AnalysisOnchainContextSupport onchainContextSupport,
             AnalysisReportFormattingSupport formattingSupport
     ) {
         this.indicatorStateSupport = indicatorStateSupport;
@@ -43,6 +46,7 @@ class AnalysisSummarySectionAssembler {
         this.derivativeContextSupport = derivativeContextSupport;
         this.macroContextSupport = macroContextSupport;
         this.sentimentContextSupport = sentimentContextSupport;
+        this.onchainContextSupport = onchainContextSupport;
         this.formattingSupport = formattingSupport;
     }
 
@@ -56,6 +60,7 @@ class AnalysisSummarySectionAssembler {
             AnalysisDerivativeContext derivativeContext,
             AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
+            AnalysisOnchainContext onchainContext,
             List<AnalysisContinuityNote> continuityNotes,
             AnalysisLevelContextPayload levelContext
     ) {
@@ -78,12 +83,17 @@ class AnalysisSummarySectionAssembler {
                 reportType,
                 sentimentContext
         );
+        AnalysisContextHeadlinePayload onchainHeadline = onchainContextSupport.onchainContextHeadline(
+                reportType,
+                onchainContext
+        );
         List<AnalysisContextHeadlinePayload> signalHeadlines = java.util.stream.Stream.of(
                         comparisonHeadline,
                         windowHeadline,
                         derivativeHeadline,
                         macroHeadline,
-                        sentimentHeadline
+                        sentimentHeadline,
+                        onchainHeadline
                 )
                 .filter(java.util.Objects::nonNull)
                 .toList();

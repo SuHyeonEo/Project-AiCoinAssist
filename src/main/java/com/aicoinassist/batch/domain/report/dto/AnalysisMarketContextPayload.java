@@ -11,6 +11,8 @@ public record AnalysisMarketContextPayload(
         AnalysisContextHeadlinePayload macroHeadline,
         AnalysisSentimentContextSummaryPayload sentimentContextSummary,
         AnalysisContextHeadlinePayload sentimentHeadline,
+        AnalysisOnchainContextSummaryPayload onchainContextSummary,
+        AnalysisContextHeadlinePayload onchainHeadline,
         AnalysisContinuityContextPayload continuityContext
 ) {
 }

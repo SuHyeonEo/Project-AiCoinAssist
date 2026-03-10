@@ -12,6 +12,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
@@ -27,6 +30,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceTyp
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractionType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisMacroHighlightImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisOnchainHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisSentimentHighlightImportance;
 
 import java.math.BigDecimal;
@@ -283,6 +287,28 @@ abstract class AnalysisReportServiceFixtures {
         );
     }
 
+    protected AnalysisOnchainContext onchainContext() {
+        return new AnalysisOnchainContext(
+                Instant.parse("2026-03-09T00:00:00Z"),
+                Instant.parse("2026-03-09T00:00:00Z"),
+                Instant.parse("2026-03-09T00:00:00Z"),
+                Instant.parse("2026-03-09T00:00:00Z"),
+                "activeAddressSourceEventTime=2026-03-09T00:00:00Z;transactionCountSourceEventTime=2026-03-09T00:00:00Z;marketCapSourceEventTime=2026-03-09T00:00:00Z",
+                new BigDecimal("1050000.00000000"),
+                new BigDecimal("525000.00000000"),
+                new BigDecimal("1700000000000.00000000"),
+                onchainComparisonFacts(),
+                List.of(
+                        new AnalysisOnchainHighlight(
+                                "D7 activity expansion",
+                                "D7 keeps active addresses +10.53%, transactions +9.38%, market cap +9.68%.",
+                                AnalysisOnchainHighlightImportance.MEDIUM,
+                                AnalysisComparisonReference.D7
+                        )
+                )
+        );
+    }
+
     protected List<AnalysisDerivativeComparisonFact> derivativeComparisonFacts() {
         return List.of(
                 new AnalysisDerivativeComparisonFact(
@@ -404,6 +430,31 @@ abstract class AnalysisReportServiceFixtures {
                         new BigDecimal("0.04040404"),
                         new BigDecimal("33.22000000"),
                         new BigDecimal("0.02339437")
+                )
+        );
+    }
+
+    protected List<AnalysisOnchainComparisonFact> onchainComparisonFacts() {
+        return List.of(
+                new AnalysisOnchainComparisonFact(
+                        AnalysisComparisonReference.D7,
+                        Instant.parse("2026-03-02T00:00:00Z"),
+                        new BigDecimal("950000.00000000"),
+                        new BigDecimal("0.10526316"),
+                        new BigDecimal("480000.00000000"),
+                        new BigDecimal("0.09375000"),
+                        new BigDecimal("1550000000000.00000000"),
+                        new BigDecimal("0.09677419")
+                ),
+                new AnalysisOnchainComparisonFact(
+                        AnalysisComparisonReference.D30,
+                        Instant.parse("2026-02-07T00:00:00Z"),
+                        new BigDecimal("1200000.00000000"),
+                        new BigDecimal("-0.12500000"),
+                        new BigDecimal("610000.00000000"),
+                        new BigDecimal("-0.13934426"),
+                        new BigDecimal("1820000000000.00000000"),
+                        new BigDecimal("-0.06593407")
                 )
         );
     }

@@ -25,6 +25,7 @@ class AnalysisReportAssemblerLongTermTest extends AnalysisReportServiceFixtures 
                 derivativeContext(),
                 macroContext(),
                 sentimentContext(),
+                onchainContext(),
                 longContinuityNotes(),
                 levelContext(),
                 supportLevels(),
@@ -49,7 +50,8 @@ class AnalysisReportAssemblerLongTermTest extends AnalysisReportServiceFixtures 
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.WINDOW, "LAST_52W position"),
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.DERIVATIVE, "D180 derivative shift"),
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.MACRO, "Dollar strength regime"),
-                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime")
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime"),
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.ONCHAIN, "D30 activity contraction")
                 );
         assertThat(payload.marketContext().currentState().rangePositionLabel()).isEqualTo(AnalysisRangePositionLabel.UPPER_RANGE);
         assertThat(payload.marketContext().windowContext().headline().title()).isEqualTo("LAST_52W position");

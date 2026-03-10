@@ -12,4 +12,9 @@ public interface OnchainFactSnapshotRepository extends JpaRepository<OnchainFact
             String symbol,
             Instant snapshotTime
     );
+
+    Optional<OnchainFactSnapshotEntity> findTopBySymbolAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
+            String symbol,
+            Instant snapshotTime
+    );
 }

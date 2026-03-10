@@ -24,6 +24,10 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
@@ -48,6 +52,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImpo
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisMacroHighlightImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisOnchainHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
@@ -94,7 +99,8 @@ abstract class AnalysisReportPayloadTestFixtures {
                         List.of(
                                 new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison", "detail", AnalysisContextHeadlineImportance.HIGH),
                                 new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.WINDOW, "LAST_7D position", "detail", AnalysisContextHeadlineImportance.MEDIUM),
-                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.DERIVATIVE, "D1 derivative shift", "detail", AnalysisContextHeadlineImportance.MEDIUM)
+                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.DERIVATIVE, "D1 derivative shift", "detail", AnalysisContextHeadlineImportance.MEDIUM),
+                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion", "detail", AnalysisContextHeadlineImportance.MEDIUM)
                         )
                 ),
                 new AnalysisMarketContextPayload(
@@ -182,6 +188,12 @@ abstract class AnalysisReportPayloadTestFixtures {
                                 1L
                         ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime", "detail", AnalysisContextHeadlineImportance.HIGH),
+                        new AnalysisOnchainContextSummaryPayload(
+                                "Active addresses 1050000, transactions 525000, market cap 1700000000000.",
+                                "D7 keeps active addresses +10%, transactions +9.38%, market cap +1.79%.",
+                                List.of("D7 keeps active addresses +10%, transactions +9.38%, market cap +1.79%.")
+                        ),
+                        new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion", "detail", AnalysisContextHeadlineImportance.MEDIUM),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_SHORT_REPORT,
                                 "Previous short-term report highlighted momentum continuation.",
@@ -342,6 +354,36 @@ abstract class AnalysisReportPayloadTestFixtures {
                                         "Fear & Greed is at 72 (Greed), which points to risk appetite staying elevated.",
                                         AnalysisSentimentHighlightImportance.HIGH,
                                         null
+                                )
+                        )
+                ),
+                new AnalysisOnchainContext(
+                        Instant.parse("2026-03-09T00:00:00Z"),
+                        Instant.parse("2026-03-09T00:00:00Z"),
+                        Instant.parse("2026-03-09T00:00:00Z"),
+                        Instant.parse("2026-03-09T00:00:00Z"),
+                        "activeAddressDate=2026-03-09;transactionCountDate=2026-03-09;marketCapDate=2026-03-09",
+                        new BigDecimal("1050000.00000000"),
+                        new BigDecimal("525000.00000000"),
+                        new BigDecimal("1700000000000.00000000"),
+                        List.of(
+                                new AnalysisOnchainComparisonFact(
+                                        AnalysisComparisonReference.D7,
+                                        Instant.parse("2026-03-02T00:00:00Z"),
+                                        new BigDecimal("954545.45454545"),
+                                        new BigDecimal("0.10000000"),
+                                        new BigDecimal("480000.00000000"),
+                                        new BigDecimal("0.09375000"),
+                                        new BigDecimal("1670000000000.00000000"),
+                                        new BigDecimal("0.01796407")
+                                )
+                        ),
+                        List.of(
+                                new AnalysisOnchainHighlight(
+                                        "D7 activity expansion",
+                                        "D7 keeps active addresses +10%, transactions +9.38%, market cap +1.79%.",
+                                        AnalysisOnchainHighlightImportance.MEDIUM,
+                                        AnalysisComparisonReference.D7
                                 )
                         )
                 ),

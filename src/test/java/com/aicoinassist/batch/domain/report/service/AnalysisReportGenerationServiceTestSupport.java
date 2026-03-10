@@ -19,6 +19,8 @@ import com.aicoinassist.batch.domain.market.service.MarketLevelContextSnapshotPe
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.sentiment.entity.SentimentSnapshotEntity;
 import com.aicoinassist.batch.domain.sentiment.service.SentimentSnapshotPersistenceService;
+import com.aicoinassist.batch.domain.onchain.entity.OnchainFactSnapshotEntity;
+import com.aicoinassist.batch.domain.onchain.service.OnchainFactSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFactSummaryPayload;
@@ -40,6 +42,10 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContextSummaryPaylo
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
@@ -63,6 +69,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImpo
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisMacroHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisOnchainHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractionType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
@@ -114,6 +121,9 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
     protected SentimentSnapshotPersistenceService sentimentSnapshotPersistenceService;
 
     @Mock
+    protected OnchainFactSnapshotPersistenceService onchainFactSnapshotPersistenceService;
+
+    @Mock
     protected AnalysisReportContinuityService analysisReportContinuityService;
 
     @Mock
@@ -124,6 +134,9 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
 
     @Mock
     protected AnalysisSentimentComparisonService analysisSentimentComparisonService;
+
+    @Mock
+    protected AnalysisOnchainComparisonService analysisOnchainComparisonService;
 
     @Mock
     protected AnalysisReportAssembler analysisReportAssembler;
@@ -145,11 +158,13 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                 marketWindowSummarySnapshotPersistenceService,
                 macroContextSnapshotPersistenceService,
                 sentimentSnapshotPersistenceService,
+                onchainFactSnapshotPersistenceService,
                 analysisComparisonService,
                 analysisLevelContextComparisonService,
                 analysisDerivativeComparisonService,
                 analysisMacroComparisonService,
                 analysisSentimentComparisonService,
+                analysisOnchainComparisonService,
                 analysisReportContinuityService,
                 analysisReportAssembler,
                 analysisReportPersistenceService,
@@ -299,6 +314,12 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                 1L
                         ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime", "detail", AnalysisContextHeadlineImportance.HIGH),
+                        new AnalysisOnchainContextSummaryPayload(
+                                "Active addresses 1050000, transactions 525000, market cap 1700000000000.",
+                                "D7 keeps active addresses +10%, transactions +9.38%, market cap +1.79%.",
+                                List.of("D7 keeps active addresses +10%, transactions +9.38%, market cap +1.79%.")
+                        ),
+                        new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion", "detail", AnalysisContextHeadlineImportance.MEDIUM),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_MID_REPORT,
                                 "continuity summary",
@@ -388,6 +409,25 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                 )
                         )
                 ),
+                new AnalysisOnchainContext(
+                        generationOnchainSnapshot().getSnapshotTime(),
+                        generationOnchainSnapshot().getActiveAddressSourceEventTime(),
+                        generationOnchainSnapshot().getTransactionCountSourceEventTime(),
+                        generationOnchainSnapshot().getMarketCapSourceEventTime(),
+                        generationOnchainSnapshot().getSourceDataVersion(),
+                        generationOnchainSnapshot().getActiveAddressCount(),
+                        generationOnchainSnapshot().getTransactionCount(),
+                        generationOnchainSnapshot().getMarketCapUsd(),
+                        onchainComparisonFacts(),
+                        List.of(
+                                new AnalysisOnchainHighlight(
+                                        "D7 activity expansion",
+                                        "D7 keeps active addresses +10%, transactions +9.38%, market cap +1.79%.",
+                                        AnalysisOnchainHighlightImportance.MEDIUM,
+                                        AnalysisComparisonReference.D7
+                                )
+                        )
+                ),
                 supportLevels,
                 resistanceLevels,
                 supportZones,
@@ -408,6 +448,46 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                         "description",
                         List.of("invalidation")
                 ))
+        );
+    }
+
+    protected OnchainFactSnapshotEntity generationOnchainSnapshot() {
+        return OnchainFactSnapshotEntity.builder()
+                                        .symbol("BTCUSDT")
+                                        .assetCode("btc")
+                                        .snapshotTime(Instant.parse("2026-03-09T00:00:00Z"))
+                                        .activeAddressSourceEventTime(Instant.parse("2026-03-09T00:00:00Z"))
+                                        .transactionCountSourceEventTime(Instant.parse("2026-03-09T00:00:00Z"))
+                                        .marketCapSourceEventTime(Instant.parse("2026-03-09T00:00:00Z"))
+                                        .sourceDataVersion("activeAddressDate=2026-03-09;transactionCountDate=2026-03-09;marketCapDate=2026-03-09")
+                                        .activeAddressCount(new BigDecimal("1050000.00000000"))
+                                        .transactionCount(new BigDecimal("525000.00000000"))
+                                        .marketCapUsd(new BigDecimal("1700000000000.00000000"))
+                                        .build();
+    }
+
+    protected List<AnalysisOnchainComparisonFact> onchainComparisonFacts() {
+        return List.of(
+                new AnalysisOnchainComparisonFact(
+                        AnalysisComparisonReference.D7,
+                        Instant.parse("2026-03-02T00:00:00Z"),
+                        new BigDecimal("954545.45454545"),
+                        new BigDecimal("0.10000000"),
+                        new BigDecimal("480000.00000000"),
+                        new BigDecimal("0.09375000"),
+                        new BigDecimal("1670000000000.00000000"),
+                        new BigDecimal("0.01796407")
+                ),
+                new AnalysisOnchainComparisonFact(
+                        AnalysisComparisonReference.D30,
+                        Instant.parse("2026-02-07T00:00:00Z"),
+                        new BigDecimal("1166666.66666667"),
+                        new BigDecimal("-0.10000000"),
+                        new BigDecimal("583333.33333333"),
+                        new BigDecimal("-0.10000000"),
+                        new BigDecimal("1800000000000.00000000"),
+                        new BigDecimal("-0.05555556")
+                )
         );
     }
 
