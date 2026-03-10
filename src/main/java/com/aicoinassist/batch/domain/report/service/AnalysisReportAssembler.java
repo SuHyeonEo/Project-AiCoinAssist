@@ -14,6 +14,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
@@ -62,6 +63,7 @@ public class AnalysisReportAssembler {
             List<AnalysisWindowSummary> windowSummaries,
             AnalysisDerivativeContext derivativeContext,
             List<AnalysisContinuityNote> continuityNotes,
+            AnalysisLevelContextPayload levelContext,
             List<AnalysisPriceLevel> supportLevels,
             List<AnalysisPriceLevel> resistanceLevels,
             List<AnalysisPriceZone> supportZones,
@@ -70,9 +72,9 @@ public class AnalysisReportAssembler {
         List<AnalysisComparisonHighlight> comparisonHighlights = comparisonHighlights(reportType, comparisonFacts);
         List<AnalysisWindowHighlight> windowHighlights = windowHighlights(reportType, windowSummaries);
         AnalysisDerivativeContext enrichedDerivativeContext = enrichDerivativeContext(reportType, derivativeContext);
-        AnalysisPriceZone nearestSupportZone = supportZones.isEmpty() ? null : supportZones.get(0);
-        AnalysisPriceZone nearestResistanceZone = resistanceZones.isEmpty() ? null : resistanceZones.get(0);
-        List<AnalysisZoneInteractionFact> zoneInteractionFacts = zoneInteractionFacts(nearestSupportZone, nearestResistanceZone);
+        AnalysisLevelContextPayload effectiveLevelContext = levelContext == null
+                ? fallbackLevelContext(supportZones, resistanceZones)
+                : levelContext;
         AnalysisTrendLabel trendBias = determineTrendBias(snapshot);
         AnalysisSummaryPayload summary = buildSummary(
                 snapshot,
@@ -83,9 +85,7 @@ public class AnalysisReportAssembler {
                 windowSummaries,
                 enrichedDerivativeContext,
                 continuityNotes,
-                supportZones,
-                resistanceZones,
-                zoneInteractionFacts
+                effectiveLevelContext
         );
         AnalysisMarketContextPayload marketContext = buildMarketContext(
                 snapshot,
@@ -97,7 +97,7 @@ public class AnalysisReportAssembler {
                 windowSummaries,
                 enrichedDerivativeContext,
                 continuityNotes,
-                zoneInteractionFacts
+                effectiveLevelContext
         );
 
         return new AnalysisReportPayload(
@@ -113,9 +113,9 @@ public class AnalysisReportAssembler {
                 resistanceLevels,
                 supportZones,
                 resistanceZones,
-                nearestSupportZone,
-                nearestResistanceZone,
-                zoneInteractionFacts,
+                effectiveLevelContext.nearestSupportZone(),
+                effectiveLevelContext.nearestResistanceZone(),
+                effectiveLevelContext.zoneInteractionFacts(),
                 riskFactors(snapshot, reportType, enrichedDerivativeContext),
                 scenarios(snapshot, trendBias)
         );
@@ -130,9 +130,7 @@ public class AnalysisReportAssembler {
             List<AnalysisWindowSummary> windowSummaries,
             AnalysisDerivativeContext derivativeContext,
             List<AnalysisContinuityNote> continuityNotes,
-            List<AnalysisPriceZone> supportZones,
-            List<AnalysisPriceZone> resistanceZones,
-            List<AnalysisZoneInteractionFact> zoneInteractionFacts
+            AnalysisLevelContextPayload levelContext
     ) {
         String headline = reportType.name() + " view";
         AnalysisContextHeadlinePayload comparisonHeadline = comparisonContextHeadline(reportType, comparisonFacts, comparisonHighlights);
@@ -157,7 +155,7 @@ public class AnalysisReportAssembler {
                         + ", and MACD histogram at "
                         + snapshot.getMacdHistogram().stripTrailingZeros().toPlainString()
                         + ".",
-                summarySignalDetails(signalHeadlines, supportZones, resistanceZones, zoneInteractionFacts),
+                summarySignalDetails(signalHeadlines, levelContext),
                 continuityNotes.isEmpty()
                         ? null
                         : continuityNotes.get(0).summary()
@@ -182,15 +180,13 @@ public class AnalysisReportAssembler {
 
     private List<String> summarySignalDetails(
             List<AnalysisContextHeadlinePayload> signalHeadlines,
-            List<AnalysisPriceZone> supportZones,
-            List<AnalysisPriceZone> resistanceZones,
-            List<AnalysisZoneInteractionFact> zoneInteractionFacts
+            AnalysisLevelContextPayload levelContext
     ) {
         List<String> details = new java.util.ArrayList<>(signalHeadlines.stream()
                                                                         .map(AnalysisContextHeadlinePayload::detail)
                                                                         .toList());
-        if (!supportZones.isEmpty()) {
-            AnalysisPriceZone supportZone = supportZones.get(0);
+        if (levelContext.nearestSupportZone() != null) {
+            AnalysisPriceZone supportZone = levelContext.nearestSupportZone();
             details.add("Nearest support zone %s to %s with %d clustered levels."
                                 .formatted(
                                         supportZone.zoneLow().stripTrailingZeros().toPlainString(),
@@ -198,8 +194,8 @@ public class AnalysisReportAssembler {
                                         supportZone.levelCount()
                                 ));
         }
-        if (!resistanceZones.isEmpty()) {
-            AnalysisPriceZone resistanceZone = resistanceZones.get(0);
+        if (levelContext.nearestResistanceZone() != null) {
+            AnalysisPriceZone resistanceZone = levelContext.nearestResistanceZone();
             details.add("Nearest resistance zone %s to %s with %d clustered levels."
                                 .formatted(
                                         resistanceZone.zoneLow().stripTrailingZeros().toPlainString(),
@@ -207,7 +203,7 @@ public class AnalysisReportAssembler {
                                         resistanceZone.levelCount()
                                 ));
         }
-        zoneInteractionFacts.stream()
+        levelContext.zoneInteractionFacts().stream()
                             .map(AnalysisZoneInteractionFact::summary)
                             .forEach(details::add);
         return details;
@@ -223,7 +219,7 @@ public class AnalysisReportAssembler {
             List<AnalysisWindowSummary> windowSummaries,
             AnalysisDerivativeContext derivativeContext,
             List<AnalysisContinuityNote> continuityNotes,
-            List<AnalysisZoneInteractionFact> zoneInteractionFacts
+            AnalysisLevelContextPayload levelContext
     ) {
         List<AnalysisMovingAveragePositionPayload> movingAveragePositions = List.of(
                 movingAveragePosition(snapshot.getCurrentPrice(), snapshot.getMa20(), "MA20"),
@@ -266,7 +262,7 @@ public class AnalysisReportAssembler {
         List<String> windowHighlightDetails = windowHighlights.stream()
                                                               .map(AnalysisWindowHighlight::detail)
                                                               .collect(Collectors.toCollection(java.util.ArrayList::new));
-        zoneInteractionFacts.stream()
+        levelContext.zoneInteractionFacts().stream()
                             .map(AnalysisZoneInteractionFact::summary)
                             .forEach(windowHighlightDetails::add);
         AnalysisContextHeadlinePayload windowHeadline = windowContextHeadline(reportType, windowSummaries);
@@ -339,6 +335,7 @@ public class AnalysisReportAssembler {
                         windowSummary,
                         windowHighlightDetails
                 ),
+                levelContext,
                 derivativeContextSummary,
                 derivativeHeadline,
                 continuityContext
@@ -996,6 +993,21 @@ public class AnalysisReportAssembler {
             case HIGH -> AnalysisContextHeadlineImportance.HIGH;
             case MEDIUM -> AnalysisContextHeadlineImportance.MEDIUM;
         };
+    }
+
+    private AnalysisLevelContextPayload fallbackLevelContext(
+            List<AnalysisPriceZone> supportZones,
+            List<AnalysisPriceZone> resistanceZones
+    ) {
+        AnalysisPriceZone nearestSupportZone = supportZones.isEmpty() ? null : supportZones.get(0);
+        AnalysisPriceZone nearestResistanceZone = resistanceZones.isEmpty() ? null : resistanceZones.get(0);
+        return new AnalysisLevelContextPayload(
+                nearestSupportZone,
+                nearestResistanceZone,
+                zoneInteractionFacts(nearestSupportZone, nearestResistanceZone),
+                null,
+                null
+        );
     }
 
     private AnalysisWindowSummary primaryWindow(List<AnalysisWindowSummary> windowSummaries) {

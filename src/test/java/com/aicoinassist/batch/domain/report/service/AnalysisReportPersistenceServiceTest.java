@@ -18,6 +18,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
@@ -208,6 +209,13 @@ class AnalysisReportPersistenceServiceTest {
                                         "ATR vs average +3.45%."
                                 ),
                                 List.of("LAST_7D volume vs average +22%, ATR vs average +3.45%, distance from range high 2.78%.")
+                        ),
+                        new AnalysisLevelContextPayload(
+                                null,
+                                null,
+                                List.of(),
+                                new BigDecimal("0.18000000"),
+                                new BigDecimal("0.05000000")
                         ),
                         new AnalysisDerivativeContextSummaryPayload(
                                 "Funding +0.045%, basis +0.12%.",
