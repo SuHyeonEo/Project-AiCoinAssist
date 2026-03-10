@@ -25,6 +25,11 @@ batch:
     enabled: true
     token: test-admin-token
     header-name: X-Admin-Token
+  llm-narrative:
+    provider: openai
+    prompt-template-version: llm-prompt-v1
+    input-schema-version: llm-input-v1
+    output-schema-version: llm-output-v1
   analysis-report:
     engine-version: test-report-assembler
     asset-types:
@@ -51,6 +56,13 @@ logging:
 external:
   alternative-me:
     base-url: https://api.alternative.me
+  openai:
+    enabled: false
+    base-url: https://api.openai.com
+    api-key:
+    model: gpt-5.4
+    connect-timeout-millis: 5000
+    read-timeout-millis: 30000
   coinmetrics:
     base-url: https://community-api.coinmetrics.io/v4
   gdelt:
