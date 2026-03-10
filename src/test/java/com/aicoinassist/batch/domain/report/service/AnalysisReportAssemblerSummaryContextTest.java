@@ -40,6 +40,7 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                 sentimentContext(),
                 onchainContext(),
                 shortContinuityNotes(),
+                externalContextComposite(),
                 levelContext(),
                 supportLevels(),
                 resistanceLevels(),
@@ -139,14 +140,17 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                         AnalysisContextHeadlinePayload::title
                 )
                 .containsExactly(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion");
+        assertThat(payload.marketContext().externalContextComposite()).isNotNull();
+        assertThat(payload.marketContext().externalContextComposite().primarySignalTitle()).isEqualTo("Dollar strength regime");
+        assertThat(payload.marketContext().externalContextComposite().compositeRiskScore()).isEqualByComparingTo("1.33333333");
         assertThat(payload.marketContext().externalRegimeSignals()).extracting(
                         signal -> signal.category().name(),
                         signal -> signal.title()
                 )
                 .contains(
                         org.assertj.core.groups.Tuple.tuple("DERIVATIVE", "Funding crowding regime"),
-                        org.assertj.core.groups.Tuple.tuple("MACRO", "Yield pressure"),
-                        org.assertj.core.groups.Tuple.tuple("SENTIMENT", "Greed above average")
+                        org.assertj.core.groups.Tuple.tuple("MACRO", "Dollar strength regime"),
+                        org.assertj.core.groups.Tuple.tuple("SENTIMENT", "Greed regime")
                 );
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
                                              .containsExactly(MarketWindowType.LAST_1D, MarketWindowType.LAST_7D);

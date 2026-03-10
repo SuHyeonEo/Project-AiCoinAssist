@@ -13,6 +13,7 @@ public record AnalysisMarketContextPayload(
         AnalysisContextHeadlinePayload sentimentHeadline,
         AnalysisOnchainContextSummaryPayload onchainContextSummary,
         AnalysisContextHeadlinePayload onchainHeadline,
+        AnalysisExternalContextCompositePayload externalContextComposite,
         AnalysisContinuityContextPayload continuityContext,
         java.util.List<AnalysisExternalRegimeSignal> externalRegimeSignals
 ) {

@@ -1,11 +1,13 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.macro.entity.MacroContextSnapshotEntity;
 import com.aicoinassist.batch.domain.onchain.entity.OnchainFactSnapshotEntity;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
@@ -44,6 +46,7 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         MacroContextSnapshotEntity macroContextSnapshot = generationMacroContextSnapshot();
         SentimentSnapshotEntity sentimentSnapshot = generationSentimentSnapshot();
         OnchainFactSnapshotEntity onchainSnapshot = generationOnchainSnapshot();
+        MarketExternalContextSnapshotEntity externalContextSnapshot = externalContextSnapshotEntity();
         AnalysisReportEntity savedEntity = savedReportEntity(snapshot);
         AnalysisDerivativeContext derivativeContext = generationDerivativeContextInput();
         AnalysisMacroContext macroContext = payload.macroContext();
@@ -111,6 +114,18 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 resistanceZones,
                 payload.marketContext().levelContext().comparisonFacts()
         )).thenReturn(payload.marketContext().levelContext());
+        when(analysisExternalContextSnapshotService.create(
+                "BTCUSDT",
+                AnalysisReportType.MID_TERM,
+                derivativeContext,
+                macroContext,
+                sentimentContext,
+                onchainContext
+        )).thenReturn(externalContextSnapshotInput());
+        when(marketExternalContextSnapshotPersistenceService.createAndSave(externalContextSnapshotInput()))
+                .thenReturn(externalContextSnapshot);
+        when(analysisReportMarketDataMapper.toExternalContextComposite(externalContextSnapshot))
+                .thenReturn(payload.marketContext().externalContextComposite());
         when(analysisReportAssembler.assemble(
                 eq(snapshot),
                 eq(AnalysisReportType.MID_TERM),
@@ -121,6 +136,7 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 eq(sentimentContext),
                 eq(onchainContext),
                 eq(midTermContinuityNotes()),
+                eq(payload.marketContext().externalContextComposite()),
                 any(),
                 anyList(),
                 anyList(),

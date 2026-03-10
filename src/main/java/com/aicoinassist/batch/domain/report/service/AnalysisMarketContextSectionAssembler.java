@@ -13,6 +13,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
@@ -84,6 +85,7 @@ class AnalysisMarketContextSectionAssembler {
             AnalysisSentimentContext sentimentContext,
             AnalysisOnchainContext onchainContext,
             List<AnalysisContinuityNote> continuityNotes,
+            AnalysisExternalContextCompositePayload externalContextComposite,
             AnalysisLevelContextPayload levelContext,
             List<AnalysisRiskFactor> riskFactors
     ) {
@@ -151,7 +153,6 @@ class AnalysisMarketContextSectionAssembler {
         AnalysisContextHeadlinePayload sentimentHeadline = null;
         AnalysisOnchainContextSummaryPayload onchainContextSummary = null;
         AnalysisContextHeadlinePayload onchainHeadline = null;
-        List<AnalysisExternalRegimeSignal> externalRegimeSignals = new ArrayList<>();
         if (derivativeContext != null) {
             AnalysisDerivativeWindowSummary derivativeWindowSummary = derivativeContextSupport.primaryDerivativeWindowSummary(
                     reportType,
@@ -189,7 +190,6 @@ class AnalysisMarketContextSectionAssembler {
                     derivativeContextSupport.hoursUntilNextFunding(derivativeContext)
             );
             derivativeHeadline = derivativeContextSupport.derivativeContextHeadline(reportType, derivativeContext);
-            externalRegimeSignals.addAll(derivativeContextSupport.regimeSignals(reportType, derivativeContext));
         }
         if (macroContext != null) {
             AnalysisMacroHighlight primaryHighlight = macroContext.highlights() == null || macroContext.highlights().isEmpty()
@@ -222,7 +222,6 @@ class AnalysisMarketContextSectionAssembler {
                                           .toList()
             );
             macroHeadline = macroContextSupport.macroContextHeadline(reportType, macroContext);
-            externalRegimeSignals.addAll(macroContextSupport.regimeSignals(reportType, macroContext));
         }
         if (sentimentContext != null) {
             AnalysisSentimentHighlight primaryHighlight = sentimentContext.highlights() == null || sentimentContext.highlights().isEmpty()
@@ -254,7 +253,6 @@ class AnalysisMarketContextSectionAssembler {
                     sentimentContextSupport.hoursUntilNextUpdate(sentimentContext)
             );
             sentimentHeadline = sentimentContextSupport.sentimentContextHeadline(reportType, sentimentContext);
-            externalRegimeSignals.addAll(sentimentContextSupport.regimeSignals(reportType, sentimentContext));
         }
         if (onchainContext != null) {
             AnalysisOnchainHighlight primaryHighlight = onchainContext.highlights() == null || onchainContext.highlights().isEmpty()
@@ -287,8 +285,10 @@ class AnalysisMarketContextSectionAssembler {
                                             .toList()
             );
             onchainHeadline = onchainContextSupport.onchainContextHeadline(reportType, onchainContext);
-            externalRegimeSignals.addAll(onchainContextSupport.regimeSignals(reportType, onchainContext));
         }
+        List<AnalysisExternalRegimeSignal> externalRegimeSignals = externalContextComposite == null
+                ? List.of()
+                : externalContextComposite.regimeSignals();
 
         AnalysisContinuityContextPayload continuityContext = continuityNotes.isEmpty()
                 ? null
@@ -327,6 +327,7 @@ class AnalysisMarketContextSectionAssembler {
                 sentimentHeadline,
                 onchainContextSummary,
                 onchainHeadline,
+                externalContextComposite,
                 continuityContext,
                 externalRegimeSignals
         );
