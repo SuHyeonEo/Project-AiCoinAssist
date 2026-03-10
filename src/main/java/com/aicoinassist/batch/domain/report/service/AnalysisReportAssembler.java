@@ -7,6 +7,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
@@ -28,6 +29,7 @@ public class AnalysisReportAssembler {
     private final AnalysisIndicatorStateSupport indicatorStateSupport;
     private final AnalysisComparisonWindowSupport comparisonWindowSupport;
     private final AnalysisDerivativeContextSupport derivativeContextSupport;
+    private final AnalysisMacroContextSupport macroContextSupport;
     private final AnalysisSentimentContextSupport sentimentContextSupport;
     private final AnalysisLevelContextSupport levelContextSupport;
     private final AnalysisRiskScenarioFactory riskScenarioFactory;
@@ -39,6 +41,7 @@ public class AnalysisReportAssembler {
         this.indicatorStateSupport = new AnalysisIndicatorStateSupport();
         this.comparisonWindowSupport = new AnalysisComparisonWindowSupport(formattingSupport);
         this.derivativeContextSupport = new AnalysisDerivativeContextSupport(formattingSupport);
+        this.macroContextSupport = new AnalysisMacroContextSupport(formattingSupport);
         this.sentimentContextSupport = new AnalysisSentimentContextSupport(formattingSupport);
         this.levelContextSupport = new AnalysisLevelContextSupport(formattingSupport);
         this.riskScenarioFactory = new AnalysisRiskScenarioFactory(
@@ -50,6 +53,7 @@ public class AnalysisReportAssembler {
                 indicatorStateSupport,
                 comparisonWindowSupport,
                 derivativeContextSupport,
+                macroContextSupport,
                 sentimentContextSupport,
                 formattingSupport
         );
@@ -57,6 +61,7 @@ public class AnalysisReportAssembler {
                 indicatorStateSupport,
                 comparisonWindowSupport,
                 derivativeContextSupport,
+                macroContextSupport,
                 sentimentContextSupport,
                 formattingSupport
         );
@@ -68,6 +73,7 @@ public class AnalysisReportAssembler {
             List<AnalysisComparisonFact> comparisonFacts,
             List<AnalysisWindowSummary> windowSummaries,
             AnalysisDerivativeContext derivativeContext,
+            AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
             List<AnalysisContinuityNote> continuityNotes,
             AnalysisLevelContextPayload levelContext,
@@ -88,6 +94,10 @@ public class AnalysisReportAssembler {
                 reportType,
                 derivativeContext
         );
+        AnalysisMacroContext enrichedMacroContext = macroContextSupport.enrichMacroContext(
+                reportType,
+                macroContext
+        );
         AnalysisSentimentContext enrichedSentimentContext = sentimentContextSupport.enrichSentimentContext(
                 reportType,
                 sentimentContext
@@ -102,6 +112,7 @@ public class AnalysisReportAssembler {
                 snapshot,
                 reportType,
                 enrichedDerivativeContext,
+                enrichedMacroContext,
                 enrichedSentimentContext
         );
         List<AnalysisScenario> scenarios = riskScenarioFactory.scenarios(snapshot, trendBias);
@@ -114,6 +125,7 @@ public class AnalysisReportAssembler {
                 comparisonHighlights,
                 windowSummaries,
                 enrichedDerivativeContext,
+                enrichedMacroContext,
                 enrichedSentimentContext,
                 continuityNotes,
                 effectiveLevelContext
@@ -127,6 +139,7 @@ public class AnalysisReportAssembler {
                 windowHighlights,
                 windowSummaries,
                 enrichedDerivativeContext,
+                enrichedMacroContext,
                 enrichedSentimentContext,
                 continuityNotes,
                 effectiveLevelContext,
@@ -142,6 +155,7 @@ public class AnalysisReportAssembler {
                 continuityNotes,
                 windowSummaries,
                 enrichedDerivativeContext,
+                enrichedMacroContext,
                 enrichedSentimentContext,
                 supportLevels,
                 resistanceLevels,

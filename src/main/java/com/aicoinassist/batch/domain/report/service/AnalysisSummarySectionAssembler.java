@@ -8,6 +8,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryKeyMessagePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
@@ -25,6 +26,7 @@ class AnalysisSummarySectionAssembler {
     private final AnalysisIndicatorStateSupport indicatorStateSupport;
     private final AnalysisComparisonWindowSupport comparisonWindowSupport;
     private final AnalysisDerivativeContextSupport derivativeContextSupport;
+    private final AnalysisMacroContextSupport macroContextSupport;
     private final AnalysisSentimentContextSupport sentimentContextSupport;
     private final AnalysisReportFormattingSupport formattingSupport;
 
@@ -32,12 +34,14 @@ class AnalysisSummarySectionAssembler {
             AnalysisIndicatorStateSupport indicatorStateSupport,
             AnalysisComparisonWindowSupport comparisonWindowSupport,
             AnalysisDerivativeContextSupport derivativeContextSupport,
+            AnalysisMacroContextSupport macroContextSupport,
             AnalysisSentimentContextSupport sentimentContextSupport,
             AnalysisReportFormattingSupport formattingSupport
     ) {
         this.indicatorStateSupport = indicatorStateSupport;
         this.comparisonWindowSupport = comparisonWindowSupport;
         this.derivativeContextSupport = derivativeContextSupport;
+        this.macroContextSupport = macroContextSupport;
         this.sentimentContextSupport = sentimentContextSupport;
         this.formattingSupport = formattingSupport;
     }
@@ -50,6 +54,7 @@ class AnalysisSummarySectionAssembler {
             List<AnalysisComparisonHighlight> comparisonHighlights,
             List<AnalysisWindowSummary> windowSummaries,
             AnalysisDerivativeContext derivativeContext,
+            AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
             List<AnalysisContinuityNote> continuityNotes,
             AnalysisLevelContextPayload levelContext
@@ -65,6 +70,10 @@ class AnalysisSummarySectionAssembler {
                 reportType,
                 derivativeContext
         );
+        AnalysisContextHeadlinePayload macroHeadline = macroContextSupport.macroContextHeadline(
+                reportType,
+                macroContext
+        );
         AnalysisContextHeadlinePayload sentimentHeadline = sentimentContextSupport.sentimentContextHeadline(
                 reportType,
                 sentimentContext
@@ -73,6 +82,7 @@ class AnalysisSummarySectionAssembler {
                         comparisonHeadline,
                         windowHeadline,
                         derivativeHeadline,
+                        macroHeadline,
                         sentimentHeadline
                 )
                 .filter(java.util.Objects::nonNull)

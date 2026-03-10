@@ -15,6 +15,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
@@ -38,6 +41,7 @@ class AnalysisMarketContextSectionAssembler {
     private final AnalysisIndicatorStateSupport indicatorStateSupport;
     private final AnalysisComparisonWindowSupport comparisonWindowSupport;
     private final AnalysisDerivativeContextSupport derivativeContextSupport;
+    private final AnalysisMacroContextSupport macroContextSupport;
     private final AnalysisSentimentContextSupport sentimentContextSupport;
     private final AnalysisReportFormattingSupport formattingSupport;
 
@@ -45,12 +49,14 @@ class AnalysisMarketContextSectionAssembler {
             AnalysisIndicatorStateSupport indicatorStateSupport,
             AnalysisComparisonWindowSupport comparisonWindowSupport,
             AnalysisDerivativeContextSupport derivativeContextSupport,
+            AnalysisMacroContextSupport macroContextSupport,
             AnalysisSentimentContextSupport sentimentContextSupport,
             AnalysisReportFormattingSupport formattingSupport
     ) {
         this.indicatorStateSupport = indicatorStateSupport;
         this.comparisonWindowSupport = comparisonWindowSupport;
         this.derivativeContextSupport = derivativeContextSupport;
+        this.macroContextSupport = macroContextSupport;
         this.sentimentContextSupport = sentimentContextSupport;
         this.formattingSupport = formattingSupport;
     }
@@ -64,6 +70,7 @@ class AnalysisMarketContextSectionAssembler {
             List<AnalysisWindowHighlight> windowHighlights,
             List<AnalysisWindowSummary> windowSummaries,
             AnalysisDerivativeContext derivativeContext,
+            AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
             List<AnalysisContinuityNote> continuityNotes,
             AnalysisLevelContextPayload levelContext,
@@ -127,6 +134,8 @@ class AnalysisMarketContextSectionAssembler {
 
         AnalysisDerivativeContextSummaryPayload derivativeContextSummary = null;
         AnalysisContextHeadlinePayload derivativeHeadline = null;
+        AnalysisMacroContextSummaryPayload macroContextSummary = null;
+        AnalysisContextHeadlinePayload macroHeadline = null;
         AnalysisSentimentContextSummaryPayload sentimentContextSummary = null;
         AnalysisContextHeadlinePayload sentimentHeadline = null;
         if (derivativeContext != null) {
@@ -166,6 +175,27 @@ class AnalysisMarketContextSectionAssembler {
                     derivativeContextSupport.hoursUntilNextFunding(derivativeContext)
             );
             derivativeHeadline = derivativeContextSupport.derivativeContextHeadline(reportType, derivativeContext);
+        }
+        if (macroContext != null) {
+            AnalysisMacroHighlight primaryHighlight = macroContext.highlights() == null || macroContext.highlights().isEmpty()
+                    ? null
+                    : macroContext.highlights().get(0);
+            macroContextSummary = new AnalysisMacroContextSummaryPayload(
+                    "DXY proxy "
+                            + macroContext.dxyProxyValue().stripTrailingZeros().toPlainString()
+                            + ", US10Y "
+                            + macroContext.us10yYieldValue().stripTrailingZeros().toPlainString()
+                            + ", USD/KRW "
+                            + macroContext.usdKrwValue().stripTrailingZeros().toPlainString()
+                            + ".",
+                    primaryHighlight == null ? null : primaryHighlight.summary(),
+                    macroContext.highlights() == null
+                            ? List.of()
+                            : macroContext.highlights().stream()
+                                          .map(AnalysisMacroHighlight::summary)
+                                          .toList()
+            );
+            macroHeadline = macroContextSupport.macroContextHeadline(reportType, macroContext);
         }
         if (sentimentContext != null) {
             AnalysisSentimentHighlight primaryHighlight = sentimentContext.highlights() == null || sentimentContext.highlights().isEmpty()
@@ -219,6 +249,8 @@ class AnalysisMarketContextSectionAssembler {
                 levelContext,
                 derivativeContextSummary,
                 derivativeHeadline,
+                macroContextSummary,
+                macroHeadline,
                 sentimentContextSummary,
                 sentimentHeadline,
                 continuityContext

@@ -36,6 +36,7 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                 comparisonFacts(),
                 shortWindowSummaries(),
                 derivativeContext(),
+                macroContext(),
                 sentimentContext(),
                 shortContinuityNotes(),
                 levelContext(),
@@ -64,6 +65,7 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison"),
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.WINDOW, "LAST_7D position"),
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.DERIVATIVE, "PREV_BATCH derivative shift"),
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.MACRO, "Dollar strength regime"),
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime")
                 );
 
@@ -108,6 +110,14 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
         assertThat(payload.marketContext().sentimentContextSummary().currentStateSummary()).contains("Fear & Greed 72");
         assertThat(payload.marketContext().sentimentContextSummary().comparisonSummary()).contains("Greed");
         assertThat(payload.marketContext().sentimentContextSummary().highlightDetails()).isNotEmpty();
+        assertThat(payload.marketContext().macroContextSummary().currentStateSummary()).contains("DXY proxy");
+        assertThat(payload.marketContext().macroContextSummary().comparisonSummary()).contains("D30");
+        assertThat(payload.marketContext().macroContextSummary().highlightDetails()).isNotEmpty();
+        assertThat(payload.marketContext().macroHeadline()).extracting(
+                        AnalysisContextHeadlinePayload::category,
+                        AnalysisContextHeadlinePayload::title
+                )
+                .containsExactly(AnalysisContextHeadlineCategory.MACRO, "Dollar strength regime");
         assertThat(payload.marketContext().sentimentHeadline()).extracting(
                         AnalysisContextHeadlinePayload::category,
                         AnalysisContextHeadlinePayload::title
@@ -140,8 +150,10 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                                                                                AnalysisComparisonReference.D1
                                                                        );
         assertThat(payload.sentimentContext()).isNotNull();
+        assertThat(payload.macroContext()).isNotNull();
+        assertThat(payload.macroContext().highlights()).isNotEmpty();
         assertThat(payload.sentimentContext().highlights()).isNotEmpty();
         assertThat(payload.riskFactors()).extracting(risk -> risk.type().name())
-                                         .contains("SENTIMENT_GREED_EXTREME");
+                                         .contains("SENTIMENT_GREED_EXTREME", "MACRO_VOLATILITY");
     }
 }

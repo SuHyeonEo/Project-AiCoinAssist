@@ -2,6 +2,7 @@ package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
@@ -34,6 +35,7 @@ class AnalysisRiskScenarioFactory {
             MarketIndicatorSnapshotEntity snapshot,
             AnalysisReportType reportType,
             AnalysisDerivativeContext derivativeContext,
+            AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext
     ) {
         List<AnalysisRiskFactor> candidates = new java.util.ArrayList<>();
@@ -127,6 +129,29 @@ class AnalysisRiskScenarioFactory {
                     "Fear & Greed is at " + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
                             + " (" + sentimentContext.classification() + "), so reactive selloffs and whipsaws can expand.",
                     List.of("Fear & Greed classification is " + sentimentContext.classification() + ".")
+            ));
+        }
+
+        if (macroContext != null && (
+                macroContext.dxyProxyValue().compareTo(new BigDecimal("120")) >= 0
+                        || macroContext.us10yYieldValue().compareTo(new BigDecimal("4.50")) >= 0
+                        || macroContext.usdKrwValue().compareTo(new BigDecimal("1450")) >= 0
+        )) {
+            candidates.add(new AnalysisRiskFactor(
+                    AnalysisRiskFactorType.MACRO_VOLATILITY,
+                    "Macro volatility",
+                    "Macro backdrop is firm with DXY "
+                            + macroContext.dxyProxyValue().stripTrailingZeros().toPlainString()
+                            + ", US10Y "
+                            + macroContext.us10yYieldValue().stripTrailingZeros().toPlainString()
+                            + ", USD/KRW "
+                            + macroContext.usdKrwValue().stripTrailingZeros().toPlainString()
+                            + ", which can pressure crypto risk appetite.",
+                    List.of(
+                            "DXY proxy is " + macroContext.dxyProxyValue().stripTrailingZeros().toPlainString() + ".",
+                            "US10Y yield is " + macroContext.us10yYieldValue().stripTrailingZeros().toPlainString() + ".",
+                            "USD/KRW is " + macroContext.usdKrwValue().stripTrailingZeros().toPlainString() + "."
+                    )
             ));
         }
 

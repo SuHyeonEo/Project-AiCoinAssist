@@ -18,6 +18,7 @@ import com.aicoinassist.batch.domain.market.service.MarketLevelContextSnapshotPe
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
@@ -32,6 +33,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisZoneInteractionFact;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
+import com.aicoinassist.batch.domain.macro.entity.MacroContextSnapshotEntity;
+import com.aicoinassist.batch.domain.macro.service.MacroContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.sentiment.entity.SentimentSnapshotEntity;
 import com.aicoinassist.batch.domain.sentiment.service.SentimentSnapshotPersistenceService;
 import lombok.RequiredArgsConstructor;
@@ -52,10 +55,12 @@ public class AnalysisReportGenerationService {
     private final MarketContextSnapshotPersistenceService marketContextSnapshotPersistenceService;
     private final MarketContextWindowSummarySnapshotPersistenceService marketContextWindowSummarySnapshotPersistenceService;
     private final MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
+    private final MacroContextSnapshotPersistenceService macroContextSnapshotPersistenceService;
     private final SentimentSnapshotPersistenceService sentimentSnapshotPersistenceService;
     private final AnalysisComparisonService analysisComparisonService;
     private final AnalysisLevelContextComparisonService analysisLevelContextComparisonService;
     private final AnalysisDerivativeComparisonService analysisDerivativeComparisonService;
+    private final AnalysisMacroComparisonService analysisMacroComparisonService;
     private final AnalysisSentimentComparisonService analysisSentimentComparisonService;
     private final AnalysisReportContinuityService analysisReportContinuityService;
     private final AnalysisReportAssembler analysisReportAssembler;
@@ -85,6 +90,11 @@ public class AnalysisReportGenerationService {
         List<AnalysisDerivativeComparisonFact> derivativeComparisonFacts = analysisDerivativeComparisonService.buildFacts(
                 marketContextSnapshot,
                 reportType
+        );
+        MacroContextSnapshotEntity macroContextSnapshot = macroContextSnapshotPersistenceService.createAndSave();
+        AnalysisMacroContext macroContext = analysisReportMarketDataMapper.toMacroContext(
+                macroContextSnapshot,
+                analysisMacroComparisonService.buildFacts(macroContextSnapshot, reportType)
         );
         SentimentSnapshotEntity sentimentSnapshot = sentimentSnapshotPersistenceService.createAndSaveFearGreedSnapshot();
         AnalysisSentimentContext sentimentContext = analysisReportMarketDataMapper.toSentimentContext(
@@ -138,6 +148,7 @@ public class AnalysisReportGenerationService {
                 comparisonFacts,
                 windowSummaries,
                 derivativeContext,
+                macroContext,
                 sentimentContext,
                 continuityNotes,
                 levelContext,

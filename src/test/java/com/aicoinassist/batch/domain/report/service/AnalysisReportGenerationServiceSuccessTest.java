@@ -3,7 +3,9 @@ package com.aicoinassist.batch.domain.report.service;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
+import com.aicoinassist.batch.domain.macro.entity.MacroContextSnapshotEntity;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
@@ -37,9 +39,11 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         AnalysisReportPayload payload = midTermPayload();
         MarketContextSnapshotEntity contextSnapshot = marketContextSnapshotEntity();
         MarketLevelContextSnapshotEntity levelContextSnapshot = levelContextSnapshotEntity();
+        MacroContextSnapshotEntity macroContextSnapshot = generationMacroContextSnapshot();
         SentimentSnapshotEntity sentimentSnapshot = generationSentimentSnapshot();
         AnalysisReportEntity savedEntity = savedReportEntity(snapshot);
         AnalysisDerivativeContext derivativeContext = generationDerivativeContextInput();
+        AnalysisMacroContext macroContext = payload.macroContext();
         AnalysisSentimentContext sentimentContext = payload.sentimentContext();
         java.util.List<AnalysisPriceLevel> supportLevels = supportLevels();
         java.util.List<AnalysisPriceLevel> resistanceLevels = resistanceLevels();
@@ -53,6 +57,9 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         when(marketContextSnapshotPersistenceService.createAndSave("BTCUSDT")).thenReturn(contextSnapshot);
         when(analysisDerivativeComparisonService.buildFacts(contextSnapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(derivativeContext.comparisonFacts());
+        when(macroContextSnapshotPersistenceService.createAndSave()).thenReturn(macroContextSnapshot);
+        when(analysisMacroComparisonService.buildFacts(macroContextSnapshot, AnalysisReportType.MID_TERM))
+                .thenReturn(macroContext.comparisonFacts());
         when(sentimentSnapshotPersistenceService.createAndSaveFearGreedSnapshot()).thenReturn(sentimentSnapshot);
         when(analysisSentimentComparisonService.buildFacts(sentimentSnapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(sentimentContext.comparisonFacts());
@@ -71,6 +78,8 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         when(analysisReportMarketDataMapper.toDerivativeWindowSummary(any())).thenReturn(derivativeContext.windowSummaries().get(0));
         when(analysisReportMarketDataMapper.toDerivativeContext(contextSnapshot, derivativeContext.comparisonFacts(), derivativeContext.windowSummaries()))
                 .thenReturn(derivativeContext);
+        when(analysisReportMarketDataMapper.toMacroContext(macroContextSnapshot, macroContext.comparisonFacts()))
+                .thenReturn(macroContext);
         when(analysisReportMarketDataMapper.toSentimentContext(sentimentSnapshot, sentimentContext.comparisonFacts()))
                 .thenReturn(sentimentContext);
         when(analysisReportMarketDataMapper.toWindowSummary(any())).thenReturn(payload.windowSummaries().get(0));
@@ -90,6 +99,7 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 eq(generationComparisonFacts()),
                 eq(payload.windowSummaries()),
                 eq(derivativeContext),
+                eq(macroContext),
                 eq(sentimentContext),
                 eq(midTermContinuityNotes()),
                 any(),

@@ -28,6 +28,7 @@ class AnalysisReportAssemblerDerivativeLevelTest extends AnalysisReportServiceFi
                 comparisonFacts(),
                 shortWindowSummaries(),
                 derivativeContext(),
+                macroContext(),
                 sentimentContext(),
                 shortContinuityNotes(),
                 levelContext(),

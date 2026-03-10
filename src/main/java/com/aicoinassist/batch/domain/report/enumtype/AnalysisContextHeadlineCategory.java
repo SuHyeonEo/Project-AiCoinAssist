@@ -4,5 +4,6 @@ public enum AnalysisContextHeadlineCategory {
     COMPARISON,
     WINDOW,
     DERIVATIVE,
+    MACRO,
     SENTIMENT
 }
