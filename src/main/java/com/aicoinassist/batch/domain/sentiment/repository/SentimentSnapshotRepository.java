@@ -5,6 +5,7 @@ import com.aicoinassist.batch.domain.sentiment.enumtype.SentimentMetricType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface SentimentSnapshotRepository extends JpaRepository<SentimentSnapshotEntity, Long> {
@@ -22,5 +23,11 @@ public interface SentimentSnapshotRepository extends JpaRepository<SentimentSnap
     Optional<SentimentSnapshotEntity> findTopByMetricTypeAndSnapshotTimeLessThanOrderBySnapshotTimeDescIdDesc(
             SentimentMetricType metricType,
             Instant snapshotTime
+    );
+
+    List<SentimentSnapshotEntity> findAllByMetricTypeAndSnapshotTimeGreaterThanEqualAndSnapshotTimeLessThanEqualOrderBySnapshotTimeAscIdAsc(
+            SentimentMetricType metricType,
+            Instant startTime,
+            Instant endTime
     );
 }

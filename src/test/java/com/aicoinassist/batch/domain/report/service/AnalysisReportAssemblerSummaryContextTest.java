@@ -111,9 +111,11 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
         assertThat(payload.marketContext().windowContext().highlightDetails()).isNotEmpty();
         assertThat(payload.marketContext().sentimentContextSummary().currentStateSummary()).contains("Fear & Greed 72");
         assertThat(payload.marketContext().sentimentContextSummary().comparisonSummary()).contains("Greed");
+        assertThat(payload.marketContext().sentimentContextSummary().windowSummary()).contains("LAST_7D");
         assertThat(payload.marketContext().sentimentContextSummary().highlightDetails()).isNotEmpty();
         assertThat(payload.marketContext().macroContextSummary().currentStateSummary()).contains("DXY proxy");
         assertThat(payload.marketContext().macroContextSummary().comparisonSummary()).contains("D30");
+        assertThat(payload.marketContext().macroContextSummary().windowSummary()).contains("LAST_30D");
         assertThat(payload.marketContext().macroContextSummary().highlightDetails()).isNotEmpty();
         assertThat(payload.marketContext().macroHeadline()).extracting(
                         AnalysisContextHeadlinePayload::category,
@@ -127,6 +129,7 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                 .containsExactly(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime");
         assertThat(payload.marketContext().onchainContextSummary().currentStateSummary()).contains("Active addresses");
         assertThat(payload.marketContext().onchainContextSummary().comparisonSummary()).contains("D7");
+        assertThat(payload.marketContext().onchainContextSummary().windowSummary()).contains("LAST_30D");
         assertThat(payload.marketContext().onchainContextSummary().highlightDetails()).isNotEmpty();
         assertThat(payload.marketContext().onchainHeadline()).extracting(
                         AnalysisContextHeadlinePayload::category,

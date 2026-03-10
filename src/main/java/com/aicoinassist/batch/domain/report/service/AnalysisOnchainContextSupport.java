@@ -4,6 +4,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
@@ -40,8 +41,50 @@ class AnalysisOnchainContextSupport {
                 onchainContext.transactionCount(),
                 onchainContext.marketCapUsd(),
                 onchainContext.comparisonFacts(),
+                onchainContext.windowSummaries(),
                 onchainHighlights(reportType, onchainContext)
         );
+    }
+
+    AnalysisOnchainWindowSummary primaryWindowSummary(
+            AnalysisReportType reportType,
+            AnalysisOnchainContext onchainContext
+    ) {
+        if (onchainContext.windowSummaries() == null || onchainContext.windowSummaries().isEmpty()) {
+            return null;
+        }
+
+        Map<com.aicoinassist.batch.domain.market.enumtype.MarketWindowType, AnalysisOnchainWindowSummary> summaryByType = onchainContext.windowSummaries()
+                                                                                                                                         .stream()
+                                                                                                                                         .collect(Collectors.toMap(
+                                                                                                                                                 AnalysisOnchainWindowSummary::windowType,
+                                                                                                                                                 summary -> summary,
+                                                                                                                                                 (left, right) -> left
+                                                                                                                                         ));
+
+        List<com.aicoinassist.batch.domain.market.enumtype.MarketWindowType> priority = switch (reportType) {
+            case SHORT_TERM -> List.of(
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_7D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_3D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_1D
+            );
+            case MID_TERM -> List.of(
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_30D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_14D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_7D
+            );
+            case LONG_TERM -> List.of(
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_180D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_90D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_30D
+            );
+        };
+
+        return priority.stream()
+                       .map(summaryByType::get)
+                       .filter(java.util.Objects::nonNull)
+                       .findFirst()
+                       .orElse(onchainContext.windowSummaries().get(onchainContext.windowSummaries().size() - 1));
     }
 
     AnalysisContextHeadlinePayload onchainContextHeadline(
@@ -143,6 +186,31 @@ class AnalysisOnchainContextSupport {
                     AnalysisOnchainHighlightImportance.MEDIUM,
                     null
             ));
+        }
+
+        AnalysisOnchainWindowSummary primaryWindowSummary = primaryWindowSummary(reportType, onchainContext);
+        if (primaryWindowSummary != null
+                && primaryWindowSummary.currentActiveAddressVsAverage() != null
+                && primaryWindowSummary.currentTransactionCountVsAverage() != null) {
+            boolean expansion = primaryWindowSummary.currentActiveAddressVsAverage().compareTo(new java.math.BigDecimal("0.10")) >= 0
+                    && primaryWindowSummary.currentTransactionCountVsAverage().compareTo(new java.math.BigDecimal("0.10")) >= 0;
+            boolean contraction = primaryWindowSummary.currentActiveAddressVsAverage().compareTo(new java.math.BigDecimal("-0.10")) <= 0
+                    && primaryWindowSummary.currentTransactionCountVsAverage().compareTo(new java.math.BigDecimal("-0.10")) <= 0;
+            if (expansion || contraction) {
+                highlights.add(new AnalysisOnchainHighlight(
+                        primaryWindowSummary.windowType().name() + (expansion ? " network activity expansion" : " network activity contraction"),
+                        primaryWindowSummary.windowType().name()
+                                + " keeps active addresses "
+                                + formattingSupport.signedRatio(primaryWindowSummary.currentActiveAddressVsAverage())
+                                + ", transactions "
+                                + formattingSupport.signedRatio(primaryWindowSummary.currentTransactionCountVsAverage())
+                                + ", market cap "
+                                + formattingSupport.signedRatio(primaryWindowSummary.currentMarketCapVsAverage())
+                                + " versus average.",
+                        contraction ? AnalysisOnchainHighlightImportance.HIGH : AnalysisOnchainHighlightImportance.MEDIUM,
+                        null
+                ));
+            }
         }
 
         return highlights.stream().limit(2).toList();

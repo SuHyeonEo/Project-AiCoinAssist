@@ -15,6 +15,7 @@ public record AnalysisMacroContext(
         BigDecimal us10yYieldValue,
         BigDecimal usdKrwValue,
         List<AnalysisMacroComparisonFact> comparisonFacts,
+        List<AnalysisMacroWindowSummary> windowSummaries,
         List<AnalysisMacroHighlight> highlights
 ) {
 }

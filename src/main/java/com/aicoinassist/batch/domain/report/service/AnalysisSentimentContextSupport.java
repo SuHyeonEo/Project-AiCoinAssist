@@ -4,6 +4,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
@@ -39,8 +40,50 @@ class AnalysisSentimentContextSupport {
                 sentimentContext.classification(),
                 sentimentContext.timeUntilUpdateSeconds(),
                 sentimentContext.comparisonFacts(),
+                sentimentContext.windowSummaries(),
                 sentimentHighlights(reportType, sentimentContext)
         );
+    }
+
+    AnalysisSentimentWindowSummary primaryWindowSummary(
+            AnalysisReportType reportType,
+            AnalysisSentimentContext sentimentContext
+    ) {
+        if (sentimentContext.windowSummaries() == null || sentimentContext.windowSummaries().isEmpty()) {
+            return null;
+        }
+
+        Map<com.aicoinassist.batch.domain.market.enumtype.MarketWindowType, AnalysisSentimentWindowSummary> summaryByType = sentimentContext.windowSummaries()
+                                                                                                                                            .stream()
+                                                                                                                                            .collect(Collectors.toMap(
+                                                                                                                                                    AnalysisSentimentWindowSummary::windowType,
+                                                                                                                                                    summary -> summary,
+                                                                                                                                                    (left, right) -> left
+                                                                                                                                            ));
+
+        List<com.aicoinassist.batch.domain.market.enumtype.MarketWindowType> priority = switch (reportType) {
+            case SHORT_TERM -> List.of(
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_7D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_3D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_1D
+            );
+            case MID_TERM -> List.of(
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_30D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_14D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_7D
+            );
+            case LONG_TERM -> List.of(
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_180D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_90D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_30D
+            );
+        };
+
+        return priority.stream()
+                       .map(summaryByType::get)
+                       .filter(java.util.Objects::nonNull)
+                       .findFirst()
+                       .orElse(sentimentContext.windowSummaries().get(sentimentContext.windowSummaries().size() - 1));
     }
 
     AnalysisContextHeadlinePayload sentimentContextHeadline(
@@ -160,6 +203,39 @@ class AnalysisSentimentContextSupport {
                             : AnalysisSentimentHighlightImportance.MEDIUM,
                     primaryFact.reference()
             ));
+        }
+
+        AnalysisSentimentWindowSummary primaryWindowSummary = primaryWindowSummary(reportType, sentimentContext);
+        if (primaryWindowSummary != null && primaryWindowSummary.currentIndexVsAverage() != null) {
+            if (primaryWindowSummary.currentIndexVsAverage().compareTo(new java.math.BigDecimal("0.10")) >= 0) {
+                highlights.add(new AnalysisSentimentHighlight(
+                        primaryWindowSummary.windowType().name() + " sentiment above average",
+                        primaryWindowSummary.windowType().name()
+                                + " keeps Fear & Greed "
+                                + formattingSupport.signedRatio(primaryWindowSummary.currentIndexVsAverage())
+                                + " versus its average, with greed samples "
+                                + primaryWindowSummary.greedSampleCount()
+                                + " out of "
+                                + primaryWindowSummary.sampleCount()
+                                + ".",
+                        AnalysisSentimentHighlightImportance.MEDIUM,
+                        null
+                ));
+            } else if (primaryWindowSummary.currentIndexVsAverage().compareTo(new java.math.BigDecimal("-0.10")) <= 0) {
+                highlights.add(new AnalysisSentimentHighlight(
+                        primaryWindowSummary.windowType().name() + " sentiment below average",
+                        primaryWindowSummary.windowType().name()
+                                + " keeps Fear & Greed "
+                                + formattingSupport.signedRatio(primaryWindowSummary.currentIndexVsAverage())
+                                + " versus its average, with fear samples "
+                                + primaryWindowSummary.fearSampleCount()
+                                + " out of "
+                                + primaryWindowSummary.sampleCount()
+                                + ".",
+                        AnalysisSentimentHighlightImportance.MEDIUM,
+                        null
+                ));
+            }
         }
 
         return highlights.stream().limit(2).toList();

@@ -18,6 +18,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
@@ -28,6 +29,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
@@ -38,6 +40,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryKeyMessagePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
@@ -178,12 +181,14 @@ abstract class AnalysisReportPayloadTestFixtures {
                         new AnalysisMacroContextSummaryPayload(
                                 "DXY proxy 119.8421, US10Y 4.12, USD/KRW 1453.22.",
                                 "D30 keeps DXY +1.50%, US10Y +4.04%, USD/KRW +2.34%.",
+                                "LAST_30D keeps DXY +0.71%, US10Y +3%, USD/KRW +1.62% versus average.",
                                 List.of("Dollar strength regime")
                         ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.MACRO, "Dollar strength regime", "detail", AnalysisContextHeadlineImportance.HIGH),
                         new AnalysisSentimentContextSummaryPayload(
                                 "Fear & Greed 72 (Greed).",
                                 "Greed regime remains elevated versus recent references.",
+                                "LAST_7D keeps Fear & Greed +18.03% versus average, greed samples 5/7.",
                                 List.of("Greed regime", "PREV_BATCH sentiment shift"),
                                 1L
                         ),
@@ -191,6 +196,7 @@ abstract class AnalysisReportPayloadTestFixtures {
                         new AnalysisOnchainContextSummaryPayload(
                                 "Active addresses 1050000, transactions 525000, market cap 1700000000000.",
                                 "D7 keeps active addresses +10%, transactions +9.38%, market cap +1.79%.",
+                                "LAST_30D keeps active addresses +7.14%, transactions +5%, market cap +3.03% versus average.",
                                 List.of("D7 keeps active addresses +10%, transactions +9.38%, market cap +1.79%.")
                         ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion", "detail", AnalysisContextHeadlineImportance.MEDIUM),
@@ -322,6 +328,20 @@ abstract class AnalysisReportPayloadTestFixtures {
                                 )
                         ),
                         List.of(
+                                new AnalysisMacroWindowSummary(
+                                        MarketWindowType.LAST_30D,
+                                        Instant.parse("2026-02-07T00:00:00Z"),
+                                        Instant.parse("2026-03-09T00:00:00Z"),
+                                        30,
+                                        new BigDecimal("118.90000000"),
+                                        new BigDecimal("0.00708242"),
+                                        new BigDecimal("4.00000000"),
+                                        new BigDecimal("0.03000000"),
+                                        new BigDecimal("1430.00000000"),
+                                        new BigDecimal("0.01623776")
+                                )
+                        ),
+                        List.of(
                                 new AnalysisMacroHighlight(
                                         "Dollar strength regime",
                                         "D30 keeps DXY proxy +1.50%, which can pressure crypto risk appetite.",
@@ -346,6 +366,18 @@ abstract class AnalysisReportPayloadTestFixtures {
                                         new BigDecimal("4.00000000"),
                                         new BigDecimal("0.05882353"),
                                         true
+                                )
+                        ),
+                        List.of(
+                                new AnalysisSentimentWindowSummary(
+                                        MarketWindowType.LAST_7D,
+                                        Instant.parse("2026-03-02T00:00:00Z"),
+                                        Instant.parse("2026-03-09T00:00:00Z"),
+                                        7,
+                                        new BigDecimal("61.00000000"),
+                                        new BigDecimal("0.18032787"),
+                                        5,
+                                        0
                                 )
                         ),
                         List.of(
@@ -376,6 +408,20 @@ abstract class AnalysisReportPayloadTestFixtures {
                                         new BigDecimal("0.09375000"),
                                         new BigDecimal("1670000000000.00000000"),
                                         new BigDecimal("0.01796407")
+                                )
+                        ),
+                        List.of(
+                                new AnalysisOnchainWindowSummary(
+                                        MarketWindowType.LAST_30D,
+                                        Instant.parse("2026-02-07T00:00:00Z"),
+                                        Instant.parse("2026-03-09T00:00:00Z"),
+                                        30,
+                                        new BigDecimal("980000.00000000"),
+                                        new BigDecimal("0.07142857"),
+                                        new BigDecimal("500000.00000000"),
+                                        new BigDecimal("0.05000000"),
+                                        new BigDecimal("1650000000000.00000000"),
+                                        new BigDecimal("0.03030303")
                                 )
                         ),
                         List.of(

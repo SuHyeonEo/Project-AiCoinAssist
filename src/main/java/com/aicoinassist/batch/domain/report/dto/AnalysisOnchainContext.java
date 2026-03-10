@@ -14,6 +14,7 @@ public record AnalysisOnchainContext(
         BigDecimal transactionCount,
         BigDecimal marketCapUsd,
         List<AnalysisOnchainComparisonFact> comparisonFacts,
+        List<AnalysisOnchainWindowSummary> windowSummaries,
         List<AnalysisOnchainHighlight> highlights
 ) {
 }

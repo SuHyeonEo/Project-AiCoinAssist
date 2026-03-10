@@ -62,12 +62,18 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         when(analysisDerivativeComparisonService.buildFacts(contextSnapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(derivativeContext.comparisonFacts());
         when(macroContextSnapshotPersistenceService.createAndSave()).thenReturn(macroContextSnapshot);
+        when(macroContextWindowSummarySnapshotPersistenceService.createAndSaveForReportType(macroContextSnapshot, AnalysisReportType.MID_TERM))
+                .thenReturn(generationMacroWindowSummaryEntities());
         when(analysisMacroComparisonService.buildFacts(macroContextSnapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(macroContext.comparisonFacts());
         when(sentimentSnapshotPersistenceService.createAndSaveFearGreedSnapshot()).thenReturn(sentimentSnapshot);
+        when(sentimentWindowSummarySnapshotPersistenceService.createAndSaveForReportType(sentimentSnapshot, AnalysisReportType.MID_TERM))
+                .thenReturn(generationSentimentWindowSummaryEntities());
         when(analysisSentimentComparisonService.buildFacts(sentimentSnapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(sentimentContext.comparisonFacts());
         when(onchainFactSnapshotPersistenceService.createAndSave("BTCUSDT")).thenReturn(onchainSnapshot);
+        when(onchainWindowSummarySnapshotPersistenceService.createAndSaveForReportType(onchainSnapshot, AnalysisReportType.MID_TERM))
+                .thenReturn(generationOnchainWindowSummaryEntities());
         when(analysisOnchainComparisonService.buildFacts(onchainSnapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(onchainContext.comparisonFacts());
         when(marketContextWindowSummarySnapshotPersistenceService.createAndSaveForReportType(contextSnapshot, AnalysisReportType.MID_TERM))
@@ -85,11 +91,14 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         when(analysisReportMarketDataMapper.toDerivativeWindowSummary(any())).thenReturn(derivativeContext.windowSummaries().get(0));
         when(analysisReportMarketDataMapper.toDerivativeContext(contextSnapshot, derivativeContext.comparisonFacts(), derivativeContext.windowSummaries()))
                 .thenReturn(derivativeContext);
-        when(analysisReportMarketDataMapper.toMacroContext(macroContextSnapshot, macroContext.comparisonFacts()))
+        when(analysisReportMarketDataMapper.toMacroWindowSummary(any())).thenReturn(macroContext.windowSummaries().get(0));
+        when(analysisReportMarketDataMapper.toMacroContext(macroContextSnapshot, macroContext.comparisonFacts(), macroContext.windowSummaries()))
                 .thenReturn(macroContext);
-        when(analysisReportMarketDataMapper.toSentimentContext(sentimentSnapshot, sentimentContext.comparisonFacts()))
+        when(analysisReportMarketDataMapper.toSentimentWindowSummary(any())).thenReturn(sentimentContext.windowSummaries().get(0));
+        when(analysisReportMarketDataMapper.toSentimentContext(sentimentSnapshot, sentimentContext.comparisonFacts(), sentimentContext.windowSummaries()))
                 .thenReturn(sentimentContext);
-        when(analysisReportMarketDataMapper.toOnchainContext(onchainSnapshot, onchainContext.comparisonFacts()))
+        when(analysisReportMarketDataMapper.toOnchainWindowSummary(any())).thenReturn(onchainContext.windowSummaries().get(0));
+        when(analysisReportMarketDataMapper.toOnchainContext(onchainSnapshot, onchainContext.comparisonFacts(), onchainContext.windowSummaries()))
                 .thenReturn(onchainContext);
         when(analysisReportMarketDataMapper.toWindowSummary(any())).thenReturn(payload.windowSummaries().get(0));
         when(analysisReportMarketDataMapper.toCandidateLevels(anyList(), eq("SUPPORT"), any())).thenReturn(supportLevels);
