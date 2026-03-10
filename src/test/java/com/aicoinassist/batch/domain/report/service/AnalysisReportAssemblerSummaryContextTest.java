@@ -72,7 +72,8 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.DERIVATIVE, "PREV_BATCH derivative shift"),
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.MACRO, "Dollar strength regime"),
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime"),
-                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion")
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion"),
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.EXTERNAL, "External regime direction changed")
                 );
 
         assertThat(payload.marketContext().currentState()).extracting(
@@ -140,9 +141,16 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                         AnalysisContextHeadlinePayload::title
                 )
                 .containsExactly(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion");
+        assertThat(payload.marketContext().externalHeadline()).extracting(
+                        AnalysisContextHeadlinePayload::category,
+                        AnalysisContextHeadlinePayload::title
+                )
+                .containsExactly(AnalysisContextHeadlineCategory.EXTERNAL, "External regime direction changed");
         assertThat(payload.marketContext().externalContextComposite()).isNotNull();
         assertThat(payload.marketContext().externalContextComposite().primarySignalTitle()).isEqualTo("Dollar strength regime");
         assertThat(payload.marketContext().externalContextComposite().compositeRiskScore()).isEqualByComparingTo("1.33333333");
+        assertThat(payload.marketContext().externalContextComposite().comparisonFacts()).hasSize(1);
+        assertThat(payload.marketContext().externalContextComposite().highlights()).hasSize(1);
         assertThat(payload.marketContext().externalRegimeSignals()).extracting(
                         signal -> signal.category().name(),
                         signal -> signal.title()
@@ -185,6 +193,6 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
         assertThat(payload.sentimentContext().highlights()).isNotEmpty();
         assertThat(payload.onchainContext().highlights()).isNotEmpty();
         assertThat(payload.riskFactors()).extracting(risk -> risk.type().name())
-                                         .contains("SENTIMENT_GREED_EXTREME", "MACRO_VOLATILITY");
+                                         .contains("SENTIMENT_GREED_EXTREME", "MACRO_VOLATILITY", "EXTERNAL_RISK_CONFLUENCE");
     }
 }

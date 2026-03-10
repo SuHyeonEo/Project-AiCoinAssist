@@ -24,7 +24,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
@@ -255,16 +257,29 @@ public class AnalysisReportMarketDataMapper {
     }
 
     public AnalysisExternalContextCompositePayload toExternalContextComposite(MarketExternalContextSnapshotEntity entity) {
+        return toExternalContextComposite(entity, List.of(), List.of());
+    }
+
+    public AnalysisExternalContextCompositePayload toExternalContextComposite(
+            MarketExternalContextSnapshotEntity entity,
+            List<AnalysisExternalContextComparisonFact> comparisonFacts,
+            List<AnalysisExternalContextHighlight> highlights
+    ) {
         return new AnalysisExternalContextCompositePayload(
+                entity.getSnapshotTime(),
+                entity.getSourceDataVersion(),
                 entity.getCompositeRiskScore(),
                 enumValue(entity.getDominantDirection(), com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeDirection.class),
                 enumValue(entity.getHighestSeverity(), com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeSeverity.class),
                 entity.getSupportiveSignalCount(),
                 entity.getCautionarySignalCount(),
                 entity.getHeadwindSignalCount(),
+                enumValue(entity.getPrimarySignalCategory(), com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeCategory.class),
                 entity.getPrimarySignalTitle(),
                 entity.getPrimarySignalDetail(),
-                externalRegimeSignals(entity)
+                externalRegimeSignals(entity),
+                comparisonFacts,
+                highlights
         );
     }
 

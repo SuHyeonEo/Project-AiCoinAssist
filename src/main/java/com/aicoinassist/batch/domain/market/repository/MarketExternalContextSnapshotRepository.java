@@ -12,4 +12,9 @@ public interface MarketExternalContextSnapshotRepository extends JpaRepository<M
             String symbol,
             Instant snapshotTime
     );
+
+    Optional<MarketExternalContextSnapshotEntity> findTopBySymbolAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
+            String symbol,
+            Instant snapshotTime
+    );
 }

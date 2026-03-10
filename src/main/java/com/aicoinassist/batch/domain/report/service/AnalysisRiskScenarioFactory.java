@@ -3,6 +3,8 @@ package com.aicoinassist.batch.domain.report.service;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
@@ -51,7 +53,8 @@ class AnalysisRiskScenarioFactory {
             AnalysisDerivativeContext derivativeContext,
             AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
-            AnalysisOnchainContext onchainContext
+            AnalysisOnchainContext onchainContext,
+            AnalysisExternalContextCompositePayload externalContextComposite
     ) {
         List<AnalysisRiskFactor> candidates = new java.util.ArrayList<>();
 
@@ -267,6 +270,36 @@ class AnalysisRiskScenarioFactory {
             ));
         }
 
+        if (externalContextComposite != null
+                && externalContextComposite.compositeRiskScore() != null
+                && externalContextComposite.compositeRiskScore().compareTo(new BigDecimal("1.00")) >= 0
+                && externalContextComposite.primarySignalTitle() != null) {
+            candidates.add(new AnalysisRiskFactor(
+                    AnalysisRiskFactorType.EXTERNAL_RISK_CONFLUENCE,
+                    "External risk confluence",
+                    "Composite external regime keeps "
+                            + externalContextComposite.primarySignalTitle()
+                            + " in focus with risk score "
+                            + externalContextComposite.compositeRiskScore().stripTrailingZeros().toPlainString()
+                            + ".",
+                    java.util.stream.Stream.concat(
+                                    java.util.stream.Stream.of(
+                                            "Dominant external direction is "
+                                                    + (externalContextComposite.dominantDirection() == null
+                                                    ? "mixed"
+                                                    : externalContextComposite.dominantDirection().name().toLowerCase().replace('_', ' '))
+                                                    + "."
+                                    ),
+                                    externalContextComposite.highlights() == null
+                                            ? java.util.stream.Stream.empty()
+                                            : externalContextComposite.highlights().stream()
+                                                                      .limit(2)
+                                                                      .map(AnalysisExternalContextHighlight::summary)
+                            )
+                            .toList()
+            ));
+        }
+
         if (candidates.isEmpty()) {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.MOMENTUM_TRANSITION,
@@ -286,11 +319,33 @@ class AnalysisRiskScenarioFactory {
             AnalysisDerivativeContext derivativeContext,
             AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
-            AnalysisOnchainContext onchainContext
+            AnalysisOnchainContext onchainContext,
+            AnalysisExternalContextCompositePayload externalContextComposite
     ) {
-        List<String> externalTriggers = externalTriggerConditions(reportType, derivativeContext, macroContext, sentimentContext, onchainContext);
-        List<String> externalInvalidations = externalInvalidationSignals(reportType, derivativeContext, macroContext, sentimentContext, onchainContext);
-        String externalPath = externalPathSummary(reportType, derivativeContext, macroContext, sentimentContext, onchainContext);
+        List<String> externalTriggers = externalTriggerConditions(
+                reportType,
+                derivativeContext,
+                macroContext,
+                sentimentContext,
+                onchainContext,
+                externalContextComposite
+        );
+        List<String> externalInvalidations = externalInvalidationSignals(
+                reportType,
+                derivativeContext,
+                macroContext,
+                sentimentContext,
+                onchainContext,
+                externalContextComposite
+        );
+        String externalPath = externalPathSummary(
+                reportType,
+                derivativeContext,
+                macroContext,
+                sentimentContext,
+                onchainContext,
+                externalContextComposite
+        );
 
         return switch (trendBias) {
             case BULLISH -> List.of(
@@ -309,7 +364,7 @@ class AnalysisRiskScenarioFactory {
                             appendAll(List.of("Price loses MA20 support."), externalTriggers),
                             "A loss of MA20 can trigger a pullback toward "
                                     + snapshot.getMa60().stripTrailingZeros().toPlainString()
-                                    + ". " + externalRiskPathSummary(reportType, macroContext, sentimentContext, onchainContext),
+                                    + ". " + externalRiskPathSummary(reportType, macroContext, sentimentContext, onchainContext, externalContextComposite),
                             appendAll(List.of("A fast recovery above MA20 invalidates the pullback case."), externalInvalidations)
                     )
             );
@@ -320,7 +375,7 @@ class AnalysisRiskScenarioFactory {
                             appendAll(List.of("Price stays below MA20.", "Momentum remains weak."), externalTriggers),
                             "Price stays below MA20 and can probe "
                                     + snapshot.getBollingerLowerBand().stripTrailingZeros().toPlainString()
-                                    + ". " + externalRiskPathSummary(reportType, macroContext, sentimentContext, onchainContext),
+                                    + ". " + externalRiskPathSummary(reportType, macroContext, sentimentContext, onchainContext, externalContextComposite),
                             appendAll(List.of("A recovery above MA20 weakens the bearish continuation case."), externalInvalidations)
                     ),
                     new AnalysisScenario(
@@ -357,7 +412,8 @@ class AnalysisRiskScenarioFactory {
             AnalysisDerivativeContext derivativeContext,
             AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
-            AnalysisOnchainContext onchainContext
+            AnalysisOnchainContext onchainContext,
+            AnalysisExternalContextCompositePayload externalContextComposite
     ) {
         java.util.ArrayList<String> triggers = new java.util.ArrayList<>();
 
@@ -407,6 +463,13 @@ class AnalysisRiskScenarioFactory {
             }
         }
 
+        if (externalContextComposite != null && externalContextComposite.highlights() != null) {
+            externalContextComposite.highlights().stream()
+                                    .limit(2)
+                                    .map(AnalysisExternalContextHighlight::summary)
+                                    .forEach(triggers::add);
+        }
+
         return triggers;
     }
 
@@ -415,7 +478,8 @@ class AnalysisRiskScenarioFactory {
             AnalysisDerivativeContext derivativeContext,
             AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
-            AnalysisOnchainContext onchainContext
+            AnalysisOnchainContext onchainContext,
+            AnalysisExternalContextCompositePayload externalContextComposite
     ) {
         java.util.ArrayList<String> clauses = new java.util.ArrayList<>();
 
@@ -440,6 +504,10 @@ class AnalysisRiskScenarioFactory {
             clauses.add("on-chain activity sits " + formattingSupport.signedRatio(onchainWindowSummary.currentActiveAddressVsAverage()) + " versus average");
         }
 
+        if (externalContextComposite != null && externalContextComposite.primarySignalTitle() != null) {
+            clauses.add("external regime focus stays on " + externalContextComposite.primarySignalTitle());
+        }
+
         return clauses.isEmpty() ? "External context stays mixed." : String.join(", ", clauses) + ".";
     }
 
@@ -447,7 +515,8 @@ class AnalysisRiskScenarioFactory {
             AnalysisReportType reportType,
             AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
-            AnalysisOnchainContext onchainContext
+            AnalysisOnchainContext onchainContext,
+            AnalysisExternalContextCompositePayload externalContextComposite
     ) {
         java.util.ArrayList<String> clauses = new java.util.ArrayList<>();
 
@@ -478,6 +547,12 @@ class AnalysisRiskScenarioFactory {
             clauses.add("soft on-chain activity can weaken follow-through");
         }
 
+        if (externalContextComposite != null
+                && externalContextComposite.compositeRiskScore() != null
+                && externalContextComposite.compositeRiskScore().compareTo(new BigDecimal("1.00")) >= 0) {
+            clauses.add("external regime confluence keeps risk skew elevated");
+        }
+
         return clauses.isEmpty() ? "External context does not add a strong risk skew." : String.join(", ", clauses) + ".";
     }
 
@@ -486,7 +561,8 @@ class AnalysisRiskScenarioFactory {
             AnalysisDerivativeContext derivativeContext,
             AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
-            AnalysisOnchainContext onchainContext
+            AnalysisOnchainContext onchainContext,
+            AnalysisExternalContextCompositePayload externalContextComposite
     ) {
         java.util.ArrayList<String> signals = new java.util.ArrayList<>();
 
@@ -516,6 +592,10 @@ class AnalysisRiskScenarioFactory {
                 : onchainContextSupport.primaryWindowSummary(reportType, onchainContext);
         if (onchainWindowSummary != null) {
             signals.add("On-chain activity stabilizes around its recent average.");
+        }
+
+        if (externalContextComposite != null) {
+            signals.add("Composite external regime score cools back toward neutral.");
         }
 
         return signals;

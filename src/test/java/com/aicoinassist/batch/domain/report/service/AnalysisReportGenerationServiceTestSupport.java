@@ -41,7 +41,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
@@ -170,6 +172,9 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
     protected AnalysisExternalContextSnapshotService analysisExternalContextSnapshotService;
 
     @Mock
+    protected AnalysisExternalContextComparisonService analysisExternalContextComparisonService;
+
+    @Mock
     protected AnalysisReportAssembler analysisReportAssembler;
 
     @Mock
@@ -201,6 +206,7 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                 analysisSentimentComparisonService,
                 analysisOnchainComparisonService,
                 analysisExternalContextSnapshotService,
+                analysisExternalContextComparisonService,
                 analysisReportContinuityService,
                 analysisReportAssembler,
                 analysisReportPersistenceService,
@@ -359,13 +365,17 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                 List.of("D7 keeps active addresses +10%, transactions +9.38%, market cap +1.79%.")
                         ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion", "detail", AnalysisContextHeadlineImportance.MEDIUM),
+                        new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.EXTERNAL, "External regime direction changed", "detail", AnalysisContextHeadlineImportance.HIGH),
                         new AnalysisExternalContextCompositePayload(
+                                Instant.parse("2026-03-09T00:59:30Z"),
+                                "derivative=context-basis-key;macro=dxyProxyDate=2026-03-09;sentiment=metricType=FEAR_GREED_INDEX;onchain=activeAddressDate=2026-03-09",
                                 new BigDecimal("1.33333333"),
                                 AnalysisExternalRegimeDirection.HEADWIND,
                                 AnalysisExternalRegimeSeverity.HIGH,
                                 0,
                                 2,
                                 2,
+                                AnalysisExternalRegimeCategory.MACRO,
                                 "Dollar strength regime",
                                 "DXY and yields remain firm versus representative averages.",
                                 List.of(
@@ -376,6 +386,29 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                                 AnalysisExternalRegimeDirection.HEADWIND,
                                                 AnalysisExternalRegimeSeverity.HIGH,
                                                 "LAST_30D"
+                                        )
+                                ),
+                                List.of(
+                                        new AnalysisExternalContextComparisonFact(
+                                                AnalysisComparisonReference.D7,
+                                                Instant.parse("2026-03-02T00:59:30Z"),
+                                                new BigDecimal("0.25000000"),
+                                                new BigDecimal("1.08333333"),
+                                                true,
+                                                false,
+                                                -1,
+                                                1,
+                                                1,
+                                                true,
+                                                "Funding crowding regime"
+                                        )
+                                ),
+                                List.of(
+                                        new AnalysisExternalContextHighlight(
+                                                "External regime direction changed",
+                                                "D7 대비 external regime direction이 headwind로 전환되었습니다.",
+                                                AnalysisContextHeadlineImportance.HIGH,
+                                                AnalysisComparisonReference.D7
                                         )
                                 )
                         ),

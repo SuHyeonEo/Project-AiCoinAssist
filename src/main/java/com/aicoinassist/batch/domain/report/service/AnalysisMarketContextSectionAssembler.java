@@ -153,6 +153,7 @@ class AnalysisMarketContextSectionAssembler {
         AnalysisContextHeadlinePayload sentimentHeadline = null;
         AnalysisOnchainContextSummaryPayload onchainContextSummary = null;
         AnalysisContextHeadlinePayload onchainHeadline = null;
+        AnalysisContextHeadlinePayload externalHeadline = null;
         if (derivativeContext != null) {
             AnalysisDerivativeWindowSummary derivativeWindowSummary = derivativeContextSupport.primaryDerivativeWindowSummary(
                     reportType,
@@ -289,6 +290,9 @@ class AnalysisMarketContextSectionAssembler {
         List<AnalysisExternalRegimeSignal> externalRegimeSignals = externalContextComposite == null
                 ? List.of()
                 : externalContextComposite.regimeSignals();
+        if (externalContextComposite != null) {
+            externalHeadline = externalContextHeadline(externalContextComposite);
+        }
 
         AnalysisContinuityContextPayload continuityContext = continuityNotes.isEmpty()
                 ? null
@@ -327,9 +331,33 @@ class AnalysisMarketContextSectionAssembler {
                 sentimentHeadline,
                 onchainContextSummary,
                 onchainHeadline,
+                externalHeadline,
                 externalContextComposite,
                 continuityContext,
                 externalRegimeSignals
+        );
+    }
+
+    private AnalysisContextHeadlinePayload externalContextHeadline(
+            AnalysisExternalContextCompositePayload externalContextComposite
+    ) {
+        if (externalContextComposite.highlights() != null && !externalContextComposite.highlights().isEmpty()) {
+            var highlight = externalContextComposite.highlights().get(0);
+            return new AnalysisContextHeadlinePayload(
+                    com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory.EXTERNAL,
+                    highlight.title(),
+                    highlight.summary(),
+                    highlight.importance()
+            );
+        }
+        if (externalContextComposite.primarySignalTitle() == null) {
+            return null;
+        }
+        return new AnalysisContextHeadlinePayload(
+                com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory.EXTERNAL,
+                externalContextComposite.primarySignalTitle(),
+                externalContextComposite.primarySignalDetail(),
+                com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance.MEDIUM
         );
     }
 }

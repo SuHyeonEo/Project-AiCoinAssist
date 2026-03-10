@@ -81,6 +81,7 @@ public class AnalysisReportGenerationService {
     private final AnalysisSentimentComparisonService analysisSentimentComparisonService;
     private final AnalysisOnchainComparisonService analysisOnchainComparisonService;
     private final AnalysisExternalContextSnapshotService analysisExternalContextSnapshotService;
+    private final AnalysisExternalContextComparisonService analysisExternalContextComparisonService;
     private final AnalysisReportContinuityService analysisReportContinuityService;
     private final AnalysisReportAssembler analysisReportAssembler;
     private final AnalysisReportPersistenceService analysisReportPersistenceService;
@@ -193,8 +194,16 @@ public class AnalysisReportGenerationService {
                         sentimentContext,
                         onchainContext
                 ));
+        var externalContextComparisonFacts = analysisExternalContextComparisonService.buildFacts(
+                externalContextSnapshot,
+                reportType
+        );
+        var externalContextHighlights = analysisExternalContextComparisonService.buildHighlights(
+                externalContextSnapshot,
+                externalContextComparisonFacts
+        );
         AnalysisExternalContextCompositePayload externalContextComposite = analysisReportMarketDataMapper
-                .toExternalContextComposite(externalContextSnapshot);
+                .toExternalContextComposite(externalContextSnapshot, externalContextComparisonFacts, externalContextHighlights);
         AnalysisReportPayload payload = analysisReportAssembler.assemble(
                 snapshot,
                 reportType,
