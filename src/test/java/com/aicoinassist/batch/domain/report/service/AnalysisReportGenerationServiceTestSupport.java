@@ -5,6 +5,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnaps
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketExternalContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
@@ -19,6 +20,7 @@ import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelZoneSnap
 import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketExternalContextSnapshotPersistenceService;
+import com.aicoinassist.batch.domain.market.service.MarketExternalContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketLevelContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.onchain.entity.OnchainWindowSummarySnapshotEntity;
@@ -133,6 +135,9 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
     protected MarketExternalContextSnapshotPersistenceService marketExternalContextSnapshotPersistenceService;
 
     @Mock
+    protected MarketExternalContextWindowSummarySnapshotPersistenceService marketExternalContextWindowSummarySnapshotPersistenceService;
+
+    @Mock
     protected MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
 
     @Mock
@@ -192,6 +197,7 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                 marketContextSnapshotPersistenceService,
                 marketContextWindowSummarySnapshotPersistenceService,
                 marketExternalContextSnapshotPersistenceService,
+                marketExternalContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
                 macroContextSnapshotPersistenceService,
                 macroContextWindowSummarySnapshotPersistenceService,
@@ -252,6 +258,26 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                         new BigDecimal("0.71428571")
                 )),
                 List.of()
+        );
+    }
+
+    protected List<MarketExternalContextWindowSummarySnapshotEntity> externalContextWindowSummaryEntities() {
+        return List.of(
+                MarketExternalContextWindowSummarySnapshotEntity.builder()
+                        .symbol("BTCUSDT")
+                        .windowType(MarketWindowType.LAST_30D.name())
+                        .windowStartTime(Instant.parse("2026-02-07T00:59:30Z"))
+                        .windowEndTime(Instant.parse("2026-03-09T00:59:30Z"))
+                        .sampleCount(30)
+                        .currentCompositeRiskScore(new BigDecimal("1.33333333"))
+                        .averageCompositeRiskScore(new BigDecimal("0.95000000"))
+                        .currentCompositeRiskVsAverage(new BigDecimal("0.40350877"))
+                        .supportiveDominanceSampleCount(4)
+                        .cautionaryDominanceSampleCount(10)
+                        .headwindDominanceSampleCount(16)
+                        .highSeveritySampleCount(8)
+                        .sourceDataVersion("external-composite-basis;windowType=LAST_30D")
+                        .build()
         );
     }
 

@@ -12,6 +12,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;

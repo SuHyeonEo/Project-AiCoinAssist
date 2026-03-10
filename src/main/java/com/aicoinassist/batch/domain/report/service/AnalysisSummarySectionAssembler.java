@@ -218,6 +218,18 @@ class AnalysisSummarySectionAssembler {
             }
         }
 
+        if (externalContextComposite != null
+                && externalContextComposite.windowSummaries() != null
+                && !externalContextComposite.windowSummaries().isEmpty()) {
+            var primaryWindowSummary = externalContextComposite.windowSummaries().get(externalContextComposite.windowSummaries().size() - 1);
+            if (primaryWindowSummary.currentCompositeRiskVsAverage() != null) {
+                clauses.add(primaryWindowSummary.windowType().name()
+                        + " external risk stays "
+                        + formattingSupport.signedRatio(primaryWindowSummary.currentCompositeRiskVsAverage())
+                        + " versus average");
+            }
+        }
+
         return clauses.isEmpty() ? "External context stays mixed." : String.join(", ", clauses) + ".";
     }
 

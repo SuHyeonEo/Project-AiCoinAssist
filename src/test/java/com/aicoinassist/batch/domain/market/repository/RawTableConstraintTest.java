@@ -5,6 +5,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotE
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketExternalContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketOpenInterestRawEntity;
@@ -53,6 +54,9 @@ class RawTableConstraintTest {
 
     @Autowired
     private MarketWindowSummarySnapshotRepository marketWindowSummarySnapshotRepository;
+
+    @Autowired
+    private MarketExternalContextWindowSummarySnapshotRepository marketExternalContextWindowSummarySnapshotRepository;
 
     @Autowired
     private MarketCandidateLevelSnapshotRepository marketCandidateLevelSnapshotRepository;
@@ -147,6 +151,17 @@ class RawTableConstraintTest {
 
         assertThatThrownBy(() -> marketWindowSummarySnapshotRepository.saveAndFlush(
                 windowSummary(windowEndTime, "87510.12")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketExternalContextWindowSummarySnapshotRejectsDuplicateSymbolWindowTypeAndWindowEndTime() {
+        Instant windowEndTime = Instant.parse("2026-03-10T00:59:30Z");
+
+        marketExternalContextWindowSummarySnapshotRepository.saveAndFlush(externalContextWindowSummary(windowEndTime, "1.20000000"));
+
+        assertThatThrownBy(() -> marketExternalContextWindowSummarySnapshotRepository.saveAndFlush(
+                externalContextWindowSummary(windowEndTime, "1.35000000")
         )).isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -344,6 +359,27 @@ class RawTableConstraintTest {
                                                           [{"category":"MACRO","title":"Dollar strength regime","detail":"DXY is above average.","direction":"HEADWIND","severity":"HIGH","basisLabel":"LAST_30D"}]
                                                           """)
                                                   .build();
+    }
+
+    private MarketExternalContextWindowSummarySnapshotEntity externalContextWindowSummary(
+            Instant windowEndTime,
+            String currentCompositeRiskScore
+    ) {
+        return MarketExternalContextWindowSummarySnapshotEntity.builder()
+                .symbol("BTCUSDT")
+                .windowType(MarketWindowType.LAST_30D.name())
+                .windowStartTime(windowEndTime.minusSeconds(30L * 24L * 3600L))
+                .windowEndTime(windowEndTime)
+                .sampleCount(30)
+                .currentCompositeRiskScore(new BigDecimal(currentCompositeRiskScore))
+                .averageCompositeRiskScore(new BigDecimal("0.95000000"))
+                .currentCompositeRiskVsAverage(new BigDecimal("0.40350877"))
+                .supportiveDominanceSampleCount(4)
+                .cautionaryDominanceSampleCount(10)
+                .headwindDominanceSampleCount(16)
+                .highSeveritySampleCount(8)
+                .sourceDataVersion("external-window-basis;windowType=LAST_30D")
+                .build();
     }
 
     private MarketCandidateLevelSnapshotEntity candidateLevelSnapshot(Instant snapshotTime, String levelPrice) {

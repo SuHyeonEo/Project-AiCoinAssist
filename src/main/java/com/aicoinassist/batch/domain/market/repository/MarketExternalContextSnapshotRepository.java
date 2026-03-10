@@ -4,6 +4,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshot
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface MarketExternalContextSnapshotRepository extends JpaRepository<MarketExternalContextSnapshotEntity, Long> {
@@ -16,5 +17,11 @@ public interface MarketExternalContextSnapshotRepository extends JpaRepository<M
     Optional<MarketExternalContextSnapshotEntity> findTopBySymbolAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
             String symbol,
             Instant snapshotTime
+    );
+
+    List<MarketExternalContextSnapshotEntity> findAllBySymbolAndSnapshotTimeGreaterThanEqualAndSnapshotTimeLessThanEqualOrderBySnapshotTimeAscIdAsc(
+            String symbol,
+            Instant startTime,
+            Instant endTime
     );
 }
