@@ -16,6 +16,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
@@ -65,6 +66,7 @@ class AnalysisReportAssemblerTest {
                 shortWindowSummaries(),
                 derivativeContext(),
                 shortContinuityNotes(),
+                levelContext(),
                 supportLevels(),
                 resistanceLevels(),
                 supportZones(),
@@ -128,6 +130,9 @@ class AnalysisReportAssemblerTest {
         assertThat(payload.marketContext().windowContext().summary().rangePositionSummary()).contains("position");
         assertThat(payload.marketContext().windowContext().summary().volatilitySummary()).contains("ATR vs average");
         assertThat(payload.marketContext().windowContext().highlightDetails()).isNotEmpty();
+        assertThat(payload.marketContext().levelContext().supportBreakRisk()).isEqualByComparingTo("0.18000000");
+        assertThat(payload.marketContext().levelContext().resistanceBreakRisk()).isEqualByComparingTo("0.05000000");
+        assertThat(payload.marketContext().levelContext().zoneInteractionFacts()).hasSize(2);
         assertThat(payload.marketContext().derivativeContextSummary().currentStateSummary()).contains("Open interest");
         assertThat(payload.marketContext().derivativeHeadline()).extracting(
                         AnalysisContextHeadlinePayload::category,
@@ -231,6 +236,7 @@ class AnalysisReportAssemblerTest {
                 shortWindowSummaries(),
                 derivativeContext(),
                 shortContinuityNotes(),
+                levelContext(),
                 supportLevels(),
                 resistanceLevels(),
                 supportZones(),
@@ -257,6 +263,7 @@ class AnalysisReportAssemblerTest {
                 longWindowSummaries(),
                 derivativeContext(),
                 longContinuityNotes(),
+                levelContext(),
                 supportLevels(),
                 resistanceLevels(),
                 supportZones(),
@@ -644,6 +651,31 @@ class AnalysisReportAssemblerTest {
                         List.of(AnalysisPriceLevelSourceType.BOLLINGER_BAND, AnalysisPriceLevelSourceType.PIVOT_LEVEL),
                         List.of("RESISTANCE zone spans 88500 to 88620 with 2 candidate levels.", "Recent tests=3, rejections=2, breaks=0 within 14 days.")
                 )
+        );
+    }
+
+    private AnalysisLevelContextPayload levelContext() {
+        return new AnalysisLevelContextPayload(
+                supportZones().get(0),
+                resistanceZones().get(0),
+                List.of(
+                        new AnalysisZoneInteractionFact(
+                                AnalysisPriceZoneType.SUPPORT,
+                                1,
+                                AnalysisPriceZoneInteractionType.ABOVE_ZONE,
+                                "Nearest support zone is 86850 to 87000, currently above zone with 5 tests and break risk 18%.",
+                                supportZones().get(0).triggerFacts()
+                        ),
+                        new AnalysisZoneInteractionFact(
+                                AnalysisPriceZoneType.RESISTANCE,
+                                1,
+                                AnalysisPriceZoneInteractionType.BELOW_ZONE,
+                                "Nearest resistance zone is 88500 to 88620, currently below zone with 3 tests and break risk 5%.",
+                                resistanceZones().get(0).triggerFacts()
+                        )
+                ),
+                new BigDecimal("0.18000000"),
+                new BigDecimal("0.05000000")
         );
     }
 }

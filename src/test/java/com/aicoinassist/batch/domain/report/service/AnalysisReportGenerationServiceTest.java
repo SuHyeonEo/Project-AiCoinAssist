@@ -5,6 +5,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnaps
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
@@ -12,6 +13,7 @@ import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelSnapshot
 import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelZoneSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
+import com.aicoinassist.batch.domain.market.service.MarketLevelContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
@@ -22,6 +24,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
@@ -72,6 +75,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -91,6 +95,9 @@ class AnalysisReportGenerationServiceTest {
 
     @Mock
     private MarketCandidateLevelZoneSnapshotPersistenceService marketCandidateLevelZoneSnapshotPersistenceService;
+
+    @Mock
+    private MarketLevelContextSnapshotPersistenceService marketLevelContextSnapshotPersistenceService;
 
     @Mock
     private MarketContextSnapshotPersistenceService marketContextSnapshotPersistenceService;
@@ -119,6 +126,7 @@ class AnalysisReportGenerationServiceTest {
                 marketIndicatorSnapshotRepository,
                 marketCandidateLevelSnapshotPersistenceService,
                 marketCandidateLevelZoneSnapshotPersistenceService,
+                marketLevelContextSnapshotPersistenceService,
                 marketContextSnapshotPersistenceService,
                 marketContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
@@ -300,18 +308,25 @@ class AnalysisReportGenerationServiceTest {
                                 ),
                                 List.of("comparison highlight")
                         ),
-                        new AnalysisWindowContextPayload(
-                                new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.WINDOW, "LAST_30D position", "detail", AnalysisContextHeadlineImportance.MEDIUM),
-                                new AnalysisWindowContextSummaryPayload(
-                                        "context window range",
-                                        "context window position",
-                                        "context window volatility"
-                                ),
-                                List.of("window highlight")
+                new AnalysisWindowContextPayload(
+                        new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.WINDOW, "LAST_30D position", "detail", AnalysisContextHeadlineImportance.MEDIUM),
+                        new AnalysisWindowContextSummaryPayload(
+                                "context window range",
+                                "context window position",
+                                "context window volatility"
                         ),
-                        new AnalysisDerivativeContextSummaryPayload(
-                                "context derivative",
-                                "context derivative window",
+                        List.of("window highlight")
+                ),
+                new AnalysisLevelContextPayload(
+                        supportZones.get(0),
+                        resistanceZones.get(0),
+                        List.of(),
+                        new BigDecimal("0.18000000"),
+                        new BigDecimal("0.05000000")
+                ),
+                new AnalysisDerivativeContextSummaryPayload(
+                        "context derivative",
+                        "context derivative window",
                                 List.of("context derivative highlight"),
                                 List.of("context derivative risk"),
                                 7L
@@ -459,6 +474,35 @@ class AnalysisReportGenerationServiceTest {
                 candidateLevelZoneEntity("SUPPORT", 1, "86850", "86850", "87000", "0.00742857", "0.00514286", "0.89285714", "ABOVE_ZONE", "PIVOT_LOW", "PIVOT_LEVEL", "[\"MA20\",\"PIVOT_LOW\"]", "[\"MOVING_AVERAGE\",\"PIVOT_LEVEL\"]"),
                 candidateLevelZoneEntity("RESISTANCE", 1, "88560", "88500", "88620", "0.01211429", "0.01165714", "0.86285714", "BELOW_ZONE", "PIVOT_HIGH", "PIVOT_LEVEL", "[\"BB_UPPER\",\"PIVOT_HIGH\"]", "[\"BOLLINGER_BAND\",\"PIVOT_LEVEL\"]")
         );
+        MarketLevelContextSnapshotEntity levelContextSnapshotEntity = MarketLevelContextSnapshotEntity.builder()
+                                                                                                      .symbol("BTCUSDT")
+                                                                                                      .intervalValue("4h")
+                                                                                                      .snapshotTime(Instant.parse("2026-03-09T00:59:59Z"))
+                                                                                                      .currentPrice(new BigDecimal("87500"))
+                                                                                                      .supportZoneRank(1)
+                                                                                                      .supportRepresentativePrice(new BigDecimal("86850"))
+                                                                                                      .supportZoneLow(new BigDecimal("86850"))
+                                                                                                      .supportZoneHigh(new BigDecimal("87000"))
+                                                                                                      .supportDistanceToZone(new BigDecimal("0.00514286"))
+                                                                                                      .supportZoneStrength(new BigDecimal("0.89285714"))
+                                                                                                      .supportInteractionType("ABOVE_ZONE")
+                                                                                                      .supportRecentTestCount(5)
+                                                                                                      .supportRecentRejectionCount(4)
+                                                                                                      .supportRecentBreakCount(1)
+                                                                                                      .supportBreakRisk(new BigDecimal("0.18000000"))
+                                                                                                      .resistanceZoneRank(1)
+                                                                                                      .resistanceRepresentativePrice(new BigDecimal("88560"))
+                                                                                                      .resistanceZoneLow(new BigDecimal("88500"))
+                                                                                                      .resistanceZoneHigh(new BigDecimal("88620"))
+                                                                                                      .resistanceDistanceToZone(new BigDecimal("0.01165714"))
+                                                                                                      .resistanceZoneStrength(new BigDecimal("0.86285714"))
+                                                                                                      .resistanceInteractionType("BELOW_ZONE")
+                                                                                                      .resistanceRecentTestCount(3)
+                                                                                                      .resistanceRecentRejectionCount(2)
+                                                                                                      .resistanceRecentBreakCount(0)
+                                                                                                      .resistanceBreakRisk(new BigDecimal("0.05000000"))
+                                                                                                      .sourceDataVersion("indicator=basis-key;supportZone=support;resistanceZone=resistance")
+                                                                                                      .build();
         AnalysisReportEntity savedEntity = AnalysisReportEntity.builder()
                                                                .symbol("BTCUSDT")
                                                                .reportType(AnalysisReportType.MID_TERM)
@@ -491,6 +535,8 @@ class AnalysisReportGenerationServiceTest {
                 .thenReturn(candidateLevelEntities);
         when(marketCandidateLevelZoneSnapshotPersistenceService.createAndSaveAll(candidateLevelEntities))
                 .thenReturn(candidateLevelZoneEntities);
+        when(marketLevelContextSnapshotPersistenceService.createAndSave(snapshot, candidateLevelZoneEntities))
+                .thenReturn(levelContextSnapshotEntity);
         when(analysisComparisonService.buildFacts(snapshot, AnalysisReportType.MID_TERM)).thenReturn(comparisonFacts);
         when(analysisReportAssembler.assemble(
                 eq(snapshot),
@@ -499,6 +545,7 @@ class AnalysisReportGenerationServiceTest {
                 eq(payload.windowSummaries()),
                 eq(derivativeContextInput),
                 eq(payload.continuityNotes()),
+                any(AnalysisLevelContextPayload.class),
                 anyList(),
                 anyList(),
                 anyList(),
@@ -535,6 +582,7 @@ class AnalysisReportGenerationServiceTest {
                 marketIndicatorSnapshotRepository,
                 marketCandidateLevelSnapshotPersistenceService,
                 marketCandidateLevelZoneSnapshotPersistenceService,
+                marketLevelContextSnapshotPersistenceService,
                 marketContextSnapshotPersistenceService,
                 marketContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,

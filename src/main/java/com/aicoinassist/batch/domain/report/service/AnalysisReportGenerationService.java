@@ -4,6 +4,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotE
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
@@ -13,6 +14,7 @@ import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelSnapshot
 import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelZoneSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
+import com.aicoinassist.batch.domain.market.service.MarketLevelContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
@@ -21,9 +23,11 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisZoneInteractionFact;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractionType;
@@ -46,6 +50,7 @@ public class AnalysisReportGenerationService {
     private final MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
     private final MarketCandidateLevelSnapshotPersistenceService marketCandidateLevelSnapshotPersistenceService;
     private final MarketCandidateLevelZoneSnapshotPersistenceService marketCandidateLevelZoneSnapshotPersistenceService;
+    private final MarketLevelContextSnapshotPersistenceService marketLevelContextSnapshotPersistenceService;
     private final MarketContextSnapshotPersistenceService marketContextSnapshotPersistenceService;
     private final MarketContextWindowSummarySnapshotPersistenceService marketContextWindowSummarySnapshotPersistenceService;
     private final MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
@@ -103,6 +108,9 @@ public class AnalysisReportGenerationService {
         List<AnalysisPriceLevel> resistanceLevels = candidateLevels(candidateLevelSnapshots, "RESISTANCE", Comparator.comparing(AnalysisPriceLevel::price));
         List<AnalysisPriceZone> supportZones = candidateZones(candidateLevelZoneSnapshots, "SUPPORT");
         List<AnalysisPriceZone> resistanceZones = candidateZones(candidateLevelZoneSnapshots, "RESISTANCE");
+        MarketLevelContextSnapshotEntity levelContextSnapshot = marketLevelContextSnapshotPersistenceService
+                .createAndSave(snapshot, candidateLevelZoneSnapshots);
+        AnalysisLevelContextPayload levelContext = toLevelContext(levelContextSnapshot, supportZones, resistanceZones);
         AnalysisReportPayload payload = analysisReportAssembler.assemble(
                 snapshot,
                 reportType,
@@ -110,6 +118,7 @@ public class AnalysisReportGenerationService {
                 windowSummaries,
                 derivativeContext,
                 continuityNotes,
+                levelContext,
                 supportLevels,
                 resistanceLevels,
                 supportZones,
@@ -191,6 +200,87 @@ public class AnalysisReportGenerationService {
                 entity.getAverageBasisRate(),
                 entity.getCurrentBasisVsAverage()
         );
+    }
+
+    private AnalysisLevelContextPayload toLevelContext(
+            MarketLevelContextSnapshotEntity entity,
+            List<AnalysisPriceZone> supportZones,
+            List<AnalysisPriceZone> resistanceZones
+    ) {
+        AnalysisPriceZone nearestSupportZone = nearestZone(supportZones, entity.getSupportZoneRank());
+        AnalysisPriceZone nearestResistanceZone = nearestZone(resistanceZones, entity.getResistanceZoneRank());
+        return new AnalysisLevelContextPayload(
+                nearestSupportZone,
+                nearestResistanceZone,
+                zoneInteractionFacts(entity, nearestSupportZone, nearestResistanceZone),
+                entity.getSupportBreakRisk(),
+                entity.getResistanceBreakRisk()
+        );
+    }
+
+    private AnalysisPriceZone nearestZone(List<AnalysisPriceZone> zones, Integer zoneRank) {
+        if (zoneRank == null) {
+            return null;
+        }
+        return zones.stream()
+                    .filter(zone -> zone.zoneRank().equals(zoneRank))
+                    .findFirst()
+                    .orElse(null);
+    }
+
+    private List<AnalysisZoneInteractionFact> zoneInteractionFacts(
+            MarketLevelContextSnapshotEntity entity,
+            AnalysisPriceZone nearestSupportZone,
+            AnalysisPriceZone nearestResistanceZone
+    ) {
+        java.util.ArrayList<AnalysisZoneInteractionFact> facts = new java.util.ArrayList<>();
+        if (nearestSupportZone != null && entity.getSupportInteractionType() != null) {
+            facts.add(new AnalysisZoneInteractionFact(
+                    AnalysisPriceZoneType.SUPPORT,
+                    entity.getSupportZoneRank(),
+                    AnalysisPriceZoneInteractionType.valueOf(entity.getSupportInteractionType()),
+                    "Nearest support zone is %s to %s, currently %s with %d tests and break risk %s."
+                            .formatted(
+                                    nearestSupportZone.zoneLow().stripTrailingZeros().toPlainString(),
+                                    nearestSupportZone.zoneHigh().stripTrailingZeros().toPlainString(),
+                                    entity.getSupportInteractionType().toLowerCase().replace('_', ' '),
+                                    zeroSafe(entity.getSupportRecentTestCount()),
+                                    percentage(entity.getSupportBreakRisk())
+                            ),
+                    nearestSupportZone.triggerFacts()
+            ));
+        }
+        if (nearestResistanceZone != null && entity.getResistanceInteractionType() != null) {
+            facts.add(new AnalysisZoneInteractionFact(
+                    AnalysisPriceZoneType.RESISTANCE,
+                    entity.getResistanceZoneRank(),
+                    AnalysisPriceZoneInteractionType.valueOf(entity.getResistanceInteractionType()),
+                    "Nearest resistance zone is %s to %s, currently %s with %d tests and break risk %s."
+                            .formatted(
+                                    nearestResistanceZone.zoneLow().stripTrailingZeros().toPlainString(),
+                                    nearestResistanceZone.zoneHigh().stripTrailingZeros().toPlainString(),
+                                    entity.getResistanceInteractionType().toLowerCase().replace('_', ' '),
+                                    zeroSafe(entity.getResistanceRecentTestCount()),
+                                    percentage(entity.getResistanceBreakRisk())
+                            ),
+                    nearestResistanceZone.triggerFacts()
+            ));
+        }
+        return facts;
+    }
+
+    private int zeroSafe(Integer value) {
+        return value == null ? 0 : value;
+    }
+
+    private String percentage(java.math.BigDecimal value) {
+        if (value == null) {
+            return "unavailable";
+        }
+        return value.multiply(new java.math.BigDecimal("100"))
+                    .setScale(2, java.math.RoundingMode.HALF_UP)
+                    .stripTrailingZeros()
+                    .toPlainString() + "%";
     }
 
     private List<AnalysisPriceLevel> candidateLevels(

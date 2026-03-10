@@ -5,6 +5,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotE
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketOpenInterestRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketPremiumIndexRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketPriceRawEntity;
@@ -54,6 +55,9 @@ class RawTableConstraintTest {
 
     @Autowired
     private MarketCandidateLevelZoneSnapshotRepository marketCandidateLevelZoneSnapshotRepository;
+
+    @Autowired
+    private MarketLevelContextSnapshotRepository marketLevelContextSnapshotRepository;
 
     @Test
     void marketPriceRawRejectsDuplicateSourceSymbolAndSourceEventTime() {
@@ -150,6 +154,17 @@ class RawTableConstraintTest {
 
         assertThatThrownBy(() -> marketCandidateLevelZoneSnapshotRepository.saveAndFlush(
                 candidateLevelZoneSnapshot(snapshotTime, 1, "86700.00")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketLevelContextSnapshotRejectsDuplicateSymbolIntervalAndSnapshotTime() {
+        Instant snapshotTime = Instant.parse("2026-03-10T00:59:59Z");
+
+        marketLevelContextSnapshotRepository.saveAndFlush(levelContextSnapshot(snapshotTime, "0.18000000"));
+
+        assertThatThrownBy(() -> marketLevelContextSnapshotRepository.saveAndFlush(
+                levelContextSnapshot(snapshotTime, "0.22000000")
         )).isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -343,5 +358,37 @@ class RawTableConstraintTest {
                                                      .triggerFactsPayload("[\"SUPPORT zone spans 86000 to 87000 with 2 candidate levels.\"]")
                                                      .sourceDataVersion("basis-key;zoneType=SUPPORT;zoneRank=1")
                                                      .build();
+    }
+
+    private MarketLevelContextSnapshotEntity levelContextSnapshot(Instant snapshotTime, String supportBreakRisk) {
+        return MarketLevelContextSnapshotEntity.builder()
+                                               .symbol("BTCUSDT")
+                                               .intervalValue("1h")
+                                               .snapshotTime(snapshotTime)
+                                               .currentPrice(new BigDecimal("87500.00"))
+                                               .supportZoneRank(1)
+                                               .supportRepresentativePrice(new BigDecimal("86500.00"))
+                                               .supportZoneLow(new BigDecimal("86000.00"))
+                                               .supportZoneHigh(new BigDecimal("87000.00"))
+                                               .supportDistanceToZone(new BigDecimal("0.00571429"))
+                                               .supportZoneStrength(new BigDecimal("0.84428571"))
+                                               .supportInteractionType(MarketCandidateLevelZoneInteractionType.ABOVE_ZONE.name())
+                                               .supportRecentTestCount(4)
+                                               .supportRecentRejectionCount(3)
+                                               .supportRecentBreakCount(1)
+                                               .supportBreakRisk(new BigDecimal(supportBreakRisk))
+                                               .resistanceZoneRank(1)
+                                               .resistanceRepresentativePrice(new BigDecimal("88550.00"))
+                                               .resistanceZoneLow(new BigDecimal("88400.00"))
+                                               .resistanceZoneHigh(new BigDecimal("88600.00"))
+                                               .resistanceDistanceToZone(new BigDecimal("0.01000000"))
+                                               .resistanceZoneStrength(new BigDecimal("0.82285714"))
+                                               .resistanceInteractionType(MarketCandidateLevelZoneInteractionType.BELOW_ZONE.name())
+                                               .resistanceRecentTestCount(3)
+                                               .resistanceRecentRejectionCount(2)
+                                               .resistanceRecentBreakCount(0)
+                                               .resistanceBreakRisk(new BigDecimal("0.05000000"))
+                                               .sourceDataVersion("indicator=basis-key;supportZone=support-v1;resistanceZone=resistance-v1")
+                                               .build();
     }
 }
