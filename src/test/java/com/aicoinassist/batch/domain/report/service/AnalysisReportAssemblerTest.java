@@ -27,6 +27,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisZoneInteractionFact;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisConfidenceLevel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
@@ -35,6 +36,8 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricTyp
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractionType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
@@ -198,8 +201,19 @@ class AnalysisReportAssemblerTest {
         });
         assertThat(payload.supportZones()).hasSize(1);
         assertThat(payload.supportZones().get(0).includedLevelLabels()).contains(AnalysisPriceLevelLabel.MA20, AnalysisPriceLevelLabel.PIVOT_LOW);
+        assertThat(payload.supportZones().get(0).interactionType()).isEqualTo(AnalysisPriceZoneInteractionType.ABOVE_ZONE);
         assertThat(payload.resistanceZones()).hasSize(1);
         assertThat(payload.resistanceZones().get(0).strongestLevelLabel()).isEqualTo(AnalysisPriceLevelLabel.PIVOT_HIGH);
+        assertThat(payload.nearestSupportZone()).isEqualTo(payload.supportZones().get(0));
+        assertThat(payload.nearestResistanceZone()).isEqualTo(payload.resistanceZones().get(0));
+        assertThat(payload.zoneInteractionFacts()).extracting(
+                        AnalysisZoneInteractionFact::zoneType,
+                        AnalysisZoneInteractionFact::interactionType
+                )
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(AnalysisPriceZoneType.SUPPORT, AnalysisPriceZoneInteractionType.ABOVE_ZONE),
+                        org.assertj.core.groups.Tuple.tuple(AnalysisPriceZoneType.RESISTANCE, AnalysisPriceZoneInteractionType.BELOW_ZONE)
+                );
         assertThat(payload.scenarios()).extracting("bias").contains(AnalysisScenarioBias.BULLISH, AnalysisScenarioBias.NEUTRAL);
         assertThat(payload.scenarios()).allSatisfy(scenario -> {
             assertThat(scenario.triggerConditions()).isNotEmpty();
@@ -586,18 +600,24 @@ class AnalysisReportAssemblerTest {
     private List<AnalysisPriceZone> supportZones() {
         return List.of(
                 new AnalysisPriceZone(
+                        AnalysisPriceZoneType.SUPPORT,
                         1,
                         new BigDecimal("86850"),
                         new BigDecimal("86850"),
                         new BigDecimal("87000"),
                         new BigDecimal("0.00742857"),
+                        new BigDecimal("0.00514286"),
                         new BigDecimal("0.89285714"),
+                        AnalysisPriceZoneInteractionType.ABOVE_ZONE,
                         AnalysisPriceLevelLabel.PIVOT_LOW,
                         AnalysisPriceLevelSourceType.PIVOT_LEVEL,
                         2,
+                        5,
+                        4,
+                        1,
                         List.of(AnalysisPriceLevelLabel.MA20, AnalysisPriceLevelLabel.PIVOT_LOW),
                         List.of(AnalysisPriceLevelSourceType.MOVING_AVERAGE, AnalysisPriceLevelSourceType.PIVOT_LEVEL),
-                        List.of("SUPPORT zone spans 86850 to 87000 with 2 candidate levels.")
+                        List.of("SUPPORT zone spans 86850 to 87000 with 2 candidate levels.", "Recent tests=5, rejections=4, breaks=1 within 14 days.")
                 )
         );
     }
@@ -605,18 +625,24 @@ class AnalysisReportAssemblerTest {
     private List<AnalysisPriceZone> resistanceZones() {
         return List.of(
                 new AnalysisPriceZone(
+                        AnalysisPriceZoneType.RESISTANCE,
                         1,
                         new BigDecimal("88560"),
                         new BigDecimal("88500"),
                         new BigDecimal("88620"),
                         new BigDecimal("0.01211429"),
+                        new BigDecimal("0.01165714"),
                         new BigDecimal("0.86285714"),
+                        AnalysisPriceZoneInteractionType.BELOW_ZONE,
                         AnalysisPriceLevelLabel.PIVOT_HIGH,
                         AnalysisPriceLevelSourceType.PIVOT_LEVEL,
                         2,
+                        3,
+                        2,
+                        0,
                         List.of(AnalysisPriceLevelLabel.BB_UPPER, AnalysisPriceLevelLabel.PIVOT_HIGH),
                         List.of(AnalysisPriceLevelSourceType.BOLLINGER_BAND, AnalysisPriceLevelSourceType.PIVOT_LEVEL),
-                        List.of("RESISTANCE zone spans 88500 to 88620 with 2 candidate levels.")
+                        List.of("RESISTANCE zone spans 88500 to 88620 with 2 candidate levels.", "Recent tests=3, rejections=2, breaks=0 within 14 days.")
                 )
         );
     }

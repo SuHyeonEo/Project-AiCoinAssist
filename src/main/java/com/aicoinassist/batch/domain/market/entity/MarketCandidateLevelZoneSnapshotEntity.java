@@ -75,7 +75,13 @@ public class MarketCandidateLevelZoneSnapshotEntity {
     private BigDecimal distanceFromCurrent;
 
     @Column(precision = 19, scale = 8)
+    private BigDecimal distanceToZone;
+
+    @Column(precision = 19, scale = 8)
     private BigDecimal zoneStrengthScore;
+
+    @Column(nullable = false, length = 20)
+    private String interactionType;
 
     @Column(nullable = false, length = 20)
     private String strongestLevelLabel;
@@ -85,6 +91,15 @@ public class MarketCandidateLevelZoneSnapshotEntity {
 
     @Column(nullable = false)
     private Integer levelCount;
+
+    @Column(nullable = false)
+    private Integer recentTestCount;
+
+    @Column(nullable = false)
+    private Integer recentRejectionCount;
+
+    @Column(nullable = false)
+    private Integer recentBreakCount;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String includedLevelLabelsPayload;
@@ -110,10 +125,15 @@ public class MarketCandidateLevelZoneSnapshotEntity {
             BigDecimal zoneLow,
             BigDecimal zoneHigh,
             BigDecimal distanceFromCurrent,
+            BigDecimal distanceToZone,
             BigDecimal zoneStrengthScore,
+            String interactionType,
             String strongestLevelLabel,
             String strongestSourceType,
             Integer levelCount,
+            Integer recentTestCount,
+            Integer recentRejectionCount,
+            Integer recentBreakCount,
             String includedLevelLabelsPayload,
             String includedSourceTypesPayload,
             String triggerFactsPayload,
@@ -129,10 +149,15 @@ public class MarketCandidateLevelZoneSnapshotEntity {
         this.zoneLow = zoneLow;
         this.zoneHigh = zoneHigh;
         this.distanceFromCurrent = distanceFromCurrent;
+        this.distanceToZone = distanceToZone;
         this.zoneStrengthScore = zoneStrengthScore;
+        this.interactionType = interactionType;
         this.strongestLevelLabel = strongestLevelLabel;
         this.strongestSourceType = strongestSourceType;
         this.levelCount = levelCount;
+        this.recentTestCount = recentTestCount;
+        this.recentRejectionCount = recentRejectionCount;
+        this.recentBreakCount = recentBreakCount;
         this.includedLevelLabelsPayload = includedLevelLabelsPayload;
         this.includedSourceTypesPayload = includedSourceTypesPayload;
         this.triggerFactsPayload = triggerFactsPayload;
@@ -145,10 +170,15 @@ public class MarketCandidateLevelZoneSnapshotEntity {
             BigDecimal zoneLow,
             BigDecimal zoneHigh,
             BigDecimal distanceFromCurrent,
+            BigDecimal distanceToZone,
             BigDecimal zoneStrengthScore,
+            String interactionType,
             String strongestLevelLabel,
             String strongestSourceType,
             Integer levelCount,
+            Integer recentTestCount,
+            Integer recentRejectionCount,
+            Integer recentBreakCount,
             String includedLevelLabelsPayload,
             String includedSourceTypesPayload,
             String triggerFactsPayload,
@@ -159,10 +189,15 @@ public class MarketCandidateLevelZoneSnapshotEntity {
         this.zoneLow = zoneLow;
         this.zoneHigh = zoneHigh;
         this.distanceFromCurrent = distanceFromCurrent;
+        this.distanceToZone = distanceToZone;
         this.zoneStrengthScore = zoneStrengthScore;
+        this.interactionType = interactionType;
         this.strongestLevelLabel = strongestLevelLabel;
         this.strongestSourceType = strongestSourceType;
         this.levelCount = levelCount;
+        this.recentTestCount = recentTestCount;
+        this.recentRejectionCount = recentRejectionCount;
+        this.recentBreakCount = recentBreakCount;
         this.includedLevelLabelsPayload = includedLevelLabelsPayload;
         this.includedSourceTypesPayload = includedSourceTypesPayload;
         this.triggerFactsPayload = triggerFactsPayload;

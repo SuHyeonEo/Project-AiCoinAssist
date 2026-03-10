@@ -6,6 +6,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnaps
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelLabel;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelSourceType;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelType;
+import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelZoneInteractionType;
 import com.aicoinassist.batch.domain.market.repository.MarketCandidateLevelZoneSnapshotRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -54,10 +55,15 @@ class MarketCandidateLevelZoneSnapshotPersistenceServiceTest {
                                                                                                       .zoneLow(new BigDecimal("86800.00000000"))
                                                                                                       .zoneHigh(new BigDecimal("87000.00000000"))
                                                                                                       .distanceFromCurrent(new BigDecimal("0.00700000"))
+                                                                                                      .distanceToZone(new BigDecimal("0.00400000"))
                                                                                                       .zoneStrengthScore(new BigDecimal("0.74000000"))
+                                                                                                      .interactionType(MarketCandidateLevelZoneInteractionType.ABOVE_ZONE.name())
                                                                                                       .strongestLevelLabel(MarketCandidateLevelLabel.MA20.name())
                                                                                                       .strongestSourceType(MarketCandidateLevelSourceType.MOVING_AVERAGE.name())
                                                                                                       .levelCount(2)
+                                                                                                      .recentTestCount(3)
+                                                                                                      .recentRejectionCount(2)
+                                                                                                      .recentBreakCount(1)
                                                                                                       .includedLevelLabelsPayload("[\"MA20\",\"PIVOT_LOW\"]")
                                                                                                       .includedSourceTypesPayload("[\"MOVING_AVERAGE\",\"PIVOT_LEVEL\"]")
                                                                                                       .triggerFactsPayload("[\"old\"]")
@@ -124,10 +130,15 @@ class MarketCandidateLevelZoneSnapshotPersistenceServiceTest {
                 new BigDecimal("86850.00000000"),
                 new BigDecimal("87000.00000000"),
                 new BigDecimal("0.00742857"),
+                new BigDecimal("0.00514286"),
                 new BigDecimal("0.89285714"),
+                MarketCandidateLevelZoneInteractionType.ABOVE_ZONE,
                 MarketCandidateLevelLabel.PIVOT_LOW,
                 MarketCandidateLevelSourceType.PIVOT_LEVEL,
                 2,
+                5,
+                4,
+                1,
                 List.of(MarketCandidateLevelLabel.MA20, MarketCandidateLevelLabel.PIVOT_LOW),
                 List.of(MarketCandidateLevelSourceType.MOVING_AVERAGE, MarketCandidateLevelSourceType.PIVOT_LEVEL),
                 List.of("SUPPORT zone spans 86850 to 87000 with 2 candidate levels."),

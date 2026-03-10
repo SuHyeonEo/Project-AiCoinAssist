@@ -15,6 +15,9 @@ public record AnalysisReportPayload(
         List<AnalysisPriceLevel> resistanceLevels,
         List<AnalysisPriceZone> supportZones,
         List<AnalysisPriceZone> resistanceZones,
+        AnalysisPriceZone nearestSupportZone,
+        AnalysisPriceZone nearestResistanceZone,
+        List<AnalysisZoneInteractionFact> zoneInteractionFacts,
         List<AnalysisRiskFactor> riskFactors,
         List<AnalysisScenario> scenarios
 ) {
