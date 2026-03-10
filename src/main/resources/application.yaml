@@ -53,6 +53,10 @@ external:
     base-url: https://api.alternative.me
   coinmetrics:
     base-url: https://community-api.coinmetrics.io/v4
+  gdelt:
+    base-url: https://api.gdeltproject.org/api/v2/doc/doc
+    max-records: 10
+    time-span: 3days
   fred:
     base-url: https://api.stlouisfed.org
     api-key: ${FRED_API_KEY:}
