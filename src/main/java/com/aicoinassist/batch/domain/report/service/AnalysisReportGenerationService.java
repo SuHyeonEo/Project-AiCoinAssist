@@ -213,12 +213,29 @@ public class AnalysisReportGenerationService {
         var externalContextWindowSummaries = externalContextWindowSummarySnapshots.stream()
                 .map(analysisReportMarketDataMapper::toExternalContextWindowSummary)
                 .toList();
+        var externalContextTransitions = analysisExternalContextComparisonService.buildTransitions(
+                externalContextSnapshot,
+                externalContextComparisonFacts
+        );
+        var externalContextPersistence = analysisExternalContextComparisonService.buildPersistence(
+                externalContextSnapshot,
+                externalContextWindowSummaries
+        );
+        var externalContextState = analysisExternalContextComparisonService.buildState(
+                externalContextSnapshot,
+                externalContextTransitions,
+                externalContextPersistence,
+                externalContextWindowSummaries
+        );
         AnalysisExternalContextCompositePayload externalContextComposite = analysisReportMarketDataMapper
                 .toExternalContextComposite(
                         externalContextSnapshot,
                         externalContextComparisonFacts,
                         externalContextHighlights,
-                        externalContextWindowSummaries
+                        externalContextWindowSummaries,
+                        externalContextTransitions,
+                        externalContextPersistence,
+                        externalContextState
                 );
         AnalysisReportPayload payload = analysisReportAssembler.assemble(
                 snapshot,

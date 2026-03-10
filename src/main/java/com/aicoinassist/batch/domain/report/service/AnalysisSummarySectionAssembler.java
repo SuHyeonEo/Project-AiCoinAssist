@@ -208,7 +208,9 @@ class AnalysisSummarySectionAssembler {
         }
 
         if (externalContextComposite != null && externalContextComposite.primarySignalTitle() != null) {
-            if (externalContextComposite.highlights() != null && !externalContextComposite.highlights().isEmpty()) {
+            if (externalContextComposite.transitions() != null && !externalContextComposite.transitions().isEmpty()) {
+                clauses.add(externalContextComposite.transitions().get(0).summary());
+            } else if (externalContextComposite.highlights() != null && !externalContextComposite.highlights().isEmpty()) {
                 clauses.add(externalContextComposite.highlights().get(0).summary());
             } else {
                 clauses.add("primary external regime is "
@@ -229,6 +231,15 @@ class AnalysisSummarySectionAssembler {
                         + " versus average");
             }
         }
+        if (externalContextComposite != null && externalContextComposite.persistence() != null) {
+            clauses.add(externalContextComposite.persistence().summary());
+        }
+        if (externalContextComposite != null && externalContextComposite.state() != null) {
+            clauses.add("external reversal risk is "
+                    + formattingSupport.signedRatio(externalContextComposite.state().reversalRiskScore())
+                    .replace("+", "")
+                    + " of full scale");
+        }
 
         return clauses.isEmpty() ? "External context stays mixed." : String.join(", ", clauses) + ".";
     }
@@ -238,6 +249,15 @@ class AnalysisSummarySectionAssembler {
     ) {
         if (externalContextComposite == null) {
             return null;
+        }
+        if (externalContextComposite.transitions() != null && !externalContextComposite.transitions().isEmpty()) {
+            var transition = externalContextComposite.transitions().get(0);
+            return new AnalysisContextHeadlinePayload(
+                    com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory.EXTERNAL,
+                    transition.transitionType().name(),
+                    transition.summary(),
+                    com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance.HIGH
+            );
         }
         if (externalContextComposite.highlights() != null && !externalContextComposite.highlights().isEmpty()) {
             var highlight = externalContextComposite.highlights().get(0);

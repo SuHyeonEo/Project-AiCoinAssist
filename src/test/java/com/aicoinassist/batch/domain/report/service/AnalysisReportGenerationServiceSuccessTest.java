@@ -9,6 +9,9 @@ import com.aicoinassist.batch.domain.onchain.entity.OnchainFactSnapshotEntity;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimePersistence;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeStatePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeTransition;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
@@ -17,6 +20,10 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeCategory;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeDirection;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeSeverity;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeTransitionType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.sentiment.entity.SentimentSnapshotEntity;
 import org.junit.jupiter.api.Test;
@@ -66,6 +73,32 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 16,
                 8
         );
+        AnalysisExternalRegimeTransition externalTransition = new AnalysisExternalRegimeTransition(
+                com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference.D7,
+                Instant.parse("2026-03-02T00:59:30Z"),
+                AnalysisExternalRegimeTransitionType.TRANSITION_TO_HEADWIND,
+                AnalysisExternalRegimeDirection.HEADWIND,
+                AnalysisExternalRegimeSeverity.HIGH,
+                new BigDecimal("1.08333333"),
+                "D7 대비 external regime가 headwind로 전이되었습니다."
+        );
+        AnalysisExternalRegimePersistence externalPersistence = new AnalysisExternalRegimePersistence(
+                com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_30D,
+                AnalysisExternalRegimeDirection.HEADWIND,
+                new BigDecimal("0.53333333"),
+                new BigDecimal("0.26666667"),
+                new BigDecimal("0.45333333"),
+                "LAST_30D keeps headwind dominance for 53.33% of samples with high severity on 26.67% of observations."
+        );
+        AnalysisExternalRegimeStatePayload externalState = new AnalysisExternalRegimeStatePayload(
+                AnalysisExternalRegimeDirection.HEADWIND,
+                AnalysisExternalRegimeSeverity.HIGH,
+                AnalysisExternalRegimeCategory.MACRO,
+                "Dollar strength regime",
+                new BigDecimal("1.33333333"),
+                new BigDecimal("0.59807018"),
+                "External regime is headwind with high severity, primary signal Dollar strength regime, and reversal risk 0.6."
+        );
         AnalysisExternalContextCompositePayload externalContextComposite = new AnalysisExternalContextCompositePayload(
                 payload.marketContext().externalContextComposite().snapshotTime(),
                 payload.marketContext().externalContextComposite().sourceDataVersion(),
@@ -81,7 +114,10 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 payload.marketContext().externalContextComposite().regimeSignals(),
                 payload.marketContext().externalContextComposite().comparisonFacts(),
                 payload.marketContext().externalContextComposite().highlights(),
-                java.util.List.of(externalWindowSummary)
+                java.util.List.of(externalWindowSummary),
+                java.util.List.of(externalTransition),
+                externalPersistence,
+                externalState
         );
         java.util.List<AnalysisPriceLevel> supportLevels = supportLevels();
         java.util.List<AnalysisPriceLevel> resistanceLevels = resistanceLevels();
@@ -161,17 +197,34 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 externalContextSnapshot,
                 payload.marketContext().externalContextComposite().comparisonFacts()
         )).thenReturn(payload.marketContext().externalContextComposite().highlights());
+        when(analysisExternalContextComparisonService.buildTransitions(
+                externalContextSnapshot,
+                payload.marketContext().externalContextComposite().comparisonFacts()
+        )).thenReturn(java.util.List.of(externalTransition));
         when(marketExternalContextWindowSummarySnapshotPersistenceService.createAndSaveForReportType(
                 externalContextSnapshot,
                 AnalysisReportType.MID_TERM
         )).thenReturn(externalContextWindowSummaryEntities());
+        when(analysisExternalContextComparisonService.buildPersistence(
+                externalContextSnapshot,
+                java.util.List.of(externalWindowSummary)
+        )).thenReturn(externalPersistence);
+        when(analysisExternalContextComparisonService.buildState(
+                externalContextSnapshot,
+                java.util.List.of(externalTransition),
+                externalPersistence,
+                java.util.List.of(externalWindowSummary)
+        )).thenReturn(externalState);
         when(analysisReportMarketDataMapper.toExternalContextWindowSummary(any()))
                 .thenReturn(externalWindowSummary);
         when(analysisReportMarketDataMapper.toExternalContextComposite(
                 externalContextSnapshot,
                 payload.marketContext().externalContextComposite().comparisonFacts(),
                 payload.marketContext().externalContextComposite().highlights(),
-                java.util.List.of(externalWindowSummary)
+                java.util.List.of(externalWindowSummary),
+                java.util.List.of(externalTransition),
+                externalPersistence,
+                externalState
         ))
                 .thenReturn(externalContextComposite);
         when(analysisReportAssembler.assemble(

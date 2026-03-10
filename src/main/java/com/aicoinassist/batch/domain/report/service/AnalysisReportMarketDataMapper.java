@@ -28,6 +28,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimePersistence;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeStatePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeTransition;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
@@ -267,7 +270,7 @@ public class AnalysisReportMarketDataMapper {
             List<AnalysisExternalContextComparisonFact> comparisonFacts,
             List<AnalysisExternalContextHighlight> highlights
     ) {
-        return toExternalContextComposite(entity, comparisonFacts, highlights, List.of());
+        return toExternalContextComposite(entity, comparisonFacts, highlights, List.of(), List.of(), null, null);
     }
 
     public AnalysisExternalContextCompositePayload toExternalContextComposite(
@@ -275,6 +278,18 @@ public class AnalysisReportMarketDataMapper {
             List<AnalysisExternalContextComparisonFact> comparisonFacts,
             List<AnalysisExternalContextHighlight> highlights,
             List<AnalysisExternalContextWindowSummary> windowSummaries
+    ) {
+        return toExternalContextComposite(entity, comparisonFacts, highlights, windowSummaries, List.of(), null, null);
+    }
+
+    public AnalysisExternalContextCompositePayload toExternalContextComposite(
+            MarketExternalContextSnapshotEntity entity,
+            List<AnalysisExternalContextComparisonFact> comparisonFacts,
+            List<AnalysisExternalContextHighlight> highlights,
+            List<AnalysisExternalContextWindowSummary> windowSummaries,
+            List<AnalysisExternalRegimeTransition> transitions,
+            AnalysisExternalRegimePersistence persistence,
+            AnalysisExternalRegimeStatePayload state
     ) {
         return new AnalysisExternalContextCompositePayload(
                 entity.getSnapshotTime(),
@@ -291,7 +306,10 @@ public class AnalysisReportMarketDataMapper {
                 externalRegimeSignals(entity),
                 comparisonFacts,
                 highlights,
-                windowSummaries
+                windowSummaries,
+                transitions,
+                persistence,
+                state
         );
     }
 

@@ -13,7 +13,10 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextComposite
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimePersistence;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeStatePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeTransition;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
@@ -36,6 +39,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeDirection;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeSeverity;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeTransitionType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
@@ -754,6 +758,74 @@ abstract class AnalysisReportServiceFixtures {
                                 AnalysisContextHeadlineImportance.HIGH,
                                 AnalysisComparisonReference.D7
                         )
+                )
+        );
+    }
+
+    protected AnalysisExternalContextCompositePayload richExternalContextComposite() {
+        return new AnalysisExternalContextCompositePayload(
+                Instant.parse("2026-03-09T00:59:30Z"),
+                "derivative=context-basis-key;macro=dxyProxyDate=2026-03-09;sentiment=metricType=FEAR_GREED_INDEX;onchain=activeAddressDate=2026-03-09",
+                new BigDecimal("1.33333333"),
+                AnalysisExternalRegimeDirection.HEADWIND,
+                AnalysisExternalRegimeSeverity.HIGH,
+                0,
+                2,
+                2,
+                AnalysisExternalRegimeCategory.MACRO,
+                "Dollar strength regime",
+                "DXY and yields remain firm versus representative averages.",
+                externalContextComposite().regimeSignals(),
+                externalContextComposite().comparisonFacts(),
+                List.of(
+                        new AnalysisExternalContextHighlight(
+                                "External regime direction changed",
+                                "D7 comparison keeps the external regime biased toward headwind.",
+                                AnalysisContextHeadlineImportance.HIGH,
+                                AnalysisComparisonReference.D7
+                        )
+                ),
+                List.of(
+                        new AnalysisExternalContextWindowSummary(
+                                MarketWindowType.LAST_30D,
+                                Instant.parse("2026-02-07T00:59:30Z"),
+                                Instant.parse("2026-03-09T00:59:30Z"),
+                                30,
+                                new BigDecimal("0.95000000"),
+                                new BigDecimal("0.40350877"),
+                                4,
+                                10,
+                                16,
+                                8
+                        )
+                ),
+                List.of(
+                        new AnalysisExternalRegimeTransition(
+                                AnalysisComparisonReference.D7,
+                                Instant.parse("2026-03-02T00:59:30Z"),
+                                AnalysisExternalRegimeTransitionType.TRANSITION_TO_HEADWIND,
+                                AnalysisExternalRegimeDirection.HEADWIND,
+                                AnalysisExternalRegimeSeverity.HIGH,
+                                new BigDecimal("1.08333333"),
+                                "D7 대비 external regime가 headwind로 전이되었습니다."
+                        )
+                ),
+                new AnalysisExternalRegimePersistence(
+                        MarketWindowType.LAST_30D,
+                        AnalysisExternalRegimeDirection.HEADWIND,
+                        new BigDecimal("0.53333333"),
+                        new BigDecimal("0.26666667"),
+                        new BigDecimal("0.45333333"),
+                        "LAST_30D keeps headwind dominance for 53.33% of samples with high severity on 26.67% of observations."
+                ),
+                new AnalysisExternalRegimeStatePayload(
+                        AnalysisExternalRegimeDirection.HEADWIND,
+                        AnalysisExternalRegimeSeverity.HIGH,
+                        AnalysisExternalRegimeCategory.MACRO,
+                        "Dollar strength regime",
+                        new BigDecimal("1.33333333"),
+                        new BigDecimal("0.59807018"),
+                        "External regime is headwind with high severity, primary signal Dollar strength regime, and reversal risk 0.6."
                 )
         );
     }

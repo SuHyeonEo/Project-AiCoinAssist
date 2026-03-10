@@ -22,7 +22,10 @@ public record AnalysisExternalContextCompositePayload(
         List<AnalysisExternalRegimeSignal> regimeSignals,
         List<AnalysisExternalContextComparisonFact> comparisonFacts,
         List<AnalysisExternalContextHighlight> highlights,
-        List<AnalysisExternalContextWindowSummary> windowSummaries
+        List<AnalysisExternalContextWindowSummary> windowSummaries,
+        List<AnalysisExternalRegimeTransition> transitions,
+        AnalysisExternalRegimePersistence persistence,
+        AnalysisExternalRegimeStatePayload state
 ) {
     public AnalysisExternalContextCompositePayload(
             Instant snapshotTime,
@@ -55,7 +58,10 @@ public record AnalysisExternalContextCompositePayload(
                 regimeSignals,
                 comparisonFacts,
                 highlights,
-                List.of()
+                List.of(),
+                List.of(),
+                null,
+                null
         );
     }
 }
