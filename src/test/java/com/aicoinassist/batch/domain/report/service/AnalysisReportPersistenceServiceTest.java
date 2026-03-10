@@ -19,6 +19,8 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisCurrentStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
@@ -215,7 +217,30 @@ class AnalysisReportPersistenceServiceTest {
                                 null,
                                 List.of(),
                                 new BigDecimal("0.18000000"),
-                                new BigDecimal("0.05000000")
+                                new BigDecimal("0.05000000"),
+                                List.of(
+                                        new AnalysisLevelContextComparisonFact(
+                                                AnalysisComparisonReference.PREV_BATCH,
+                                                Instant.parse("2026-03-08T23:59:59Z"),
+                                                new BigDecimal("0.00250000"),
+                                                new BigDecimal("-0.00150000"),
+                                                new BigDecimal("0.04000000"),
+                                                new BigDecimal("-0.01000000"),
+                                                new BigDecimal("0.02000000"),
+                                                new BigDecimal("-0.01000000"),
+                                                AnalysisPriceZoneInteractionType.ABOVE_ZONE,
+                                                AnalysisPriceZoneInteractionType.INSIDE_ZONE,
+                                                AnalysisPriceZoneInteractionType.BELOW_ZONE,
+                                                AnalysisPriceZoneInteractionType.BELOW_ZONE
+                                        )
+                                ),
+                                List.of(
+                                        new AnalysisLevelContextHighlight(
+                                                AnalysisComparisonReference.PREV_BATCH,
+                                                "PREV_BATCH level context",
+                                                "PREV_BATCH keeps support strength stronger while resistance stays capped."
+                                        )
+                                )
                         ),
                         new AnalysisDerivativeContextSummaryPayload(
                                 "Funding +0.045%, basis +0.12%.",

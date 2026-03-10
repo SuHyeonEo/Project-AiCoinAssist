@@ -24,6 +24,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
@@ -91,6 +92,9 @@ class AnalysisReportGenerationServiceTest {
     private AnalysisComparisonService analysisComparisonService;
 
     @Mock
+    private AnalysisLevelContextComparisonService analysisLevelContextComparisonService;
+
+    @Mock
     private MarketCandidateLevelSnapshotPersistenceService marketCandidateLevelSnapshotPersistenceService;
 
     @Mock
@@ -131,6 +135,7 @@ class AnalysisReportGenerationServiceTest {
                 marketContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
                 analysisComparisonService,
+                analysisLevelContextComparisonService,
                 analysisDerivativeComparisonService,
                 analysisReportContinuityService,
                 analysisReportAssembler,
@@ -322,7 +327,24 @@ class AnalysisReportGenerationServiceTest {
                         resistanceZones.get(0),
                         List.of(),
                         new BigDecimal("0.18000000"),
-                        new BigDecimal("0.05000000")
+                        new BigDecimal("0.05000000"),
+                        List.of(
+                                new AnalysisLevelContextComparisonFact(
+                                        AnalysisComparisonReference.D7,
+                                        Instant.parse("2026-03-02T00:59:59Z"),
+                                        new BigDecimal("0.01200000"),
+                                        new BigDecimal("-0.00400000"),
+                                        new BigDecimal("0.05000000"),
+                                        new BigDecimal("-0.02000000"),
+                                        new BigDecimal("-0.03000000"),
+                                        new BigDecimal("0.01000000"),
+                                        AnalysisPriceZoneInteractionType.ABOVE_ZONE,
+                                        AnalysisPriceZoneInteractionType.INSIDE_ZONE,
+                                        AnalysisPriceZoneInteractionType.BELOW_ZONE,
+                                        AnalysisPriceZoneInteractionType.BELOW_ZONE
+                                )
+                        ),
+                        List.of()
                 ),
                 new AnalysisDerivativeContextSummaryPayload(
                         "context derivative",
@@ -538,6 +560,8 @@ class AnalysisReportGenerationServiceTest {
         when(marketLevelContextSnapshotPersistenceService.createAndSave(snapshot, candidateLevelZoneEntities))
                 .thenReturn(levelContextSnapshotEntity);
         when(analysisComparisonService.buildFacts(snapshot, AnalysisReportType.MID_TERM)).thenReturn(comparisonFacts);
+        when(analysisLevelContextComparisonService.buildFacts(levelContextSnapshotEntity, AnalysisReportType.MID_TERM))
+                .thenReturn(payload.marketContext().levelContext().comparisonFacts());
         when(analysisReportAssembler.assemble(
                 eq(snapshot),
                 eq(AnalysisReportType.MID_TERM),
@@ -587,6 +611,7 @@ class AnalysisReportGenerationServiceTest {
                 marketContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
                 analysisComparisonService,
+                analysisLevelContextComparisonService,
                 analysisDerivativeComparisonService,
                 analysisReportContinuityService,
                 analysisReportAssembler,

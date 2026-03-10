@@ -18,4 +18,10 @@ public interface MarketLevelContextSnapshotRepository extends JpaRepository<Mark
             String symbol,
             String intervalValue
     );
+
+    Optional<MarketLevelContextSnapshotEntity> findTopBySymbolAndIntervalValueAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
+            String symbol,
+            String intervalValue,
+            Instant snapshotTime
+    );
 }

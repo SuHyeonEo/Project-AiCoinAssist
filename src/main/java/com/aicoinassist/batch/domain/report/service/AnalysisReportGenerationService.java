@@ -24,6 +24,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
@@ -55,6 +56,7 @@ public class AnalysisReportGenerationService {
     private final MarketContextWindowSummarySnapshotPersistenceService marketContextWindowSummarySnapshotPersistenceService;
     private final MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
     private final AnalysisComparisonService analysisComparisonService;
+    private final AnalysisLevelContextComparisonService analysisLevelContextComparisonService;
     private final AnalysisDerivativeComparisonService analysisDerivativeComparisonService;
     private final AnalysisReportContinuityService analysisReportContinuityService;
     private final AnalysisReportAssembler analysisReportAssembler;
@@ -110,7 +112,14 @@ public class AnalysisReportGenerationService {
         List<AnalysisPriceZone> resistanceZones = candidateZones(candidateLevelZoneSnapshots, "RESISTANCE");
         MarketLevelContextSnapshotEntity levelContextSnapshot = marketLevelContextSnapshotPersistenceService
                 .createAndSave(snapshot, candidateLevelZoneSnapshots);
-        AnalysisLevelContextPayload levelContext = toLevelContext(levelContextSnapshot, supportZones, resistanceZones);
+        List<AnalysisLevelContextComparisonFact> levelContextComparisonFacts = analysisLevelContextComparisonService
+                .buildFacts(levelContextSnapshot, reportType);
+        AnalysisLevelContextPayload levelContext = toLevelContext(
+                levelContextSnapshot,
+                supportZones,
+                resistanceZones,
+                levelContextComparisonFacts
+        );
         AnalysisReportPayload payload = analysisReportAssembler.assemble(
                 snapshot,
                 reportType,
@@ -205,7 +214,8 @@ public class AnalysisReportGenerationService {
     private AnalysisLevelContextPayload toLevelContext(
             MarketLevelContextSnapshotEntity entity,
             List<AnalysisPriceZone> supportZones,
-            List<AnalysisPriceZone> resistanceZones
+            List<AnalysisPriceZone> resistanceZones,
+            List<AnalysisLevelContextComparisonFact> comparisonFacts
     ) {
         AnalysisPriceZone nearestSupportZone = nearestZone(supportZones, entity.getSupportZoneRank());
         AnalysisPriceZone nearestResistanceZone = nearestZone(resistanceZones, entity.getResistanceZoneRank());
@@ -214,7 +224,9 @@ public class AnalysisReportGenerationService {
                 nearestResistanceZone,
                 zoneInteractionFacts(entity, nearestSupportZone, nearestResistanceZone),
                 entity.getSupportBreakRisk(),
-                entity.getResistanceBreakRisk()
+                entity.getResistanceBreakRisk(),
+                comparisonFacts,
+                List.of()
         );
     }
 
