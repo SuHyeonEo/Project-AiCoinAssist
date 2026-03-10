@@ -27,6 +27,7 @@ Always treat the ingestion layer as a **core production-grade foundation**, not 
 
 If raw data quality is unstable, then:
 - indicator calculations become unreliable
+- comparison facts become unreliable
 - candidate level extraction becomes unreliable
 - GPT report quality becomes unreliable
 - Redis/API outputs become unreliable
@@ -37,6 +38,23 @@ Prioritize:
 - reproducibility
 - traceability
 - validation
+
+---
+
+## Data Scope Principle
+This project must analyze more than chart candles and technical indicators.
+
+The intended market interpretation requires multiple fact domains, including:
+- market / price data
+- technical indicator data
+- derivative / leverage data
+- on-chain data
+- sentiment / market psychology data
+- macro / external context data
+
+Technical indicators alone are **not** sufficient for the intended market analysis quality.
+
+Detailed data-source rules are documented in `docs/data-source-spec.md`.
 
 ---
 
@@ -57,6 +75,7 @@ The server must first compute and structure:
 - relative position
 - market structure context
 - comparison metrics by time horizon
+- derivative / on-chain / sentiment / macro supporting facts
 
 GPT is responsible for:
 - integrated interpretation
@@ -72,71 +91,18 @@ GPT is **not** the primary calculation engine.
 ## Comparison-First Analysis Principle
 Before sending data to GPT, the server must calculate comparison-based facts.
 
-### Short-term comparison references
-Use:
-- PREV_BATCH
-- D1
-- D3
-- D7
+Use **processed snapshots / structured facts** as the primary comparison source.
 
-Focus on:
-- current move strength
-- short-term trend continuation vs slowdown
-- reactions near key support/resistance
-- short-term scenario building
+Use previous reports only as **narrative continuity references**, not as the main numeric source of truth.
 
-### Mid-term comparison references
-Use:
-- D7
-- D14
-- D30
-- PREV_MID_REPORT
+Do **not** send full raw 7d / 30d / 90d / 180d history directly to GPT.
 
-Focus on:
-- structure holding vs breaking
-- weekly/daily trend direction
-- medium-term key support/resistance
-- multi-week interpretation
+The system must compare:
+- anchor reference values
+- window summary representative values
+- structural relative position
 
-### Long-term comparison references
-Use:
-- D30
-- D90
-- D180
-- Y52_HIGH_LOW
-- PREV_LONG_REPORT
-
-Focus on:
-- long-term trend / cycle position
-- long-term support/resistance
-- long-term strength and risk
-
-### Server output for GPT must include structured facts
-Do not reduce data to vague labels only.
-
-Prefer structured values such as:
-- current price
-- 24h / 7d / 30d change rate
-- RSI current value and delta vs prior points
-- MACD histogram current value and delta
-- ATR current value vs recent average
-- price relative to MA20 / MA60 / MA120
-- recent pivot high / pivot low
-- candidate support / resistance
-- current volume vs average volume
-- OI change
-- funding vs recent average
-- Fear & Greed change
-- DXY / Nasdaq / USDKRW change
-- recent relevant news/event summary
-
-The server should provide:
-- numeric values
-- deltas
-- relative position
-- structure-related facts
-
-The server should **not** jump too early to human-language conclusions.
+Detailed comparison rules are documented in `docs/comparison-spec.md`.
 
 ---
 
@@ -144,52 +110,13 @@ The server should **not** jump too early to human-language conclusions.
 Do **not** store everything in one giant snapshot table.
 
 Use layered persistence:
+- raw layer
+- processed layer
+- report layer
 
-### 1. Raw layer
-Store raw external data by domain.
+Keep raw / processed / report clearly separated.
 
-Examples:
-- market_price_raw
-- market_candle_raw
-- derivative_snapshot_raw
-- onchain_snapshot_raw
-- macro_snapshot_raw
-- fx_snapshot_raw
-
-Raw data must preserve:
-- original source
-- asset / symbol
-- interval if applicable
-- source event time
-- collected time
-- metadata
-- validation status
-- raw payload
-
-### 2. Processed layer
-Store server-calculated / structured outputs separately.
-
-Examples:
-- technical_indicator_snapshot
-- candidate_level_snapshot
-- market_context_snapshot
-
-### 3. Report layer
-Store final user-facing analysis output separately.
-
-Example:
-- analysis_report
-
-Report storage should use:
-- important query/filter columns
-- JSON payload for detailed or evolving structure
-- reference metadata such as:
-    - analysis_basis_time
-    - raw_reference_time
-    - source_data_version
-    - analysis_engine_version
-
-Do not duplicate all raw data into report records.
+Detailed persistence rules are documented in `docs/persistence-spec.md`.
 
 ---
 
@@ -213,8 +140,7 @@ Watch for:
 - symbol mismatch
 - invalid OHLC relationships
 - abnormal negative values
-
-Keep raw storage and processed storage separate.
+- unsupported or inconsistent source semantics across domains
 
 Support:
 - re-ingestion
@@ -242,6 +168,13 @@ Indicator implementation rules:
 - Bollinger Bands should minimize floating-point precision loss
 - calculation definition correctness matters as much as code execution
 
+The same precision mindset also applies to:
+- funding calculations
+- OI delta / change-rate calculations
+- on-chain ratios
+- macro percentage change calculations
+- window summary metric calculations
+
 ---
 
 ## Time Handling Rules
@@ -254,9 +187,13 @@ Prefer clearly separated concepts such as:
 - collected time
 - processed time
 - stored time
+- analysis basis time
+- reference target time
 
 Prefer consistent internal handling using `Instant` where appropriate.
 Do not mix the business meaning of timestamps.
+
+When comparing data from different domains, preserve the time semantics of each source instead of forcing unrelated timestamps into a fake common meaning.
 
 ---
 
@@ -269,12 +206,19 @@ Current stack and direction:
 - Redis
 - Binance as an initial source
 
-Technical indicators currently include:
+Current implemented technical indicators:
 - MA
 - RSI
 - MACD
 - ATR
 - Bollinger Bands
+
+Expected next fact domains beyond technical indicators:
+- derivative data such as OI / funding
+- on-chain supporting facts
+- sentiment data such as Fear & Greed
+- macro/external context such as DXY / Nasdaq / USDKRW
+- news/event explanation inputs if added
 
 ---
 
@@ -290,11 +234,14 @@ When refactoring or adding code, prefer separation of responsibilities:
 - validators
 - persistence services
 - calculation services
+- comparison policy / reference resolution services
+- window summary calculation services
 
 Avoid mixing:
 - raw response mapping
 - calculation logic
 - persistence logic
+- comparison policy logic
 - reporting logic
 
 inside one class.
@@ -331,6 +278,13 @@ When suggesting implementation changes:
 - then propose storage / structure changes
 - keep refactoring steps explicit and incremental
 
+Prefer:
+- incremental extension on top of existing foundation
+- traceable storage changes
+- explicit comparison rules
+- explicit timestamp semantics
+- server-first fact calculation before GPT usage
+
 ---
 
 ## Anti-Patterns to Avoid
@@ -342,6 +296,10 @@ Do not:
 - skip validation because "it works for MVP"
 - couple raw ingestion too tightly with processed snapshot generation
 - collapse raw / processed / report into one model
+- use previous reports as the primary quantitative comparison source
+- rely on a single previous value as the only comparison basis
+- treat technical indicators as the only meaningful data domain
+- send the full raw 30d / 90d / 180d dataset directly into the report layer or GPT prompt when representative summary facts are sufficient
 
 ---
 
@@ -349,5 +307,8 @@ Do not:
 For this repository, always think:
 
 "Can this raw data be trusted, rechecked, reprocessed, and traced later?"
+"Are comparison facts being generated from structured data rather than from previous prose?"
+"Am I comparing representative facts instead of dumping full raw history into the interpretation layer?"
+"Does this change preserve precision, time semantics, and reprocessing ability?"
 
 If the answer is no, improve the design before adding more features.
