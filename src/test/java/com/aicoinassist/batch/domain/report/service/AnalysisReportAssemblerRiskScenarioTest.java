@@ -48,6 +48,7 @@ class AnalysisReportAssemblerRiskScenarioTest extends AnalysisReportServiceFixtu
             assertThat(scenario.pathSummary()).isNotBlank();
             assertThat(scenario.invalidationSignals()).isNotEmpty();
         });
+        assertThat(payload.marketContext().externalRegimeSignals()).isNotEmpty();
         assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("macro backdrop"));
         assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("sentiment remains"));
         assertThat(payload.scenarios().get(0).pathSummary()).contains("Sentiment remains");

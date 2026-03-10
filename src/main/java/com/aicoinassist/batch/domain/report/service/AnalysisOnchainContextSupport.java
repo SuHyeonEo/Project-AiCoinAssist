@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainHighlight;
@@ -8,6 +9,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeCategory;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeDirection;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeSeverity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOnchainHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 
@@ -214,6 +218,57 @@ class AnalysisOnchainContextSupport {
         }
 
         return highlights.stream().limit(2).toList();
+    }
+
+    List<AnalysisExternalRegimeSignal> regimeSignals(
+            AnalysisReportType reportType,
+            AnalysisOnchainContext onchainContext
+    ) {
+        if (onchainContext == null) {
+            return List.of();
+        }
+
+        AnalysisOnchainWindowSummary windowSummary = primaryWindowSummary(reportType, onchainContext);
+        if (windowSummary == null) {
+            return List.of();
+        }
+
+        boolean expansion = windowSummary.currentActiveAddressVsAverage().compareTo(new java.math.BigDecimal("0.10")) >= 0
+                && windowSummary.currentTransactionCountVsAverage().compareTo(new java.math.BigDecimal("0.10")) >= 0;
+        boolean contraction = windowSummary.currentActiveAddressVsAverage().compareTo(new java.math.BigDecimal("-0.10")) <= 0
+                && windowSummary.currentTransactionCountVsAverage().compareTo(new java.math.BigDecimal("-0.10")) <= 0;
+
+        if (expansion) {
+            return List.of(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.ONCHAIN,
+                    "Network activity expansion",
+                    windowSummary.windowType().name()
+                            + " active addresses stay "
+                            + formattingSupport.signedRatio(windowSummary.currentActiveAddressVsAverage())
+                            + " and transactions "
+                            + formattingSupport.signedRatio(windowSummary.currentTransactionCountVsAverage())
+                            + " versus average.",
+                    AnalysisExternalRegimeDirection.SUPPORTIVE,
+                    AnalysisExternalRegimeSeverity.MEDIUM,
+                    windowSummary.windowType().name()
+            ));
+        }
+        if (contraction) {
+            return List.of(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.ONCHAIN,
+                    "Network activity contraction",
+                    windowSummary.windowType().name()
+                            + " active addresses stay "
+                            + formattingSupport.signedRatio(windowSummary.currentActiveAddressVsAverage())
+                            + " and transactions "
+                            + formattingSupport.signedRatio(windowSummary.currentTransactionCountVsAverage())
+                            + " versus average.",
+                    AnalysisExternalRegimeDirection.HEADWIND,
+                    AnalysisExternalRegimeSeverity.HIGH,
+                    windowSummary.windowType().name()
+            ));
+        }
+        return List.of();
     }
 
     private boolean isContraction(AnalysisOnchainComparisonFact fact) {

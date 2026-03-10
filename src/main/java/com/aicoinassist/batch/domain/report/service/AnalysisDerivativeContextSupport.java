@@ -6,11 +6,15 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeCategory;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeDirection;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeSeverity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 
 import java.math.BigDecimal;
@@ -127,6 +131,47 @@ class AnalysisDerivativeContextSupport {
         }
 
         return java.time.Duration.ofSeconds(durationSeconds).toHours();
+    }
+
+    List<AnalysisExternalRegimeSignal> regimeSignals(
+            AnalysisReportType reportType,
+            AnalysisDerivativeContext derivativeContext
+    ) {
+        if (derivativeContext == null) {
+            return List.of();
+        }
+
+        java.util.ArrayList<AnalysisExternalRegimeSignal> signals = new java.util.ArrayList<>();
+        AnalysisDerivativeWindowSummary windowSummary = primaryDerivativeWindowSummary(reportType, derivativeContext);
+        if (windowSummary != null && windowSummary.currentFundingVsAverage() != null
+                && windowSummary.currentFundingVsAverage().compareTo(new BigDecimal("0.50")) >= 0) {
+            signals.add(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.DERIVATIVE,
+                    "Funding crowding regime",
+                    windowSummary.windowType().name()
+                            + " funding stays "
+                            + formattingSupport.signedRatio(windowSummary.currentFundingVsAverage())
+                            + " versus average.",
+                    AnalysisExternalRegimeDirection.CAUTIONARY,
+                    AnalysisExternalRegimeSeverity.HIGH,
+                    windowSummary.windowType().name()
+            ));
+        }
+        if (windowSummary != null && windowSummary.currentOpenInterestVsAverage() != null
+                && windowSummary.currentOpenInterestVsAverage().compareTo(new BigDecimal("0.20")) >= 0) {
+            signals.add(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.DERIVATIVE,
+                    "Open interest expansion",
+                    windowSummary.windowType().name()
+                            + " open interest stays "
+                            + formattingSupport.signedRatio(windowSummary.currentOpenInterestVsAverage())
+                            + " versus average.",
+                    AnalysisExternalRegimeDirection.CAUTIONARY,
+                    AnalysisExternalRegimeSeverity.MEDIUM,
+                    windowSummary.windowType().name()
+            ));
+        }
+        return signals;
     }
 
     private AnalysisDerivativeComparisonFact primaryDerivativeFact(

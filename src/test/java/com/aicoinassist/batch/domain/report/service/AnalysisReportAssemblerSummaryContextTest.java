@@ -139,6 +139,15 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                         AnalysisContextHeadlinePayload::title
                 )
                 .containsExactly(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion");
+        assertThat(payload.marketContext().externalRegimeSignals()).extracting(
+                        signal -> signal.category().name(),
+                        signal -> signal.title()
+                )
+                .contains(
+                        org.assertj.core.groups.Tuple.tuple("DERIVATIVE", "Funding crowding regime"),
+                        org.assertj.core.groups.Tuple.tuple("MACRO", "Yield pressure"),
+                        org.assertj.core.groups.Tuple.tuple("SENTIMENT", "Greed above average")
+                );
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
                                              .containsExactly(MarketWindowType.LAST_1D, MarketWindowType.LAST_7D);
         assertThat(payload.comparisonHighlights()).extracting(AnalysisComparisonHighlight::reference)

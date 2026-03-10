@@ -205,7 +205,8 @@ abstract class AnalysisReportPayloadTestFixtures {
                                 "Previous short-term report highlighted momentum continuation.",
                                 List.of("Previous short-term report highlighted momentum continuation."),
                                 List.of()
-                        )
+                        ),
+                        List.of()
                 ),
                 List.of(
                         new AnalysisComparisonFact(
