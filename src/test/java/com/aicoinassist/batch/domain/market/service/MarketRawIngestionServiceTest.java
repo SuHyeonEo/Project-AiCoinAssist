@@ -209,6 +209,70 @@ class MarketRawIngestionServiceTest {
         assertThat(existingEntity.getRawPayload()).contains("87500.12");
     }
 
+    @Test
+    void ingestPriceOnlySkipsCandleFetchAndReturnsPriceStatus() {
+        MarketRawIngestionService service = new MarketRawIngestionService(
+                binanceApiClient,
+                aggregateTradeResponseValidator,
+                klineResponseValidator,
+                marketPriceRawRepository,
+                marketCandleRawRepository,
+                new ObjectMapper()
+        );
+
+        BinanceAggregateTradeResponse aggregateTradeResponse = aggregateTrade(1L, "87500.12", "0.10", 1000L);
+        when(binanceApiClient.getLatestAggregateTrade("BTCUSDT")).thenReturn(aggregateTradeResponse);
+        when(aggregateTradeResponseValidator.validate(aggregateTradeResponse))
+                .thenReturn(RawDataValidationResult.valid());
+        when(marketPriceRawRepository.findTopBySourceAndSymbolAndSourceEventTimeOrderByCollectedTimeDescIdDesc(
+                "BINANCE",
+                "BTCUSDT",
+                Instant.ofEpochMilli(1000L)
+        )).thenReturn(Optional.empty());
+        when(marketPriceRawRepository.save(any(MarketPriceRawEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RawDataValidationStatus result = service.ingestPrice("BTCUSDT");
+
+        assertThat(result).isEqualTo(RawDataValidationStatus.VALID);
+        verify(binanceApiClient, never()).getKlines(any(), any(), any(Integer.class));
+        verify(marketCandleRawRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void ingestCandlesOnlyUsesRequestedDeltaLimit() {
+        MarketRawIngestionService service = new MarketRawIngestionService(
+                binanceApiClient,
+                aggregateTradeResponseValidator,
+                klineResponseValidator,
+                marketPriceRawRepository,
+                marketCandleRawRepository,
+                new ObjectMapper()
+        );
+
+        BinanceKlineResponse first = kline(1000L, 1999L, "10", "12", "9", "11", "100");
+        BinanceKlineResponse second = kline(2000L, 2999L, "11", "13", "10", "12", "110");
+
+        when(binanceApiClient.getKlines("BTCUSDT", "1h", 3)).thenReturn(List.of(first, second));
+        when(klineResponseValidator.validateSequence(List.of(first, second))).thenReturn(RawDataValidationResult.valid());
+        when(klineResponseValidator.validateItem(first)).thenReturn(RawDataValidationResult.valid());
+        when(klineResponseValidator.validateItem(second)).thenReturn(RawDataValidationResult.valid());
+        when(marketCandleRawRepository.findAllBySourceAndSymbolAndIntervalValueAndOpenTimeIn(
+                eq("BINANCE"),
+                eq("BTCUSDT"),
+                eq("1h"),
+                anyCollection()
+        )).thenReturn(List.of());
+        when(marketCandleRawRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MarketRawIngestionResult result = service.ingestCandles("BTCUSDT", CandleInterval.ONE_HOUR, 3);
+
+        assertThat(result.priceValidationStatus()).isNull();
+        assertThat(result.candleCount()).isEqualTo(2);
+        verify(binanceApiClient).getKlines("BTCUSDT", "1h", 3);
+        verify(binanceApiClient, never()).getLatestAggregateTrade(any());
+        verify(marketPriceRawRepository, never()).save(any(MarketPriceRawEntity.class));
+    }
+
     private BinanceKlineResponse kline(
             Long openTime,
             Long closeTime,

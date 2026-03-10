@@ -47,6 +47,9 @@ batch:
   scheduler:
     market-raw-ingestion:
       enabled: false
+      price-fixed-delay-ms: 60000
+      candle-fixed-delay-ms: 600000
+      candle-limit: 3
     analysis-report-generation:
       enabled: false
 
