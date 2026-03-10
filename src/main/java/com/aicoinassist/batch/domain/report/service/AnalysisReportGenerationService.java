@@ -200,6 +200,9 @@ public class AnalysisReportGenerationService {
                 entity.getLevelPrice(),
                 entity.getDistanceFromCurrent(),
                 entity.getStrengthScore(),
+                entity.getReferenceTime(),
+                entity.getReactionCount(),
+                entity.getClusterSize(),
                 entity.getRationale(),
                 triggerFacts(entity.getTriggerFactsPayload())
         );

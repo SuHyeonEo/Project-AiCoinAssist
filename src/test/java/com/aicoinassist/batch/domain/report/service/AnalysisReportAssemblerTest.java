@@ -532,6 +532,9 @@ class AnalysisReportAssemblerTest {
                         new BigDecimal("87000"),
                         new BigDecimal("0.00571429"),
                         new BigDecimal("0.64428571"),
+                        Instant.parse("2026-03-09T00:59:59Z"),
+                        2,
+                        1,
                         "Short-term average support",
                         List.of("Current price 87500 vs MA20 87000", "SUPPORT distance 0.57%")
                 ),
@@ -541,6 +544,9 @@ class AnalysisReportAssemblerTest {
                         new BigDecimal("86000"),
                         new BigDecimal("0.01714286"),
                         new BigDecimal("0.78285714"),
+                        Instant.parse("2026-03-09T00:59:59Z"),
+                        3,
+                        2,
                         "Mid-trend average support",
                         List.of("Current price 87500 vs MA60 86000", "SUPPORT distance 1.71%")
                 )
@@ -555,6 +561,9 @@ class AnalysisReportAssemblerTest {
                         new BigDecimal("88500"),
                         new BigDecimal("0.01142857"),
                         new BigDecimal("0.63857143"),
+                        Instant.parse("2026-03-09T00:59:59Z"),
+                        1,
+                        1,
                         "Upper Bollinger band resistance",
                         List.of("Current price 87500 vs BB_UPPER 88500", "RESISTANCE distance 1.14%")
                 )

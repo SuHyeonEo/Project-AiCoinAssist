@@ -323,6 +323,9 @@ class AnalysisReportPersistenceServiceTest {
                         new BigDecimal("84500.00"),
                         new BigDecimal("0.03428571"),
                         new BigDecimal("0.75"),
+                        Instant.parse("2026-03-08T12:00:00Z"),
+                        2,
+                        1,
                         "Recent pullback low",
                         List.of("Current price is 3.43% away from S1.")
                 )),
@@ -332,6 +335,9 @@ class AnalysisReportPersistenceServiceTest {
                         new BigDecimal("88500.00"),
                         new BigDecimal("0.01142857"),
                         new BigDecimal("0.75"),
+                        Instant.parse("2026-03-08T18:00:00Z"),
+                        2,
+                        1,
                         "Recent swing high",
                         List.of("Current price is 1.14% away from R1.")
                 )),

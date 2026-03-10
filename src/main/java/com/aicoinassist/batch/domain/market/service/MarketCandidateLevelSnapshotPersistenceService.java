@@ -48,6 +48,7 @@ public class MarketCandidateLevelSnapshotPersistenceService {
                                                                                           .symbol(snapshot.symbol())
                                                                                           .intervalValue(snapshot.intervalValue())
                                                                                           .snapshotTime(snapshot.snapshotTime())
+                                                                                          .referenceTime(snapshot.referenceTime())
                                                                                           .levelType(snapshot.levelType().name())
                                                                                           .levelLabel(snapshot.levelLabel().name())
                                                                                           .sourceType(snapshot.sourceType().name())
@@ -55,6 +56,8 @@ public class MarketCandidateLevelSnapshotPersistenceService {
                                                                                           .levelPrice(snapshot.levelPrice())
                                                                                           .distanceFromCurrent(snapshot.distanceFromCurrent())
                                                                                           .strengthScore(snapshot.strengthScore())
+                                                                                          .reactionCount(snapshot.reactionCount())
+                                                                                          .clusterSize(snapshot.clusterSize())
                                                                                           .rationale(snapshot.rationale())
                                                                                           .triggerFactsPayload(triggerFactsPayload)
                                                                                           .sourceDataVersion(snapshot.sourceDataVersion())
@@ -63,10 +66,13 @@ public class MarketCandidateLevelSnapshotPersistenceService {
         }
 
         existingEntity.refreshFromSnapshot(
+                snapshot.referenceTime(),
                 snapshot.currentPrice(),
                 snapshot.levelPrice(),
                 snapshot.distanceFromCurrent(),
                 snapshot.strengthScore(),
+                snapshot.reactionCount(),
+                snapshot.clusterSize(),
                 snapshot.rationale(),
                 triggerFactsPayload,
                 snapshot.sourceDataVersion()
