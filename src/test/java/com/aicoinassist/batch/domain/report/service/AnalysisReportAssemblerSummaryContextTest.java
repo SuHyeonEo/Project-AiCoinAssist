@@ -54,6 +54,9 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                 )
                 .containsExactly("SHORT_TERM view", AnalysisOutlookType.CONSTRUCTIVE, AnalysisConfidenceLevel.HIGH);
         assertThat(payload.summary().keyMessage().primaryMessage()).contains("bullish");
+        assertThat(payload.summary().keyMessage().primaryMessage()).contains("Macro context keeps DXY");
+        assertThat(payload.summary().keyMessage().primaryMessage()).contains("sentiment stays");
+        assertThat(payload.summary().keyMessage().primaryMessage()).contains("on-chain activity runs");
         assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("PREV_BATCH confirms the latest impulse"));
         assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("Nearest support zone"));
         assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("Nearest resistance zone"));

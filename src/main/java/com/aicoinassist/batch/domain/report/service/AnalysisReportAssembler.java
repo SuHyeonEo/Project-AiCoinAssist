@@ -50,7 +50,10 @@ public class AnalysisReportAssembler {
         this.riskScenarioFactory = new AnalysisRiskScenarioFactory(
                 formattingSupport,
                 indicatorStateSupport,
-                derivativeContextSupport
+                derivativeContextSupport,
+                macroContextSupport,
+                sentimentContextSupport,
+                onchainContextSupport
         );
         this.summarySectionAssembler = new AnalysisSummarySectionAssembler(
                 indicatorStateSupport,
@@ -126,7 +129,15 @@ public class AnalysisReportAssembler {
                 enrichedSentimentContext,
                 enrichedOnchainContext
         );
-        List<AnalysisScenario> scenarios = riskScenarioFactory.scenarios(snapshot, trendBias);
+        List<AnalysisScenario> scenarios = riskScenarioFactory.scenarios(
+                snapshot,
+                trendBias,
+                reportType,
+                enrichedDerivativeContext,
+                enrichedMacroContext,
+                enrichedSentimentContext,
+                enrichedOnchainContext
+        );
 
         AnalysisSummaryPayload summary = summarySectionAssembler.buildSummary(
                 snapshot,

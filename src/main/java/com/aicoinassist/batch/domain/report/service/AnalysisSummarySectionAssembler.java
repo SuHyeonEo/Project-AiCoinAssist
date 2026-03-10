@@ -108,7 +108,8 @@ class AnalysisSummarySectionAssembler {
                         + snapshot.getRsi14().stripTrailingZeros().toPlainString()
                         + ", and MACD histogram at "
                         + snapshot.getMacdHistogram().stripTrailingZeros().toPlainString()
-                        + ".",
+                        + ". "
+                        + externalContextSentence(reportType, macroContext, sentimentContext, onchainContext),
                 summarySignalDetails(signalHeadlines, levelContext),
                 continuityNotes.isEmpty() ? null : continuityNotes.get(0).summary()
         );
@@ -158,5 +159,43 @@ class AnalysisSummarySectionAssembler {
                     .map(AnalysisLevelContextHighlight::detail)
                     .forEach(details::add);
         return details;
+    }
+
+    private String externalContextSentence(
+            AnalysisReportType reportType,
+            AnalysisMacroContext macroContext,
+            AnalysisSentimentContext sentimentContext,
+            AnalysisOnchainContext onchainContext
+    ) {
+        List<String> clauses = new ArrayList<>();
+
+        if (macroContext != null) {
+            var macroWindowSummary = macroContextSupport.primaryWindowSummary(reportType, macroContext);
+            if (macroWindowSummary != null) {
+                clauses.add("Macro context keeps DXY "
+                        + formattingSupport.signedRatio(macroWindowSummary.currentDxyProxyVsAverage())
+                        + " versus average");
+            }
+        }
+
+        if (sentimentContext != null) {
+            var sentimentWindowSummary = sentimentContextSupport.primaryWindowSummary(reportType, sentimentContext);
+            if (sentimentWindowSummary != null && sentimentWindowSummary.currentIndexVsAverage() != null) {
+                clauses.add("sentiment stays "
+                        + formattingSupport.signedRatio(sentimentWindowSummary.currentIndexVsAverage())
+                        + " versus average");
+            }
+        }
+
+        if (onchainContext != null) {
+            var onchainWindowSummary = onchainContextSupport.primaryWindowSummary(reportType, onchainContext);
+            if (onchainWindowSummary != null && onchainWindowSummary.currentActiveAddressVsAverage() != null) {
+                clauses.add("on-chain activity runs "
+                        + formattingSupport.signedRatio(onchainWindowSummary.currentActiveAddressVsAverage())
+                        + " versus average");
+            }
+        }
+
+        return clauses.isEmpty() ? "External context stays mixed." : String.join(", ", clauses) + ".";
     }
 }
