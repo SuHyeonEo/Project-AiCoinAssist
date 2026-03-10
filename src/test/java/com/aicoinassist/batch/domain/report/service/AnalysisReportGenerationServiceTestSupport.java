@@ -349,7 +349,8 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                 "continuity summary",
                                 List.of("continuity summary"),
                                 List.of()
-                        )
+                        ),
+                        List.of()
                 ),
                 generationComparisonFacts(),
                 List.<AnalysisComparisonHighlight>of(),

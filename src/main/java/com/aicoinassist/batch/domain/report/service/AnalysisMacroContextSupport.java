@@ -3,11 +3,15 @@ package com.aicoinassist.batch.domain.report.service;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeCategory;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeDirection;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeSeverity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisMacroHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 
@@ -247,6 +251,63 @@ class AnalysisMacroContextSupport {
         }
 
         return highlights.stream().limit(2).toList();
+    }
+
+    List<AnalysisExternalRegimeSignal> regimeSignals(
+            AnalysisReportType reportType,
+            AnalysisMacroContext macroContext
+    ) {
+        if (macroContext == null) {
+            return List.of();
+        }
+
+        java.util.ArrayList<AnalysisExternalRegimeSignal> signals = new java.util.ArrayList<>();
+        AnalysisMacroWindowSummary windowSummary = primaryWindowSummary(reportType, macroContext);
+        if (windowSummary == null) {
+            return List.of();
+        }
+
+        if (windowSummary.currentDxyProxyVsAverage().compareTo(new java.math.BigDecimal("0.01")) >= 0) {
+            signals.add(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.MACRO,
+                    "Dollar strength",
+                    windowSummary.windowType().name()
+                            + " DXY stays "
+                            + formattingSupport.signedRatio(windowSummary.currentDxyProxyVsAverage())
+                            + " versus average.",
+                    AnalysisExternalRegimeDirection.HEADWIND,
+                    AnalysisExternalRegimeSeverity.HIGH,
+                    windowSummary.windowType().name()
+            ));
+        } else if (windowSummary.currentDxyProxyVsAverage().compareTo(new java.math.BigDecimal("-0.01")) <= 0) {
+            signals.add(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.MACRO,
+                    "Dollar easing",
+                    windowSummary.windowType().name()
+                            + " DXY stays "
+                            + formattingSupport.signedRatio(windowSummary.currentDxyProxyVsAverage())
+                            + " versus average.",
+                    AnalysisExternalRegimeDirection.SUPPORTIVE,
+                    AnalysisExternalRegimeSeverity.MEDIUM,
+                    windowSummary.windowType().name()
+            ));
+        }
+
+        if (windowSummary.currentUs10yYieldVsAverage().compareTo(new java.math.BigDecimal("0.03")) >= 0) {
+            signals.add(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.MACRO,
+                    "Yield pressure",
+                    windowSummary.windowType().name()
+                            + " US10Y stays "
+                            + formattingSupport.signedRatio(windowSummary.currentUs10yYieldVsAverage())
+                            + " versus average.",
+                    AnalysisExternalRegimeDirection.HEADWIND,
+                    AnalysisExternalRegimeSeverity.MEDIUM,
+                    windowSummary.windowType().name()
+            ));
+        }
+
+        return signals;
     }
 
     private AnalysisContextHeadlineImportance headlineImportance(AnalysisMacroHighlightImportance importance) {

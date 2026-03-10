@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentHighlight;
@@ -8,6 +9,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeCategory;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeDirection;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeSeverity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisSentimentHighlightImportance;
 
@@ -128,6 +132,48 @@ class AnalysisSentimentContextSupport {
             return 0L;
         }
         return Duration.ofSeconds(sentimentContext.timeUntilUpdateSeconds()).toHours();
+    }
+
+    List<AnalysisExternalRegimeSignal> regimeSignals(
+            AnalysisReportType reportType,
+            AnalysisSentimentContext sentimentContext
+    ) {
+        if (sentimentContext == null) {
+            return List.of();
+        }
+
+        AnalysisSentimentWindowSummary windowSummary = primaryWindowSummary(reportType, sentimentContext);
+        if (windowSummary == null || windowSummary.currentIndexVsAverage() == null) {
+            return List.of();
+        }
+
+        if (windowSummary.currentIndexVsAverage().compareTo(new java.math.BigDecimal("0.15")) >= 0) {
+            return List.of(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.SENTIMENT,
+                    "Greed above average",
+                    windowSummary.windowType().name()
+                            + " Fear & Greed stays "
+                            + formattingSupport.signedRatio(windowSummary.currentIndexVsAverage())
+                            + " versus average.",
+                    AnalysisExternalRegimeDirection.CAUTIONARY,
+                    AnalysisExternalRegimeSeverity.HIGH,
+                    windowSummary.windowType().name()
+            ));
+        }
+        if (windowSummary.currentIndexVsAverage().compareTo(new java.math.BigDecimal("-0.15")) <= 0) {
+            return List.of(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.SENTIMENT,
+                    "Fear below average",
+                    windowSummary.windowType().name()
+                            + " Fear & Greed stays "
+                            + formattingSupport.signedRatio(windowSummary.currentIndexVsAverage())
+                            + " versus average.",
+                    AnalysisExternalRegimeDirection.HEADWIND,
+                    AnalysisExternalRegimeSeverity.HIGH,
+                    windowSummary.windowType().name()
+            ));
+        }
+        return List.of();
     }
 
     private AnalysisSentimentComparisonFact primaryFact(
