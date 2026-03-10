@@ -89,13 +89,15 @@ class AnalysisSummarySectionAssembler {
                 reportType,
                 onchainContext
         );
+        AnalysisContextHeadlinePayload externalHeadline = externalContextHeadline(externalContextComposite);
         List<AnalysisContextHeadlinePayload> signalHeadlines = java.util.stream.Stream.of(
                         comparisonHeadline,
                         windowHeadline,
                         derivativeHeadline,
                         macroHeadline,
                         sentimentHeadline,
-                        onchainHeadline
+                        onchainHeadline,
+                        externalHeadline
                 )
                 .filter(java.util.Objects::nonNull)
                 .toList();
@@ -160,6 +162,12 @@ class AnalysisSummarySectionAssembler {
         levelContext.highlights().stream()
                     .map(AnalysisLevelContextHighlight::detail)
                     .forEach(details::add);
+        if (levelContext != null && levelContext.comparisonFacts() != null) {
+            levelContext.comparisonFacts().stream()
+                        .limit(2)
+                        .map(fact -> fact.reference().name() + " 대비 level context 변화 반영")
+                        .forEach(details::add);
+        }
         return details;
     }
 
@@ -200,12 +208,42 @@ class AnalysisSummarySectionAssembler {
         }
 
         if (externalContextComposite != null && externalContextComposite.primarySignalTitle() != null) {
-            clauses.add("primary external regime is "
-                    + externalContextComposite.primarySignalTitle().toLowerCase()
-                    + " with composite risk score "
-                    + externalContextComposite.compositeRiskScore().setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString());
+            if (externalContextComposite.highlights() != null && !externalContextComposite.highlights().isEmpty()) {
+                clauses.add(externalContextComposite.highlights().get(0).summary());
+            } else {
+                clauses.add("primary external regime is "
+                        + externalContextComposite.primarySignalTitle().toLowerCase()
+                        + " with composite risk score "
+                        + externalContextComposite.compositeRiskScore().setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString());
+            }
         }
 
         return clauses.isEmpty() ? "External context stays mixed." : String.join(", ", clauses) + ".";
+    }
+
+    private AnalysisContextHeadlinePayload externalContextHeadline(
+            AnalysisExternalContextCompositePayload externalContextComposite
+    ) {
+        if (externalContextComposite == null) {
+            return null;
+        }
+        if (externalContextComposite.highlights() != null && !externalContextComposite.highlights().isEmpty()) {
+            var highlight = externalContextComposite.highlights().get(0);
+            return new AnalysisContextHeadlinePayload(
+                    com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory.EXTERNAL,
+                    highlight.title(),
+                    highlight.summary(),
+                    highlight.importance()
+            );
+        }
+        if (externalContextComposite.primarySignalTitle() == null) {
+            return null;
+        }
+        return new AnalysisContextHeadlinePayload(
+                com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory.EXTERNAL,
+                externalContextComposite.primarySignalTitle(),
+                externalContextComposite.primarySignalDetail(),
+                com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance.MEDIUM
+        );
     }
 }

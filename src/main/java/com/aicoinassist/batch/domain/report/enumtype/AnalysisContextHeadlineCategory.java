@@ -6,5 +6,6 @@ public enum AnalysisContextHeadlineCategory {
     DERIVATIVE,
     MACRO,
     SENTIMENT,
-    ONCHAIN
+    ONCHAIN,
+    EXTERNAL
 }

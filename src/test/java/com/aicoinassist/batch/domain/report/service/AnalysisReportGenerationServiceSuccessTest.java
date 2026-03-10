@@ -124,7 +124,17 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         )).thenReturn(externalContextSnapshotInput());
         when(marketExternalContextSnapshotPersistenceService.createAndSave(externalContextSnapshotInput()))
                 .thenReturn(externalContextSnapshot);
-        when(analysisReportMarketDataMapper.toExternalContextComposite(externalContextSnapshot))
+        when(analysisExternalContextComparisonService.buildFacts(externalContextSnapshot, AnalysisReportType.MID_TERM))
+                .thenReturn(payload.marketContext().externalContextComposite().comparisonFacts());
+        when(analysisExternalContextComparisonService.buildHighlights(
+                externalContextSnapshot,
+                payload.marketContext().externalContextComposite().comparisonFacts()
+        )).thenReturn(payload.marketContext().externalContextComposite().highlights());
+        when(analysisReportMarketDataMapper.toExternalContextComposite(
+                externalContextSnapshot,
+                payload.marketContext().externalContextComposite().comparisonFacts(),
+                payload.marketContext().externalContextComposite().highlights()
+        ))
                 .thenReturn(payload.marketContext().externalContextComposite());
         when(analysisReportAssembler.assemble(
                 eq(snapshot),

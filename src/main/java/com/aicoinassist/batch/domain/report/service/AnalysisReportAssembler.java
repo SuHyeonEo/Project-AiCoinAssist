@@ -129,7 +129,8 @@ public class AnalysisReportAssembler {
                 enrichedDerivativeContext,
                 enrichedMacroContext,
                 enrichedSentimentContext,
-                enrichedOnchainContext
+                enrichedOnchainContext,
+                externalContextComposite
         );
         List<AnalysisScenario> scenarios = riskScenarioFactory.scenarios(
                 snapshot,
@@ -138,7 +139,8 @@ public class AnalysisReportAssembler {
                 enrichedDerivativeContext,
                 enrichedMacroContext,
                 enrichedSentimentContext,
-                enrichedOnchainContext
+                enrichedOnchainContext,
+                externalContextComposite
         );
 
         AnalysisSummaryPayload summary = summarySectionAssembler.buildSummary(

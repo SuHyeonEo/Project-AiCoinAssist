@@ -40,7 +40,8 @@ class AnalysisReportAssemblerRiskScenarioTest extends AnalysisReportServiceFixtu
                                                  org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.FUNDING_SKEW, "Funding skew"),
                                                  org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.BASIS_EXPANSION, "Basis expansion"),
                                                  org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.SENTIMENT_GREED_EXTREME, "Sentiment greed extreme"),
-                                                 org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.MACRO_VOLATILITY, "Macro volatility")
+                                                 org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.MACRO_VOLATILITY, "Macro volatility"),
+                                                 org.assertj.core.groups.Tuple.tuple(AnalysisRiskFactorType.EXTERNAL_RISK_CONFLUENCE, "External risk confluence")
                                          );
         assertThat(payload.riskFactors()).allSatisfy(riskFactor -> assertThat(riskFactor.triggerFacts()).isNotEmpty());
         assertThat(payload.scenarios()).extracting("bias").contains(AnalysisScenarioBias.BULLISH, AnalysisScenarioBias.NEUTRAL);
@@ -52,6 +53,8 @@ class AnalysisReportAssemblerRiskScenarioTest extends AnalysisReportServiceFixtu
         assertThat(payload.marketContext().externalRegimeSignals()).isNotEmpty();
         assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("macro backdrop"));
         assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("sentiment remains"));
+        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("external regime direction"));
         assertThat(payload.scenarios().get(0).pathSummary()).contains("Sentiment remains");
+        assertThat(payload.scenarios().get(0).pathSummary()).contains("external regime focus");
     }
 }
