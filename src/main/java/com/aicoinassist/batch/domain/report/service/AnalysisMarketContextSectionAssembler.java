@@ -18,6 +18,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
@@ -35,17 +38,20 @@ class AnalysisMarketContextSectionAssembler {
     private final AnalysisIndicatorStateSupport indicatorStateSupport;
     private final AnalysisComparisonWindowSupport comparisonWindowSupport;
     private final AnalysisDerivativeContextSupport derivativeContextSupport;
+    private final AnalysisSentimentContextSupport sentimentContextSupport;
     private final AnalysisReportFormattingSupport formattingSupport;
 
     AnalysisMarketContextSectionAssembler(
             AnalysisIndicatorStateSupport indicatorStateSupport,
             AnalysisComparisonWindowSupport comparisonWindowSupport,
             AnalysisDerivativeContextSupport derivativeContextSupport,
+            AnalysisSentimentContextSupport sentimentContextSupport,
             AnalysisReportFormattingSupport formattingSupport
     ) {
         this.indicatorStateSupport = indicatorStateSupport;
         this.comparisonWindowSupport = comparisonWindowSupport;
         this.derivativeContextSupport = derivativeContextSupport;
+        this.sentimentContextSupport = sentimentContextSupport;
         this.formattingSupport = formattingSupport;
     }
 
@@ -58,6 +64,7 @@ class AnalysisMarketContextSectionAssembler {
             List<AnalysisWindowHighlight> windowHighlights,
             List<AnalysisWindowSummary> windowSummaries,
             AnalysisDerivativeContext derivativeContext,
+            AnalysisSentimentContext sentimentContext,
             List<AnalysisContinuityNote> continuityNotes,
             AnalysisLevelContextPayload levelContext,
             List<AnalysisRiskFactor> riskFactors
@@ -120,6 +127,8 @@ class AnalysisMarketContextSectionAssembler {
 
         AnalysisDerivativeContextSummaryPayload derivativeContextSummary = null;
         AnalysisContextHeadlinePayload derivativeHeadline = null;
+        AnalysisSentimentContextSummaryPayload sentimentContextSummary = null;
+        AnalysisContextHeadlinePayload sentimentHeadline = null;
         if (derivativeContext != null) {
             AnalysisDerivativeWindowSummary derivativeWindowSummary = derivativeContextSupport.primaryDerivativeWindowSummary(
                     reportType,
@@ -158,6 +167,26 @@ class AnalysisMarketContextSectionAssembler {
             );
             derivativeHeadline = derivativeContextSupport.derivativeContextHeadline(reportType, derivativeContext);
         }
+        if (sentimentContext != null) {
+            AnalysisSentimentHighlight primaryHighlight = sentimentContext.highlights() == null || sentimentContext.highlights().isEmpty()
+                    ? null
+                    : sentimentContext.highlights().get(0);
+            sentimentContextSummary = new AnalysisSentimentContextSummaryPayload(
+                    "Fear & Greed "
+                            + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
+                            + " ("
+                            + sentimentContext.classification()
+                            + ").",
+                    primaryHighlight == null ? null : primaryHighlight.summary(),
+                    sentimentContext.highlights() == null
+                            ? List.of()
+                            : sentimentContext.highlights().stream()
+                                              .map(AnalysisSentimentHighlight::summary)
+                                              .toList(),
+                    sentimentContextSupport.hoursUntilNextUpdate(sentimentContext)
+            );
+            sentimentHeadline = sentimentContextSupport.sentimentContextHeadline(reportType, sentimentContext);
+        }
 
         AnalysisContinuityContextPayload continuityContext = continuityNotes.isEmpty()
                 ? null
@@ -190,6 +219,8 @@ class AnalysisMarketContextSectionAssembler {
                 levelContext,
                 derivativeContextSummary,
                 derivativeHeadline,
+                sentimentContextSummary,
+                sentimentHeadline,
                 continuityContext
         );
     }

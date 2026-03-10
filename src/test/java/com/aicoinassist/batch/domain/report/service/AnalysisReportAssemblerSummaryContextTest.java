@@ -36,6 +36,7 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                 comparisonFacts(),
                 shortWindowSummaries(),
                 derivativeContext(),
+                sentimentContext(),
                 shortContinuityNotes(),
                 levelContext(),
                 supportLevels(),
@@ -62,7 +63,8 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison"),
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.WINDOW, "LAST_7D position"),
-                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.DERIVATIVE, "PREV_BATCH derivative shift")
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.DERIVATIVE, "PREV_BATCH derivative shift"),
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime")
                 );
 
         assertThat(payload.marketContext().currentState()).extracting(
@@ -103,6 +105,14 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
         assertThat(payload.marketContext().windowContext().summary().rangePositionSummary()).contains("position");
         assertThat(payload.marketContext().windowContext().summary().volatilitySummary()).contains("ATR vs average");
         assertThat(payload.marketContext().windowContext().highlightDetails()).isNotEmpty();
+        assertThat(payload.marketContext().sentimentContextSummary().currentStateSummary()).contains("Fear & Greed 72");
+        assertThat(payload.marketContext().sentimentContextSummary().comparisonSummary()).contains("Greed");
+        assertThat(payload.marketContext().sentimentContextSummary().highlightDetails()).isNotEmpty();
+        assertThat(payload.marketContext().sentimentHeadline()).extracting(
+                        AnalysisContextHeadlinePayload::category,
+                        AnalysisContextHeadlinePayload::title
+                )
+                .containsExactly(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime");
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
                                              .containsExactly(MarketWindowType.LAST_1D, MarketWindowType.LAST_7D);
         assertThat(payload.comparisonHighlights()).extracting(AnalysisComparisonHighlight::reference)
@@ -129,5 +139,9 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                                                                                AnalysisComparisonReference.PREV_BATCH,
                                                                                AnalysisComparisonReference.D1
                                                                        );
+        assertThat(payload.sentimentContext()).isNotNull();
+        assertThat(payload.sentimentContext().highlights()).isNotEmpty();
+        assertThat(payload.riskFactors()).extracting(risk -> risk.type().name())
+                                         .contains("SENTIMENT_GREED_EXTREME");
     }
 }

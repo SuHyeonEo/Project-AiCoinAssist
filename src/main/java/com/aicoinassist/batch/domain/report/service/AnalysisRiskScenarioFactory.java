@@ -5,6 +5,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisScenarioBias;
@@ -32,7 +33,8 @@ class AnalysisRiskScenarioFactory {
     List<AnalysisRiskFactor> riskFactors(
             MarketIndicatorSnapshotEntity snapshot,
             AnalysisReportType reportType,
-            AnalysisDerivativeContext derivativeContext
+            AnalysisDerivativeContext derivativeContext,
+            AnalysisSentimentContext sentimentContext
     ) {
         List<AnalysisRiskFactor> candidates = new java.util.ArrayList<>();
 
@@ -105,6 +107,26 @@ class AnalysisRiskScenarioFactory {
                     "Open interest is running " + formattingSupport.signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage())
                             + " versus the representative window average.",
                     List.of("Open interest vs average is " + formattingSupport.signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage()) + ".")
+            ));
+        }
+
+        if (sentimentContext != null && sentimentContext.indexValue().compareTo(new BigDecimal("70")) >= 0) {
+            candidates.add(new AnalysisRiskFactor(
+                    AnalysisRiskFactorType.SENTIMENT_GREED_EXTREME,
+                    "Sentiment greed extreme",
+                    "Fear & Greed is at " + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
+                            + " (" + sentimentContext.classification() + "), so chase risk can rise near resistance.",
+                    List.of("Fear & Greed classification is " + sentimentContext.classification() + ".")
+            ));
+        }
+
+        if (sentimentContext != null && sentimentContext.indexValue().compareTo(new BigDecimal("30")) <= 0) {
+            candidates.add(new AnalysisRiskFactor(
+                    AnalysisRiskFactorType.SENTIMENT_FEAR_EXTREME,
+                    "Sentiment fear extreme",
+                    "Fear & Greed is at " + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
+                            + " (" + sentimentContext.classification() + "), so reactive selloffs and whipsaws can expand.",
+                    List.of("Fear & Greed classification is " + sentimentContext.classification() + ".")
             ));
         }
 

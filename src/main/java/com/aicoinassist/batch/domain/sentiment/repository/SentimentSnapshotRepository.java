@@ -14,6 +14,11 @@ public interface SentimentSnapshotRepository extends JpaRepository<SentimentSnap
             Instant snapshotTime
     );
 
+    Optional<SentimentSnapshotEntity> findTopByMetricTypeAndSnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(
+            SentimentMetricType metricType,
+            Instant snapshotTime
+    );
+
     Optional<SentimentSnapshotEntity> findTopByMetricTypeAndSnapshotTimeLessThanOrderBySnapshotTimeDescIdDesc(
             SentimentMetricType metricType,
             Instant snapshotTime

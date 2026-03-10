@@ -11,6 +11,7 @@ public record AnalysisReportPayload(
         List<AnalysisContinuityNote> continuityNotes,
         List<AnalysisWindowSummary> windowSummaries,
         AnalysisDerivativeContext derivativeContext,
+        AnalysisSentimentContext sentimentContext,
         List<AnalysisPriceLevel> supportLevels,
         List<AnalysisPriceLevel> resistanceLevels,
         List<AnalysisPriceZone> supportZones,

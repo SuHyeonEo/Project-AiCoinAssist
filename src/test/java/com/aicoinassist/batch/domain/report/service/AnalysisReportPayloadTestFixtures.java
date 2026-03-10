@@ -26,6 +26,10 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryKeyMessagePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
@@ -48,6 +52,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisRangePositionLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisRiskFactorType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisScenarioBias;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisSentimentHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisVolatilityLabel;
 
@@ -159,6 +164,13 @@ abstract class AnalysisReportPayloadTestFixtures {
                                 7L
                         ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.DERIVATIVE, "D1 derivative shift", "detail", AnalysisContextHeadlineImportance.MEDIUM),
+                        new AnalysisSentimentContextSummaryPayload(
+                                "Fear & Greed 72 (Greed).",
+                                "Greed regime remains elevated versus recent references.",
+                                List.of("Greed regime", "PREV_BATCH sentiment shift"),
+                                1L
+                        ),
+                        new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime", "detail", AnalysisContextHeadlineImportance.HIGH),
                         new AnalysisContinuityContextPayload(
                                 AnalysisComparisonReference.PREV_SHORT_REPORT,
                                 "Previous short-term report highlighted momentum continuation.",
@@ -258,6 +270,33 @@ abstract class AnalysisReportPayloadTestFixtures {
                                         AnalysisDerivativeHighlightImportance.MEDIUM,
                                         AnalysisDerivativeMetricType.OPEN_INTEREST,
                                         AnalysisComparisonReference.D1,
+                                        null
+                                )
+                        )
+                ),
+                new AnalysisSentimentContext(
+                        Instant.parse("2026-03-09T00:00:00Z"),
+                        Instant.parse("2026-03-09T00:00:00Z"),
+                        "metricType=FEAR_GREED_INDEX;sourceEventTime=2026-03-09T00:00:00Z",
+                        new BigDecimal("72.00000000"),
+                        "Greed",
+                        3600L,
+                        List.of(
+                                new AnalysisSentimentComparisonFact(
+                                        AnalysisComparisonReference.PREV_BATCH,
+                                        Instant.parse("2026-03-08T00:00:00Z"),
+                                        new BigDecimal("68.00000000"),
+                                        "Neutral",
+                                        new BigDecimal("4.00000000"),
+                                        new BigDecimal("0.05882353"),
+                                        true
+                                )
+                        ),
+                        List.of(
+                                new AnalysisSentimentHighlight(
+                                        "Greed regime",
+                                        "Fear & Greed is at 72 (Greed), which points to risk appetite staying elevated.",
+                                        AnalysisSentimentHighlightImportance.HIGH,
                                         null
                                 )
                         )

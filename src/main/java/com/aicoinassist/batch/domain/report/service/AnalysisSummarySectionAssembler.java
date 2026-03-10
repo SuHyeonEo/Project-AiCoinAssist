@@ -8,6 +8,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryKeyMessagePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
@@ -24,17 +25,20 @@ class AnalysisSummarySectionAssembler {
     private final AnalysisIndicatorStateSupport indicatorStateSupport;
     private final AnalysisComparisonWindowSupport comparisonWindowSupport;
     private final AnalysisDerivativeContextSupport derivativeContextSupport;
+    private final AnalysisSentimentContextSupport sentimentContextSupport;
     private final AnalysisReportFormattingSupport formattingSupport;
 
     AnalysisSummarySectionAssembler(
             AnalysisIndicatorStateSupport indicatorStateSupport,
             AnalysisComparisonWindowSupport comparisonWindowSupport,
             AnalysisDerivativeContextSupport derivativeContextSupport,
+            AnalysisSentimentContextSupport sentimentContextSupport,
             AnalysisReportFormattingSupport formattingSupport
     ) {
         this.indicatorStateSupport = indicatorStateSupport;
         this.comparisonWindowSupport = comparisonWindowSupport;
         this.derivativeContextSupport = derivativeContextSupport;
+        this.sentimentContextSupport = sentimentContextSupport;
         this.formattingSupport = formattingSupport;
     }
 
@@ -46,6 +50,7 @@ class AnalysisSummarySectionAssembler {
             List<AnalysisComparisonHighlight> comparisonHighlights,
             List<AnalysisWindowSummary> windowSummaries,
             AnalysisDerivativeContext derivativeContext,
+            AnalysisSentimentContext sentimentContext,
             List<AnalysisContinuityNote> continuityNotes,
             AnalysisLevelContextPayload levelContext
     ) {
@@ -60,10 +65,15 @@ class AnalysisSummarySectionAssembler {
                 reportType,
                 derivativeContext
         );
+        AnalysisContextHeadlinePayload sentimentHeadline = sentimentContextSupport.sentimentContextHeadline(
+                reportType,
+                sentimentContext
+        );
         List<AnalysisContextHeadlinePayload> signalHeadlines = java.util.stream.Stream.of(
                         comparisonHeadline,
                         windowHeadline,
-                        derivativeHeadline
+                        derivativeHeadline,
+                        sentimentHeadline
                 )
                 .filter(java.util.Objects::nonNull)
                 .toList();
