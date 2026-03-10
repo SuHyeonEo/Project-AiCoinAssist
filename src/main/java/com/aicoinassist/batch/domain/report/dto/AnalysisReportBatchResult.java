@@ -60,6 +60,14 @@ public record AnalysisReportBatchResult(
         return reportResults.size() - reportSuccessCount();
     }
 
+    public int narrativeIssueCount() {
+        return (int) reportResults.stream()
+                                  .filter(result -> result.narrativeGenerationStatus() != null)
+                                  .filter(result -> result.narrativeGenerationStatus()
+                                          != com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmNarrativeGenerationStatus.SUCCESS)
+                                  .count();
+    }
+
     public boolean hasFailures() {
         return status() != BatchExecutionStatus.SUCCESS;
     }
@@ -72,7 +80,7 @@ public record AnalysisReportBatchResult(
         if (crashed()) {
             return BatchExecutionStatus.FAILED;
         }
-        if (snapshotFailureCount() > 0 || reportFailureCount() > 0) {
+        if (snapshotFailureCount() > 0 || reportFailureCount() > 0 || narrativeIssueCount() > 0) {
             return BatchExecutionStatus.PARTIAL_FAILURE;
         }
         return BatchExecutionStatus.SUCCESS;

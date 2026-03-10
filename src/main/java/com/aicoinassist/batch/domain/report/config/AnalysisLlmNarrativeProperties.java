@@ -7,6 +7,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "batch.llm-narrative")
 public record AnalysisLlmNarrativeProperties(
+        boolean enabled,
         @NotBlank String provider,
         @NotBlank String promptTemplateVersion,
         @NotBlank String inputSchemaVersion,

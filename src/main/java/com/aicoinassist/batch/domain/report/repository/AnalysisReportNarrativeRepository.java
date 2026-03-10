@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.report.repository;
 
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportNarrativeEntity;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -15,5 +16,10 @@ public interface AnalysisReportNarrativeRepository extends JpaRepository<Analysi
             String inputSchemaVersion,
             String outputSchemaVersion,
             String inputPayloadHash
+    );
+
+    Optional<AnalysisReportNarrativeEntity> findTopBySymbolAndReportTypeOrderByStoredAtDescIdDesc(
+            String symbol,
+            AnalysisReportType reportType
     );
 }

@@ -99,7 +99,7 @@ class AnalysisReportNarrativeGenerationFlowServiceTest extends AnalysisReportPay
                 analysisLlmNarrativeGenerationService,
                 new AnalysisReportNarrativeDraftFactory(objectMapper),
                 analysisReportNarrativePersistenceService,
-                new AnalysisLlmNarrativeProperties("openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1"),
+                new AnalysisLlmNarrativeProperties(true, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1"),
                 new OpenAiProperties(true, "https://api.openai.com", "test-openai-key", "gpt-5.4", null, null, 5000, 30000),
                 Clock.fixed(Instant.parse("2026-03-11T00:00:00Z"), ZoneOffset.UTC)
         );

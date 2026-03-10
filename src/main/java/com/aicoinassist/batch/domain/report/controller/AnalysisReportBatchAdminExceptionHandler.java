@@ -5,8 +5,19 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@RestControllerAdvice(assignableTypes = AnalysisReportBatchAdminController.class)
+@RestControllerAdvice(assignableTypes = {
+        AnalysisReportBatchAdminController.class,
+        AnalysisReportNarrativeAdminController.class
+})
 public class AnalysisReportBatchAdminExceptionHandler {
+
+    @ExceptionHandler(AnalysisReportNarrativeNotFoundException.class)
+    public ProblemDetail handleNarrativeNotFound(AnalysisReportNarrativeNotFoundException exception) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problemDetail.setTitle("Report narrative not found");
+        problemDetail.setDetail(exception.getMessage());
+        return problemDetail;
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail handleNotFound(IllegalArgumentException exception) {

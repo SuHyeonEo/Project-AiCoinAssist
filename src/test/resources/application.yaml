@@ -26,6 +26,7 @@ batch:
     token: test-admin-token
     header-name: X-Admin-Token
   llm-narrative:
+    enabled: false
     provider: openai
     prompt-template-version: llm-prompt-v1
     input-schema-version: llm-input-v1
