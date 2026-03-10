@@ -9,4 +9,6 @@ import java.util.Optional;
 public interface MacroContextSnapshotRepository extends JpaRepository<MacroContextSnapshotEntity, Long> {
 
     Optional<MacroContextSnapshotEntity> findTopBySnapshotTimeOrderByIdDesc(Instant snapshotTime);
+
+    Optional<MacroContextSnapshotEntity> findTopBySnapshotTimeLessThanEqualOrderBySnapshotTimeDescIdDesc(Instant snapshotTime);
 }

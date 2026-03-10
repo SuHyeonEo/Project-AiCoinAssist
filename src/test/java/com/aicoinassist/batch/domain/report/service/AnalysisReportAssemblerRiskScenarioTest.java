@@ -20,6 +20,7 @@ class AnalysisReportAssemblerRiskScenarioTest extends AnalysisReportServiceFixtu
                 comparisonFacts(),
                 shortWindowSummaries(),
                 derivativeContext(),
+                macroContext(),
                 sentimentContext(),
                 shortContinuityNotes(),
                 levelContext(),

@@ -14,6 +14,10 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
@@ -43,6 +47,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCate
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisMacroHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
@@ -164,6 +169,12 @@ abstract class AnalysisReportPayloadTestFixtures {
                                 7L
                         ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.DERIVATIVE, "D1 derivative shift", "detail", AnalysisContextHeadlineImportance.MEDIUM),
+                        new AnalysisMacroContextSummaryPayload(
+                                "DXY proxy 119.8421, US10Y 4.12, USD/KRW 1453.22.",
+                                "D30 keeps DXY +1.50%, US10Y +4.04%, USD/KRW +2.34%.",
+                                List.of("Dollar strength regime")
+                        ),
+                        new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.MACRO, "Dollar strength regime", "detail", AnalysisContextHeadlineImportance.HIGH),
                         new AnalysisSentimentContextSummaryPayload(
                                 "Fear & Greed 72 (Greed).",
                                 "Greed regime remains elevated versus recent references.",
@@ -271,6 +282,39 @@ abstract class AnalysisReportPayloadTestFixtures {
                                         AnalysisDerivativeMetricType.OPEN_INTEREST,
                                         AnalysisComparisonReference.D1,
                                         null
+                                )
+                        )
+                ),
+                new AnalysisMacroContext(
+                        Instant.parse("2026-03-09T00:00:00Z"),
+                        "dxyProxyDate=2026-03-09;us10yYieldDate=2026-03-09;usdKrwDate=2026-03-09",
+                        java.time.LocalDate.parse("2026-03-09"),
+                        java.time.LocalDate.parse("2026-03-09"),
+                        java.time.LocalDate.parse("2026-03-09"),
+                        new BigDecimal("119.84210000"),
+                        new BigDecimal("4.12000000"),
+                        new BigDecimal("1453.22000000"),
+                        List.of(
+                                new AnalysisMacroComparisonFact(
+                                        AnalysisComparisonReference.D30,
+                                        Instant.parse("2026-02-07T00:00:00Z"),
+                                        new BigDecimal("118.07000000"),
+                                        new BigDecimal("3.96000000"),
+                                        new BigDecimal("1420.00000000"),
+                                        new BigDecimal("1.77210000"),
+                                        new BigDecimal("0.01500889"),
+                                        new BigDecimal("0.16000000"),
+                                        new BigDecimal("0.04040404"),
+                                        new BigDecimal("33.22000000"),
+                                        new BigDecimal("0.02339437")
+                                )
+                        ),
+                        List.of(
+                                new AnalysisMacroHighlight(
+                                        "Dollar strength regime",
+                                        "D30 keeps DXY proxy +1.50%, which can pressure crypto risk appetite.",
+                                        AnalysisMacroHighlightImportance.HIGH,
+                                        AnalysisComparisonReference.D30
                                 )
                         )
                 ),

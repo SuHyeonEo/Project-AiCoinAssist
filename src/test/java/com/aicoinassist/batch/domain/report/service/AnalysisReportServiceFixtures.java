@@ -9,6 +9,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
@@ -23,6 +26,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelLabel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractionType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneType;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisMacroHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisSentimentHighlightImportance;
 
 import java.math.BigDecimal;
@@ -257,6 +261,28 @@ abstract class AnalysisReportServiceFixtures {
         );
     }
 
+    protected AnalysisMacroContext macroContext() {
+        return new AnalysisMacroContext(
+                Instant.parse("2026-03-09T00:00:00Z"),
+                "dxyProxyDate=2026-03-09;us10yYieldDate=2026-03-09;usdKrwDate=2026-03-09",
+                java.time.LocalDate.parse("2026-03-09"),
+                java.time.LocalDate.parse("2026-03-09"),
+                java.time.LocalDate.parse("2026-03-09"),
+                new BigDecimal("119.84210000"),
+                new BigDecimal("4.12000000"),
+                new BigDecimal("1453.22000000"),
+                macroComparisonFacts(),
+                List.of(
+                        new AnalysisMacroHighlight(
+                                "Dollar strength regime",
+                                "D30 keeps DXY proxy +1.50%, which can pressure crypto risk appetite.",
+                                AnalysisMacroHighlightImportance.HIGH,
+                                AnalysisComparisonReference.D30
+                        )
+                )
+        );
+    }
+
     protected List<AnalysisDerivativeComparisonFact> derivativeComparisonFacts() {
         return List.of(
                 new AnalysisDerivativeComparisonFact(
@@ -360,6 +386,24 @@ abstract class AnalysisReportServiceFixtures {
                         "PREV_BATCH changes Fear & Greed by 4 (5.882353%) with classification switching from Neutral to Greed.",
                         AnalysisSentimentHighlightImportance.HIGH,
                         AnalysisComparisonReference.PREV_BATCH
+                )
+        );
+    }
+
+    protected List<AnalysisMacroComparisonFact> macroComparisonFacts() {
+        return List.of(
+                new AnalysisMacroComparisonFact(
+                        AnalysisComparisonReference.D30,
+                        Instant.parse("2026-02-07T00:00:00Z"),
+                        new BigDecimal("118.07000000"),
+                        new BigDecimal("3.96000000"),
+                        new BigDecimal("1420.00000000"),
+                        new BigDecimal("1.77210000"),
+                        new BigDecimal("0.01500889"),
+                        new BigDecimal("0.16000000"),
+                        new BigDecimal("0.04040404"),
+                        new BigDecimal("33.22000000"),
+                        new BigDecimal("0.02339437")
                 )
         );
     }

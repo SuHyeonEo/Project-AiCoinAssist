@@ -8,6 +8,8 @@ import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
+import com.aicoinassist.batch.domain.macro.entity.MacroContextSnapshotEntity;
+import com.aicoinassist.batch.domain.macro.service.MacroContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
 import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelZoneSnapshotPersistenceService;
@@ -32,6 +34,10 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
@@ -54,6 +60,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisConfidenceLevel;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisMacroHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeHighlightImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisDerivativeMetricType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisOutlookType;
@@ -101,6 +108,9 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
     protected MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
 
     @Mock
+    protected MacroContextSnapshotPersistenceService macroContextSnapshotPersistenceService;
+
+    @Mock
     protected SentimentSnapshotPersistenceService sentimentSnapshotPersistenceService;
 
     @Mock
@@ -108,6 +118,9 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
 
     @Mock
     protected AnalysisDerivativeComparisonService analysisDerivativeComparisonService;
+
+    @Mock
+    protected AnalysisMacroComparisonService analysisMacroComparisonService;
 
     @Mock
     protected AnalysisSentimentComparisonService analysisSentimentComparisonService;
@@ -130,10 +143,12 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                 marketContextSnapshotPersistenceService,
                 marketContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
+                macroContextSnapshotPersistenceService,
                 sentimentSnapshotPersistenceService,
                 analysisComparisonService,
                 analysisLevelContextComparisonService,
                 analysisDerivativeComparisonService,
+                analysisMacroComparisonService,
                 analysisSentimentComparisonService,
                 analysisReportContinuityService,
                 analysisReportAssembler,
@@ -271,6 +286,12 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                 7L
                         ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.DERIVATIVE, "D7 derivative shift", "detail", AnalysisContextHeadlineImportance.MEDIUM),
+                        new AnalysisMacroContextSummaryPayload(
+                                "DXY proxy 119.8421, US10Y 4.12, USD/KRW 1453.22.",
+                                "D30 keeps DXY +1.50%, US10Y +4.04%, USD/KRW +2.34%.",
+                                List.of("Dollar strength regime", "Yield pressure regime")
+                        ),
+                        new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.MACRO, "Dollar strength regime", "detail", AnalysisContextHeadlineImportance.HIGH),
                         new AnalysisSentimentContextSummaryPayload(
                                 "Fear & Greed 72 (Greed).",
                                 "Greed regime remains elevated versus recent references.",
@@ -331,6 +352,25 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                 null
                         ))
                 ),
+                new AnalysisMacroContext(
+                        generationMacroContextSnapshot().getSnapshotTime(),
+                        generationMacroContextSnapshot().getSourceDataVersion(),
+                        generationMacroContextSnapshot().getDxyObservationDate(),
+                        generationMacroContextSnapshot().getUs10yYieldObservationDate(),
+                        generationMacroContextSnapshot().getUsdKrwObservationDate(),
+                        generationMacroContextSnapshot().getDxyProxyValue(),
+                        generationMacroContextSnapshot().getUs10yYieldValue(),
+                        generationMacroContextSnapshot().getUsdKrwValue(),
+                        macroComparisonFacts(),
+                        List.of(
+                                new AnalysisMacroHighlight(
+                                        "Dollar strength regime",
+                                        "D30 keeps DXY proxy +1.50%, which can pressure crypto risk appetite.",
+                                        AnalysisMacroHighlightImportance.HIGH,
+                                        AnalysisComparisonReference.D30
+                                )
+                        )
+                ),
                 new AnalysisSentimentContext(
                         generationSentimentSnapshot().getSnapshotTime(),
                         generationSentimentSnapshot().getSourceEventTime(),
@@ -386,6 +426,37 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                       .valueChangeRate(new BigDecimal("0.05882353"))
                                       .classificationChanged(true)
                                       .build();
+    }
+
+    protected MacroContextSnapshotEntity generationMacroContextSnapshot() {
+        return MacroContextSnapshotEntity.builder()
+                                         .snapshotTime(Instant.parse("2026-03-09T00:00:00Z"))
+                                         .dxyObservationDate(java.time.LocalDate.parse("2026-03-09"))
+                                         .us10yYieldObservationDate(java.time.LocalDate.parse("2026-03-09"))
+                                         .usdKrwObservationDate(java.time.LocalDate.parse("2026-03-09"))
+                                         .sourceDataVersion("dxyProxyDate=2026-03-09;us10yYieldDate=2026-03-09;usdKrwDate=2026-03-09")
+                                         .dxyProxyValue(new BigDecimal("119.84210000"))
+                                         .us10yYieldValue(new BigDecimal("4.12000000"))
+                                         .usdKrwValue(new BigDecimal("1453.22000000"))
+                                         .build();
+    }
+
+    protected List<AnalysisMacroComparisonFact> macroComparisonFacts() {
+        return List.of(
+                new AnalysisMacroComparisonFact(
+                        AnalysisComparisonReference.D30,
+                        Instant.parse("2026-02-07T00:00:00Z"),
+                        new BigDecimal("118.07000000"),
+                        new BigDecimal("3.96000000"),
+                        new BigDecimal("1420.00000000"),
+                        new BigDecimal("1.77210000"),
+                        new BigDecimal("0.01500889"),
+                        new BigDecimal("0.16000000"),
+                        new BigDecimal("0.04040404"),
+                        new BigDecimal("33.22000000"),
+                        new BigDecimal("0.02339437")
+                )
+        );
     }
 
     protected MarketContextSnapshotEntity marketContextSnapshotEntity() {

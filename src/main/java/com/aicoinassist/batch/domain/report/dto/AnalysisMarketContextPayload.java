@@ -7,6 +7,8 @@ public record AnalysisMarketContextPayload(
         AnalysisLevelContextPayload levelContext,
         AnalysisDerivativeContextSummaryPayload derivativeContextSummary,
         AnalysisContextHeadlinePayload derivativeHeadline,
+        AnalysisMacroContextSummaryPayload macroContextSummary,
+        AnalysisContextHeadlinePayload macroHeadline,
         AnalysisSentimentContextSummaryPayload sentimentContextSummary,
         AnalysisContextHeadlinePayload sentimentHeadline,
         AnalysisContinuityContextPayload continuityContext
