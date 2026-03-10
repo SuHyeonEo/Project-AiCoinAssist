@@ -13,6 +13,8 @@ public record AnalysisReportPayload(
         AnalysisDerivativeContext derivativeContext,
         List<AnalysisPriceLevel> supportLevels,
         List<AnalysisPriceLevel> resistanceLevels,
+        List<AnalysisPriceZone> supportZones,
+        List<AnalysisPriceZone> resistanceZones,
         List<AnalysisRiskFactor> riskFactors,
         List<AnalysisScenario> scenarios
 ) {

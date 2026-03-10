@@ -17,6 +17,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContextSummary
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
+import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
@@ -60,13 +61,26 @@ public class AnalysisReportAssembler {
             AnalysisDerivativeContext derivativeContext,
             List<AnalysisContinuityNote> continuityNotes,
             List<AnalysisPriceLevel> supportLevels,
-            List<AnalysisPriceLevel> resistanceLevels
+            List<AnalysisPriceLevel> resistanceLevels,
+            List<AnalysisPriceZone> supportZones,
+            List<AnalysisPriceZone> resistanceZones
     ) {
         List<AnalysisComparisonHighlight> comparisonHighlights = comparisonHighlights(reportType, comparisonFacts);
         List<AnalysisWindowHighlight> windowHighlights = windowHighlights(reportType, windowSummaries);
         AnalysisDerivativeContext enrichedDerivativeContext = enrichDerivativeContext(reportType, derivativeContext);
         AnalysisTrendLabel trendBias = determineTrendBias(snapshot);
-        AnalysisSummaryPayload summary = buildSummary(snapshot, trendBias, reportType, comparisonFacts, comparisonHighlights, windowSummaries, enrichedDerivativeContext, continuityNotes);
+        AnalysisSummaryPayload summary = buildSummary(
+                snapshot,
+                trendBias,
+                reportType,
+                comparisonFacts,
+                comparisonHighlights,
+                windowSummaries,
+                enrichedDerivativeContext,
+                continuityNotes,
+                supportZones,
+                resistanceZones
+        );
         AnalysisMarketContextPayload marketContext = buildMarketContext(snapshot, trendBias, reportType, comparisonFacts, comparisonHighlights, windowHighlights, windowSummaries, enrichedDerivativeContext, continuityNotes);
 
         return new AnalysisReportPayload(
@@ -80,6 +94,8 @@ public class AnalysisReportAssembler {
                 enrichedDerivativeContext,
                 supportLevels,
                 resistanceLevels,
+                supportZones,
+                resistanceZones,
                 riskFactors(snapshot, reportType, enrichedDerivativeContext),
                 scenarios(snapshot, trendBias)
         );
@@ -93,7 +109,9 @@ public class AnalysisReportAssembler {
             List<AnalysisComparisonHighlight> comparisonHighlights,
             List<AnalysisWindowSummary> windowSummaries,
             AnalysisDerivativeContext derivativeContext,
-            List<AnalysisContinuityNote> continuityNotes
+            List<AnalysisContinuityNote> continuityNotes,
+            List<AnalysisPriceZone> supportZones,
+            List<AnalysisPriceZone> resistanceZones
     ) {
         String headline = reportType.name() + " view";
         AnalysisContextHeadlinePayload comparisonHeadline = comparisonContextHeadline(reportType, comparisonFacts, comparisonHighlights);
@@ -118,9 +136,7 @@ public class AnalysisReportAssembler {
                         + ", and MACD histogram at "
                         + snapshot.getMacdHistogram().stripTrailingZeros().toPlainString()
                         + ".",
-                signalHeadlines.stream()
-                               .map(AnalysisContextHeadlinePayload::detail)
-                               .toList(),
+                summarySignalDetails(signalHeadlines, supportZones, resistanceZones),
                 continuityNotes.isEmpty()
                         ? null
                         : continuityNotes.get(0).summary()
@@ -141,6 +157,35 @@ public class AnalysisReportAssembler {
                 keyMessage,
                 signalHeadlines
         );
+    }
+
+    private List<String> summarySignalDetails(
+            List<AnalysisContextHeadlinePayload> signalHeadlines,
+            List<AnalysisPriceZone> supportZones,
+            List<AnalysisPriceZone> resistanceZones
+    ) {
+        List<String> details = new java.util.ArrayList<>(signalHeadlines.stream()
+                                                                        .map(AnalysisContextHeadlinePayload::detail)
+                                                                        .toList());
+        if (!supportZones.isEmpty()) {
+            AnalysisPriceZone supportZone = supportZones.get(0);
+            details.add("Nearest support zone %s to %s with %d clustered levels."
+                                .formatted(
+                                        supportZone.zoneLow().stripTrailingZeros().toPlainString(),
+                                        supportZone.zoneHigh().stripTrailingZeros().toPlainString(),
+                                        supportZone.levelCount()
+                                ));
+        }
+        if (!resistanceZones.isEmpty()) {
+            AnalysisPriceZone resistanceZone = resistanceZones.get(0);
+            details.add("Nearest resistance zone %s to %s with %d clustered levels."
+                                .formatted(
+                                        resistanceZone.zoneLow().stripTrailingZeros().toPlainString(),
+                                        resistanceZone.zoneHigh().stripTrailingZeros().toPlainString(),
+                                        resistanceZone.levelCount()
+                                ));
+        }
+        return details;
     }
 
     private AnalysisMarketContextPayload buildMarketContext(

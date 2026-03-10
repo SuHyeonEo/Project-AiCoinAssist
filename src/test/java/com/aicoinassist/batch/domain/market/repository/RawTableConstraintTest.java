@@ -2,6 +2,7 @@ package com.aicoinassist.batch.domain.market.repository;
 
 import com.aicoinassist.batch.domain.market.entity.MarketCandleRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketOpenInterestRawEntity;
@@ -49,6 +50,9 @@ class RawTableConstraintTest {
 
     @Autowired
     private MarketCandidateLevelSnapshotRepository marketCandidateLevelSnapshotRepository;
+
+    @Autowired
+    private MarketCandidateLevelZoneSnapshotRepository marketCandidateLevelZoneSnapshotRepository;
 
     @Test
     void marketPriceRawRejectsDuplicateSourceSymbolAndSourceEventTime() {
@@ -134,6 +138,17 @@ class RawTableConstraintTest {
 
         assertThatThrownBy(() -> marketCandidateLevelSnapshotRepository.saveAndFlush(
                 candidateLevelSnapshot(snapshotTime, "86900.00")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketCandidateLevelZoneSnapshotRejectsDuplicateSymbolIntervalSnapshotZoneTypeAndRank() {
+        Instant snapshotTime = Instant.parse("2026-03-10T00:59:59Z");
+
+        marketCandidateLevelZoneSnapshotRepository.saveAndFlush(candidateLevelZoneSnapshot(snapshotTime, 1, "86500.00"));
+
+        assertThatThrownBy(() -> marketCandidateLevelZoneSnapshotRepository.saveAndFlush(
+                candidateLevelZoneSnapshot(snapshotTime, 1, "86700.00")
         )).isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -295,5 +310,32 @@ class RawTableConstraintTest {
                                                  .triggerFactsPayload("[\"Current price 87500 vs MA20 87000\"]")
                                                  .sourceDataVersion("basis-key;levelType=SUPPORT;levelLabel=MA20")
                                                  .build();
+    }
+
+    private MarketCandidateLevelZoneSnapshotEntity candidateLevelZoneSnapshot(
+            Instant snapshotTime,
+            Integer zoneRank,
+            String representativePrice
+    ) {
+        return MarketCandidateLevelZoneSnapshotEntity.builder()
+                                                     .symbol("BTCUSDT")
+                                                     .intervalValue("1h")
+                                                     .snapshotTime(snapshotTime)
+                                                     .zoneType(MarketCandidateLevelType.SUPPORT.name())
+                                                     .zoneRank(zoneRank)
+                                                     .currentPrice(new BigDecimal("87500.00"))
+                                                     .representativePrice(new BigDecimal(representativePrice))
+                                                     .zoneLow(new BigDecimal("86000.00"))
+                                                     .zoneHigh(new BigDecimal("87000.00"))
+                                                     .distanceFromCurrent(new BigDecimal("0.01142857"))
+                                                     .zoneStrengthScore(new BigDecimal("0.84428571"))
+                                                     .strongestLevelLabel(MarketCandidateLevelLabel.MA20.name())
+                                                     .strongestSourceType(MarketCandidateLevelSourceType.MOVING_AVERAGE.name())
+                                                     .levelCount(2)
+                                                     .includedLevelLabelsPayload("[\"MA20\",\"PIVOT_LOW\"]")
+                                                     .includedSourceTypesPayload("[\"MOVING_AVERAGE\",\"PIVOT_LEVEL\"]")
+                                                     .triggerFactsPayload("[\"SUPPORT zone spans 86000 to 87000 with 2 candidate levels.\"]")
+                                                     .sourceDataVersion("basis-key;zoneType=SUPPORT;zoneRank=1")
+                                                     .build();
     }
 }
