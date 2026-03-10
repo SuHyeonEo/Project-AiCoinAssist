@@ -3,6 +3,9 @@ package com.aicoinassist.batch.domain.report.service;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
+import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
+import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
@@ -33,6 +36,11 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         MarketContextSnapshotEntity contextSnapshot = marketContextSnapshotEntity();
         MarketLevelContextSnapshotEntity levelContextSnapshot = levelContextSnapshotEntity();
         AnalysisReportEntity savedEntity = savedReportEntity(snapshot);
+        AnalysisDerivativeContext derivativeContext = generationDerivativeContextInput();
+        java.util.List<AnalysisPriceLevel> supportLevels = supportLevels();
+        java.util.List<AnalysisPriceLevel> resistanceLevels = resistanceLevels();
+        java.util.List<AnalysisPriceZone> supportZones = supportZones();
+        java.util.List<AnalysisPriceZone> resistanceZones = resistanceZones();
 
         when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueOrderBySnapshotTimeDescIdDesc("BTCUSDT", "4h"))
                 .thenReturn(Optional.of(snapshot));
@@ -40,7 +48,7 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 .thenReturn(midTermContinuityNotes());
         when(marketContextSnapshotPersistenceService.createAndSave("BTCUSDT")).thenReturn(contextSnapshot);
         when(analysisDerivativeComparisonService.buildFacts(contextSnapshot, AnalysisReportType.MID_TERM))
-                .thenReturn(generationDerivativeContextInput().comparisonFacts());
+                .thenReturn(derivativeContext.comparisonFacts());
         when(marketContextWindowSummarySnapshotPersistenceService.createAndSaveForReportType(contextSnapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(derivativeWindowSummaryEntities());
         when(marketWindowSummarySnapshotPersistenceService.createAndSaveForReportType(snapshot, AnalysisReportType.MID_TERM))
@@ -53,12 +61,26 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         when(analysisComparisonService.buildFacts(snapshot, AnalysisReportType.MID_TERM)).thenReturn(generationComparisonFacts());
         when(analysisLevelContextComparisonService.buildFacts(levelContextSnapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(payload.marketContext().levelContext().comparisonFacts());
+        when(analysisReportMarketDataMapper.toDerivativeWindowSummary(any())).thenReturn(derivativeContext.windowSummaries().get(0));
+        when(analysisReportMarketDataMapper.toDerivativeContext(contextSnapshot, derivativeContext.comparisonFacts(), derivativeContext.windowSummaries()))
+                .thenReturn(derivativeContext);
+        when(analysisReportMarketDataMapper.toWindowSummary(any())).thenReturn(payload.windowSummaries().get(0));
+        when(analysisReportMarketDataMapper.toCandidateLevels(anyList(), eq("SUPPORT"), any())).thenReturn(supportLevels);
+        when(analysisReportMarketDataMapper.toCandidateLevels(anyList(), eq("RESISTANCE"), any())).thenReturn(resistanceLevels);
+        when(analysisReportMarketDataMapper.toCandidateZones(anyList(), eq("SUPPORT"))).thenReturn(supportZones);
+        when(analysisReportMarketDataMapper.toCandidateZones(anyList(), eq("RESISTANCE"))).thenReturn(resistanceZones);
+        when(analysisReportMarketDataMapper.toLevelContext(
+                levelContextSnapshot,
+                supportZones,
+                resistanceZones,
+                payload.marketContext().levelContext().comparisonFacts()
+        )).thenReturn(payload.marketContext().levelContext());
         when(analysisReportAssembler.assemble(
                 eq(snapshot),
                 eq(AnalysisReportType.MID_TERM),
                 eq(generationComparisonFacts()),
                 eq(payload.windowSummaries()),
-                eq(generationDerivativeContextInput()),
+                eq(derivativeContext),
                 eq(midTermContinuityNotes()),
                 any(),
                 anyList(),

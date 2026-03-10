@@ -106,6 +106,9 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
     @Mock
     protected AnalysisReportPersistenceService analysisReportPersistenceService;
 
+    @Mock
+    protected AnalysisReportMarketDataMapper analysisReportMarketDataMapper;
+
     protected AnalysisReportGenerationService createService() {
         return new AnalysisReportGenerationService(
                 marketIndicatorSnapshotRepository,
@@ -121,7 +124,7 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                 analysisReportContinuityService,
                 analysisReportAssembler,
                 analysisReportPersistenceService,
-                new ObjectMapper()
+                analysisReportMarketDataMapper
         );
     }
 
