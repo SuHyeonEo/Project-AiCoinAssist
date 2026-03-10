@@ -83,7 +83,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class AnalysisReportGenerationServiceTest {
+class AnalysisReportGenerationServiceTest extends AnalysisReportServiceFixtures {
 
     @Mock
     private MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
@@ -632,98 +632,4 @@ class AnalysisReportGenerationServiceTest {
           .hasMessageContaining("interval=1d");
     }
 
-    private MarketIndicatorSnapshotEntity snapshot(String intervalValue) {
-        return MarketIndicatorSnapshotEntity.builder()
-                                            .symbol("BTCUSDT")
-                                            .intervalValue(intervalValue)
-                                            .snapshotTime(Instant.parse("2026-03-09T00:59:59Z"))
-                                            .latestCandleOpenTime(Instant.parse("2026-03-08T23:59:59Z"))
-                                            .priceSourceEventTime(Instant.parse("2026-03-09T00:59:30Z"))
-                                            .sourceDataVersion("basis-key")
-                                            .currentPrice(new BigDecimal("87500"))
-                                            .ma20(new BigDecimal("87000"))
-                                            .ma60(new BigDecimal("86000"))
-                                            .ma120(new BigDecimal("85000"))
-                                            .rsi14(new BigDecimal("62"))
-                                            .macdLine(new BigDecimal("120"))
-                                            .macdSignalLine(new BigDecimal("100"))
-                                            .macdHistogram(new BigDecimal("20"))
-                                            .atr14(new BigDecimal("1500"))
-                                            .bollingerUpperBand(new BigDecimal("88500"))
-                                            .bollingerMiddleBand(new BigDecimal("87000"))
-                                            .bollingerLowerBand(new BigDecimal("85500"))
-                                            .build();
-    }
-
-    private MarketCandidateLevelSnapshotEntity candidateLevelEntity(
-            String levelType,
-            String levelLabel,
-            String sourceType,
-            String levelPrice,
-            String distanceFromCurrent,
-            String strengthScore,
-            String rationale,
-            String triggerFactsPayload
-    ) {
-        return MarketCandidateLevelSnapshotEntity.builder()
-                                                 .symbol("BTCUSDT")
-                                                 .intervalValue("4h")
-                                                 .snapshotTime(Instant.parse("2026-03-09T00:59:59Z"))
-                                                 .referenceTime(Instant.parse("2026-03-09T00:59:59Z"))
-                                                 .levelType(levelType)
-                                                 .levelLabel(levelLabel)
-                                                 .sourceType(sourceType)
-                                                 .currentPrice(new BigDecimal("87500"))
-                                                 .levelPrice(new BigDecimal(levelPrice))
-                                                 .distanceFromCurrent(new BigDecimal(distanceFromCurrent))
-                                                 .strengthScore(new BigDecimal(strengthScore))
-                                                 .reactionCount(2)
-                                                 .clusterSize(1)
-                                                 .rationale(rationale)
-                                                 .triggerFactsPayload(triggerFactsPayload)
-                                                 .sourceDataVersion("basis-key;" + levelType + ";" + levelLabel)
-                                                 .build();
-    }
-
-    private MarketCandidateLevelZoneSnapshotEntity candidateLevelZoneEntity(
-            String zoneType,
-            Integer zoneRank,
-            String representativePrice,
-            String zoneLow,
-            String zoneHigh,
-            String distanceFromCurrent,
-            String distanceToZone,
-            String zoneStrengthScore,
-            String interactionType,
-            String strongestLevelLabel,
-            String strongestSourceType,
-            String includedLevelLabelsPayload,
-            String includedSourceTypesPayload
-    ) {
-        return MarketCandidateLevelZoneSnapshotEntity.builder()
-                                                     .symbol("BTCUSDT")
-                                                     .intervalValue("4h")
-                                                     .snapshotTime(Instant.parse("2026-03-09T00:59:59Z"))
-                                                     .zoneType(zoneType)
-                                                     .zoneRank(zoneRank)
-                                                     .currentPrice(new BigDecimal("87500"))
-                                                     .representativePrice(new BigDecimal(representativePrice))
-                                                     .zoneLow(new BigDecimal(zoneLow))
-                                                     .zoneHigh(new BigDecimal(zoneHigh))
-                                                     .distanceFromCurrent(new BigDecimal(distanceFromCurrent))
-                                                     .distanceToZone(new BigDecimal(distanceToZone))
-                                                     .zoneStrengthScore(new BigDecimal(zoneStrengthScore))
-                                                     .interactionType(interactionType)
-                                                     .strongestLevelLabel(strongestLevelLabel)
-                                                     .strongestSourceType(strongestSourceType)
-                                                     .levelCount(2)
-                                                     .recentTestCount(4)
-                                                     .recentRejectionCount(3)
-                                                     .recentBreakCount(1)
-                                                     .includedLevelLabelsPayload(includedLevelLabelsPayload)
-                                                     .includedSourceTypesPayload(includedSourceTypesPayload)
-                                                     .triggerFactsPayload("[\"" + zoneType + " zone spans " + zoneLow + " to " + zoneHigh + " with 2 candidate levels.\"]")
-                                                     .sourceDataVersion("basis-key;" + zoneType + ";rank=" + zoneRank)
-                                                     .build();
-    }
 }
