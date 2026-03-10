@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class AnalysisReportContinuityServiceTest {
+class AnalysisReportContinuityServiceTest extends AnalysisReportPayloadTestFixtures {
 
     @Mock
     private AnalysisReportRepository analysisReportRepository;
@@ -40,18 +40,15 @@ class AnalysisReportContinuityServiceTest {
                 "BTCUSDT",
                 AnalysisReportType.MID_TERM,
                 Instant.parse("2026-03-09T00:59:59Z")
-        )).thenReturn(Optional.of(
-                AnalysisReportEntity.builder()
-                                    .symbol("BTCUSDT")
-                                    .reportType(AnalysisReportType.MID_TERM)
-                                    .analysisBasisTime(Instant.parse("2026-03-01T20:59:59Z"))
-                                    .rawReferenceTime(Instant.parse("2026-03-01T20:59:30Z"))
-                                    .sourceDataVersion("basis-key")
-                                    .analysisEngineVersion("report-assembler-v1")
-                                    .reportPayload("{\"summary\":{\"headline\":\"MID_TERM view\",\"keyMessage\":\"Previous mid-term report emphasized structure holding above weekly support.\"}}")
-                                    .storedTime(Instant.parse("2026-03-01T21:00:30Z"))
-                                    .build()
-        ));
+        )).thenReturn(Optional.of(reportEntity(
+                AnalysisReportType.MID_TERM,
+                Instant.parse("2026-03-01T20:59:59Z"),
+                Instant.parse("2026-03-01T20:59:30Z"),
+                "basis-key",
+                "report-assembler-v1",
+                structuredSummaryPayloadJson("MID_TERM view", "Previous mid-term report emphasized structure holding above weekly support."),
+                Instant.parse("2026-03-01T21:00:30Z")
+        )));
 
         List<AnalysisContinuityNote> notes = service.buildNotes(
                 "BTCUSDT",
@@ -77,18 +74,15 @@ class AnalysisReportContinuityServiceTest {
                 "BTCUSDT",
                 AnalysisReportType.LONG_TERM,
                 Instant.parse("2026-03-09T00:59:59Z")
-        )).thenReturn(Optional.of(
-                AnalysisReportEntity.builder()
-                                    .symbol("BTCUSDT")
-                                    .reportType(AnalysisReportType.LONG_TERM)
-                                    .analysisBasisTime(Instant.parse("2025-12-31T23:59:59Z"))
-                                    .rawReferenceTime(Instant.parse("2025-12-31T23:59:30Z"))
-                                    .sourceDataVersion("basis-key")
-                                    .analysisEngineVersion("report-assembler-v1")
-                                    .reportPayload("{broken-json")
-                                    .storedTime(Instant.parse("2026-01-01T00:00:30Z"))
-                                    .build()
-        ));
+        )).thenReturn(Optional.of(reportEntity(
+                AnalysisReportType.LONG_TERM,
+                Instant.parse("2025-12-31T23:59:59Z"),
+                Instant.parse("2025-12-31T23:59:30Z"),
+                "basis-key",
+                "report-assembler-v1",
+                "{broken-json",
+                Instant.parse("2026-01-01T00:00:30Z")
+        )));
 
         List<AnalysisContinuityNote> notes = service.buildNotes(
                 "BTCUSDT",
