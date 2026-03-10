@@ -3,9 +3,9 @@ spring:
     name: batch
 
   datasource:
-    url: jdbc:mysql://localhost:3306/coin_analysis?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: root
-    password: 1234
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:coin_analysis}?serverTimezone=${DB_TIMEZONE:Asia/Seoul}&characterEncoding=${DB_CHARACTER_ENCODING:UTF-8}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
