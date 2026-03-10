@@ -49,6 +49,8 @@ batch:
       enabled: true
 
 external:
+  alternative-me:
+    base-url: https://api.alternative.me
   binance:
     base-url: https://api.binance.com
     futures-base-url: https://fapi.binance.com

@@ -47,3 +47,7 @@ batch:
 logging:
   level:
     root: warn
+
+external:
+  alternative-me:
+    base-url: https://api.alternative.me
