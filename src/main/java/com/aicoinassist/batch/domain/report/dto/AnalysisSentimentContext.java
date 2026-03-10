@@ -12,6 +12,7 @@ public record AnalysisSentimentContext(
         String classification,
         Long timeUntilUpdateSeconds,
         List<AnalysisSentimentComparisonFact> comparisonFacts,
+        List<AnalysisSentimentWindowSummary> windowSummaries,
         List<AnalysisSentimentHighlight> highlights
 ) {
 }

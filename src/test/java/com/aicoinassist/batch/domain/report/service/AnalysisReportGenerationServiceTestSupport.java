@@ -9,6 +9,8 @@ import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEnt
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.macro.entity.MacroContextSnapshotEntity;
+import com.aicoinassist.batch.domain.macro.entity.MacroContextWindowSummarySnapshotEntity;
+import com.aicoinassist.batch.domain.macro.service.MacroContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.macro.service.MacroContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
 import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelSnapshotPersistenceService;
@@ -17,10 +19,14 @@ import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersist
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketLevelContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
+import com.aicoinassist.batch.domain.onchain.entity.OnchainWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.sentiment.entity.SentimentSnapshotEntity;
+import com.aicoinassist.batch.domain.sentiment.entity.SentimentWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.sentiment.service.SentimentSnapshotPersistenceService;
+import com.aicoinassist.batch.domain.sentiment.service.SentimentWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.onchain.entity.OnchainFactSnapshotEntity;
 import com.aicoinassist.batch.domain.onchain.service.OnchainFactSnapshotPersistenceService;
+import com.aicoinassist.batch.domain.onchain.service.OnchainWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFactSummaryPayload;
@@ -40,12 +46,14 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
@@ -54,6 +62,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisZoneInteractionFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryKeyMessagePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSummaryPayload;
@@ -118,10 +127,19 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
     protected MacroContextSnapshotPersistenceService macroContextSnapshotPersistenceService;
 
     @Mock
+    protected MacroContextWindowSummarySnapshotPersistenceService macroContextWindowSummarySnapshotPersistenceService;
+
+    @Mock
     protected SentimentSnapshotPersistenceService sentimentSnapshotPersistenceService;
 
     @Mock
+    protected SentimentWindowSummarySnapshotPersistenceService sentimentWindowSummarySnapshotPersistenceService;
+
+    @Mock
     protected OnchainFactSnapshotPersistenceService onchainFactSnapshotPersistenceService;
+
+    @Mock
+    protected OnchainWindowSummarySnapshotPersistenceService onchainWindowSummarySnapshotPersistenceService;
 
     @Mock
     protected AnalysisReportContinuityService analysisReportContinuityService;
@@ -157,8 +175,11 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                 marketContextWindowSummarySnapshotPersistenceService,
                 marketWindowSummarySnapshotPersistenceService,
                 macroContextSnapshotPersistenceService,
+                macroContextWindowSummarySnapshotPersistenceService,
                 sentimentSnapshotPersistenceService,
+                sentimentWindowSummarySnapshotPersistenceService,
                 onchainFactSnapshotPersistenceService,
+                onchainWindowSummarySnapshotPersistenceService,
                 analysisComparisonService,
                 analysisLevelContextComparisonService,
                 analysisDerivativeComparisonService,
@@ -304,12 +325,14 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                         new AnalysisMacroContextSummaryPayload(
                                 "DXY proxy 119.8421, US10Y 4.12, USD/KRW 1453.22.",
                                 "D30 keeps DXY +1.50%, US10Y +4.04%, USD/KRW +2.34%.",
+                                "LAST_30D keeps DXY +0.71%, US10Y +3.00%, USD/KRW +1.62% versus average.",
                                 List.of("Dollar strength regime", "Yield pressure regime")
                         ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.MACRO, "Dollar strength regime", "detail", AnalysisContextHeadlineImportance.HIGH),
                         new AnalysisSentimentContextSummaryPayload(
                                 "Fear & Greed 72 (Greed).",
                                 "Greed regime remains elevated versus recent references.",
+                                "LAST_7D keeps Fear & Greed +18.03% versus average, greed samples 5/7.",
                                 List.of("Greed regime", "PREV_BATCH sentiment shift"),
                                 1L
                         ),
@@ -317,6 +340,7 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                         new AnalysisOnchainContextSummaryPayload(
                                 "Active addresses 1050000, transactions 525000, market cap 1700000000000.",
                                 "D7 keeps active addresses +10%, transactions +9.38%, market cap +1.79%.",
+                                "LAST_30D keeps active addresses +7.14%, transactions +5.00%, market cap +3.03% versus average.",
                                 List.of("D7 keeps active addresses +10%, transactions +9.38%, market cap +1.79%.")
                         ),
                         new AnalysisContextHeadlinePayload(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion", "detail", AnalysisContextHeadlineImportance.MEDIUM),
@@ -383,6 +407,7 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                         generationMacroContextSnapshot().getUs10yYieldValue(),
                         generationMacroContextSnapshot().getUsdKrwValue(),
                         macroComparisonFacts(),
+                        macroWindowSummaries(),
                         List.of(
                                 new AnalysisMacroHighlight(
                                         "Dollar strength regime",
@@ -400,6 +425,7 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                         generationSentimentSnapshot().getClassification(),
                         generationSentimentSnapshot().getTimeUntilUpdateSeconds(),
                         sentimentComparisonFacts(),
+                        sentimentWindowSummaries(),
                         List.of(
                                 new AnalysisSentimentHighlight(
                                         "Greed regime",
@@ -419,6 +445,7 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                         generationOnchainSnapshot().getTransactionCount(),
                         generationOnchainSnapshot().getMarketCapUsd(),
                         onchainComparisonFacts(),
+                        onchainWindowSummaries(),
                         List.of(
                                 new AnalysisOnchainHighlight(
                                         "D7 activity expansion",
@@ -466,6 +493,29 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                         .build();
     }
 
+    protected List<OnchainWindowSummarySnapshotEntity> generationOnchainWindowSummaryEntities() {
+        return List.of(
+                OnchainWindowSummarySnapshotEntity.builder()
+                                                 .symbol("BTCUSDT")
+                                                 .assetCode("btc")
+                                                 .windowType(MarketWindowType.LAST_30D.name())
+                                                 .windowStartTime(Instant.parse("2026-02-07T00:00:00Z"))
+                                                 .windowEndTime(Instant.parse("2026-03-09T00:00:00Z"))
+                                                 .sampleCount(30)
+                                                 .currentActiveAddressCount(new BigDecimal("1050000.00000000"))
+                                                 .averageActiveAddressCount(new BigDecimal("980000.00000000"))
+                                                 .currentActiveAddressVsAverage(new BigDecimal("0.07142857"))
+                                                 .currentTransactionCount(new BigDecimal("525000.00000000"))
+                                                 .averageTransactionCount(new BigDecimal("500000.00000000"))
+                                                 .currentTransactionCountVsAverage(new BigDecimal("0.05000000"))
+                                                 .currentMarketCapUsd(new BigDecimal("1700000000000.00000000"))
+                                                 .averageMarketCapUsd(new BigDecimal("1650000000000.00000000"))
+                                                 .currentMarketCapVsAverage(new BigDecimal("0.03030303"))
+                                                 .sourceDataVersion("symbol=BTCUSDT;windowType=LAST_30D;windowEndTime=2026-03-09T00:00:00Z")
+                                                 .build()
+        );
+    }
+
     protected List<AnalysisOnchainComparisonFact> onchainComparisonFacts() {
         return List.of(
                 new AnalysisOnchainComparisonFact(
@@ -491,6 +541,23 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
         );
     }
 
+    protected List<AnalysisOnchainWindowSummary> onchainWindowSummaries() {
+        return generationOnchainWindowSummaryEntities().stream()
+                                                       .map(entity -> new AnalysisOnchainWindowSummary(
+                                                               MarketWindowType.valueOf(entity.getWindowType()),
+                                                               entity.getWindowStartTime(),
+                                                               entity.getWindowEndTime(),
+                                                               entity.getSampleCount(),
+                                                               entity.getAverageActiveAddressCount(),
+                                                               entity.getCurrentActiveAddressVsAverage(),
+                                                               entity.getAverageTransactionCount(),
+                                                               entity.getCurrentTransactionCountVsAverage(),
+                                                               entity.getAverageMarketCapUsd(),
+                                                               entity.getCurrentMarketCapVsAverage()
+                                                       ))
+                                                       .toList();
+    }
+
     protected SentimentSnapshotEntity generationSentimentSnapshot() {
         return SentimentSnapshotEntity.builder()
                                       .metricType(com.aicoinassist.batch.domain.sentiment.enumtype.SentimentMetricType.FEAR_GREED_INDEX)
@@ -508,6 +575,25 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                       .build();
     }
 
+    protected List<SentimentWindowSummarySnapshotEntity> generationSentimentWindowSummaryEntities() {
+        return List.of(
+                SentimentWindowSummarySnapshotEntity.builder()
+                                                   .metricType(com.aicoinassist.batch.domain.sentiment.enumtype.SentimentMetricType.FEAR_GREED_INDEX)
+                                                   .windowType(MarketWindowType.LAST_7D.name())
+                                                   .windowStartTime(Instant.parse("2026-03-02T00:00:00Z"))
+                                                   .windowEndTime(Instant.parse("2026-03-09T00:00:00Z"))
+                                                   .sampleCount(7)
+                                                   .currentIndexValue(new BigDecimal("72.00000000"))
+                                                   .averageIndexValue(new BigDecimal("61.00000000"))
+                                                   .currentIndexVsAverage(new BigDecimal("0.18032787"))
+                                                   .currentClassification("Greed")
+                                                   .greedSampleCount(5)
+                                                   .fearSampleCount(0)
+                                                   .sourceDataVersion("metricType=FEAR_GREED_INDEX;windowType=LAST_7D;windowEndTime=2026-03-09T00:00:00Z")
+                                                   .build()
+        );
+    }
+
     protected MacroContextSnapshotEntity generationMacroContextSnapshot() {
         return MacroContextSnapshotEntity.builder()
                                          .snapshotTime(Instant.parse("2026-03-09T00:00:00Z"))
@@ -519,6 +605,27 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                          .us10yYieldValue(new BigDecimal("4.12000000"))
                                          .usdKrwValue(new BigDecimal("1453.22000000"))
                                          .build();
+    }
+
+    protected List<MacroContextWindowSummarySnapshotEntity> generationMacroWindowSummaryEntities() {
+        return List.of(
+                MacroContextWindowSummarySnapshotEntity.builder()
+                                                      .windowType(MarketWindowType.LAST_30D.name())
+                                                      .windowStartTime(Instant.parse("2026-02-07T00:00:00Z"))
+                                                      .windowEndTime(Instant.parse("2026-03-09T00:00:00Z"))
+                                                      .sampleCount(30)
+                                                      .currentDxyProxyValue(new BigDecimal("119.84210000"))
+                                                      .averageDxyProxyValue(new BigDecimal("119.00000000"))
+                                                      .currentDxyProxyVsAverage(new BigDecimal("0.00707647"))
+                                                      .currentUs10yYieldValue(new BigDecimal("4.12000000"))
+                                                      .averageUs10yYieldValue(new BigDecimal("4.00000000"))
+                                                      .currentUs10yYieldVsAverage(new BigDecimal("0.03000000"))
+                                                      .currentUsdKrwValue(new BigDecimal("1453.22000000"))
+                                                      .averageUsdKrwValue(new BigDecimal("1430.00000000"))
+                                                      .currentUsdKrwVsAverage(new BigDecimal("0.01623776"))
+                                                      .sourceDataVersion("windowType=LAST_30D;windowEndTime=2026-03-09T00:00:00Z")
+                                                      .build()
+        );
     }
 
     protected List<AnalysisMacroComparisonFact> macroComparisonFacts() {
@@ -537,6 +644,38 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                         new BigDecimal("0.02339437")
                 )
         );
+    }
+
+    protected List<AnalysisMacroWindowSummary> macroWindowSummaries() {
+        return generationMacroWindowSummaryEntities().stream()
+                                                     .map(entity -> new AnalysisMacroWindowSummary(
+                                                             MarketWindowType.valueOf(entity.getWindowType()),
+                                                             entity.getWindowStartTime(),
+                                                             entity.getWindowEndTime(),
+                                                             entity.getSampleCount(),
+                                                             entity.getAverageDxyProxyValue(),
+                                                             entity.getCurrentDxyProxyVsAverage(),
+                                                             entity.getAverageUs10yYieldValue(),
+                                                             entity.getCurrentUs10yYieldVsAverage(),
+                                                             entity.getAverageUsdKrwValue(),
+                                                             entity.getCurrentUsdKrwVsAverage()
+                                                     ))
+                                                     .toList();
+    }
+
+    protected List<AnalysisSentimentWindowSummary> sentimentWindowSummaries() {
+        return generationSentimentWindowSummaryEntities().stream()
+                                                         .map(entity -> new AnalysisSentimentWindowSummary(
+                                                                 MarketWindowType.valueOf(entity.getWindowType()),
+                                                                 entity.getWindowStartTime(),
+                                                                 entity.getWindowEndTime(),
+                                                                 entity.getSampleCount(),
+                                                                 entity.getAverageIndexValue(),
+                                                                 entity.getCurrentIndexVsAverage(),
+                                                                 entity.getGreedSampleCount(),
+                                                                 entity.getFearSampleCount()
+                                                         ))
+                                                         .toList();
     }
 
     protected MarketContextSnapshotEntity marketContextSnapshotEntity() {

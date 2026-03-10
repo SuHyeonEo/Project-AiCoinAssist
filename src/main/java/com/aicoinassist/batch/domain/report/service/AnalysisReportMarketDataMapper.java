@@ -7,14 +7,19 @@ import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySna
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.macro.entity.MacroContextSnapshotEntity;
+import com.aicoinassist.batch.domain.macro.entity.MacroContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.onchain.entity.OnchainFactSnapshotEntity;
+import com.aicoinassist.batch.domain.onchain.entity.OnchainWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
@@ -29,6 +34,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceLevelSourceTyp
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneInteractionType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisPriceZoneType;
 import com.aicoinassist.batch.domain.sentiment.entity.SentimentSnapshotEntity;
+import com.aicoinassist.batch.domain.sentiment.entity.SentimentWindowSummarySnapshotEntity;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -104,7 +110,8 @@ public class AnalysisReportMarketDataMapper {
 
     public AnalysisSentimentContext toSentimentContext(
             SentimentSnapshotEntity entity,
-            List<AnalysisSentimentComparisonFact> comparisonFacts
+            List<AnalysisSentimentComparisonFact> comparisonFacts,
+            List<AnalysisSentimentWindowSummary> windowSummaries
     ) {
         return new AnalysisSentimentContext(
                 entity.getSnapshotTime(),
@@ -114,13 +121,15 @@ public class AnalysisReportMarketDataMapper {
                 entity.getClassification(),
                 entity.getTimeUntilUpdateSeconds(),
                 comparisonFacts,
+                windowSummaries,
                 List.of()
         );
     }
 
     public AnalysisOnchainContext toOnchainContext(
             OnchainFactSnapshotEntity entity,
-            List<AnalysisOnchainComparisonFact> comparisonFacts
+            List<AnalysisOnchainComparisonFact> comparisonFacts,
+            List<AnalysisOnchainWindowSummary> windowSummaries
     ) {
         return new AnalysisOnchainContext(
                 entity.getSnapshotTime(),
@@ -132,13 +141,15 @@ public class AnalysisReportMarketDataMapper {
                 entity.getTransactionCount(),
                 entity.getMarketCapUsd(),
                 comparisonFacts,
+                windowSummaries,
                 List.of()
         );
     }
 
     public AnalysisMacroContext toMacroContext(
             MacroContextSnapshotEntity entity,
-            List<AnalysisMacroComparisonFact> comparisonFacts
+            List<AnalysisMacroComparisonFact> comparisonFacts,
+            List<AnalysisMacroWindowSummary> windowSummaries
     ) {
         return new AnalysisMacroContext(
                 entity.getSnapshotTime(),
@@ -150,7 +161,51 @@ public class AnalysisReportMarketDataMapper {
                 entity.getUs10yYieldValue(),
                 entity.getUsdKrwValue(),
                 comparisonFacts,
+                windowSummaries,
                 List.of()
+        );
+    }
+
+    public AnalysisSentimentWindowSummary toSentimentWindowSummary(SentimentWindowSummarySnapshotEntity entity) {
+        return new AnalysisSentimentWindowSummary(
+                MarketWindowType.valueOf(entity.getWindowType()),
+                entity.getWindowStartTime(),
+                entity.getWindowEndTime(),
+                entity.getSampleCount(),
+                entity.getAverageIndexValue(),
+                entity.getCurrentIndexVsAverage(),
+                entity.getGreedSampleCount(),
+                entity.getFearSampleCount()
+        );
+    }
+
+    public AnalysisMacroWindowSummary toMacroWindowSummary(MacroContextWindowSummarySnapshotEntity entity) {
+        return new AnalysisMacroWindowSummary(
+                MarketWindowType.valueOf(entity.getWindowType()),
+                entity.getWindowStartTime(),
+                entity.getWindowEndTime(),
+                entity.getSampleCount(),
+                entity.getAverageDxyProxyValue(),
+                entity.getCurrentDxyProxyVsAverage(),
+                entity.getAverageUs10yYieldValue(),
+                entity.getCurrentUs10yYieldVsAverage(),
+                entity.getAverageUsdKrwValue(),
+                entity.getCurrentUsdKrwVsAverage()
+        );
+    }
+
+    public AnalysisOnchainWindowSummary toOnchainWindowSummary(OnchainWindowSummarySnapshotEntity entity) {
+        return new AnalysisOnchainWindowSummary(
+                MarketWindowType.valueOf(entity.getWindowType()),
+                entity.getWindowStartTime(),
+                entity.getWindowEndTime(),
+                entity.getSampleCount(),
+                entity.getAverageActiveAddressCount(),
+                entity.getCurrentActiveAddressVsAverage(),
+                entity.getAverageTransactionCount(),
+                entity.getCurrentTransactionCountVsAverage(),
+                entity.getAverageMarketCapUsd(),
+                entity.getCurrentMarketCapVsAverage()
         );
     }
 

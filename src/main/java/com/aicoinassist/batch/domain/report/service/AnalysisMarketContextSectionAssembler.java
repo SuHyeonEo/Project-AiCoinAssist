@@ -18,15 +18,18 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowHighlight;
@@ -189,6 +192,7 @@ class AnalysisMarketContextSectionAssembler {
             AnalysisMacroHighlight primaryHighlight = macroContext.highlights() == null || macroContext.highlights().isEmpty()
                     ? null
                     : macroContext.highlights().get(0);
+            AnalysisMacroWindowSummary primaryWindowSummary = macroContextSupport.primaryWindowSummary(reportType, macroContext);
             macroContextSummary = new AnalysisMacroContextSummaryPayload(
                     "DXY proxy "
                             + macroContext.dxyProxyValue().stripTrailingZeros().toPlainString()
@@ -198,6 +202,16 @@ class AnalysisMarketContextSectionAssembler {
                             + macroContext.usdKrwValue().stripTrailingZeros().toPlainString()
                             + ".",
                     primaryHighlight == null ? null : primaryHighlight.summary(),
+                    primaryWindowSummary == null
+                            ? null
+                            : primaryWindowSummary.windowType().name()
+                                    + " keeps DXY "
+                                    + formattingSupport.signedRatio(primaryWindowSummary.currentDxyProxyVsAverage())
+                                    + ", US10Y "
+                                    + formattingSupport.signedRatio(primaryWindowSummary.currentUs10yYieldVsAverage())
+                                    + ", USD/KRW "
+                                    + formattingSupport.signedRatio(primaryWindowSummary.currentUsdKrwVsAverage())
+                                    + " versus average.",
                     macroContext.highlights() == null
                             ? List.of()
                             : macroContext.highlights().stream()
@@ -210,6 +224,7 @@ class AnalysisMarketContextSectionAssembler {
             AnalysisSentimentHighlight primaryHighlight = sentimentContext.highlights() == null || sentimentContext.highlights().isEmpty()
                     ? null
                     : sentimentContext.highlights().get(0);
+            AnalysisSentimentWindowSummary primaryWindowSummary = sentimentContextSupport.primaryWindowSummary(reportType, sentimentContext);
             sentimentContextSummary = new AnalysisSentimentContextSummaryPayload(
                     "Fear & Greed "
                             + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
@@ -217,6 +232,16 @@ class AnalysisMarketContextSectionAssembler {
                             + sentimentContext.classification()
                             + ").",
                     primaryHighlight == null ? null : primaryHighlight.summary(),
+                    primaryWindowSummary == null
+                            ? null
+                            : primaryWindowSummary.windowType().name()
+                                    + " keeps Fear & Greed "
+                                    + formattingSupport.signedRatio(primaryWindowSummary.currentIndexVsAverage())
+                                    + " versus average, greed samples "
+                                    + primaryWindowSummary.greedSampleCount()
+                                    + "/"
+                                    + primaryWindowSummary.sampleCount()
+                                    + ".",
                     sentimentContext.highlights() == null
                             ? List.of()
                             : sentimentContext.highlights().stream()
@@ -230,6 +255,7 @@ class AnalysisMarketContextSectionAssembler {
             AnalysisOnchainHighlight primaryHighlight = onchainContext.highlights() == null || onchainContext.highlights().isEmpty()
                     ? null
                     : onchainContext.highlights().get(0);
+            AnalysisOnchainWindowSummary primaryWindowSummary = onchainContextSupport.primaryWindowSummary(reportType, onchainContext);
             onchainContextSummary = new AnalysisOnchainContextSummaryPayload(
                     "Active addresses "
                             + onchainContext.activeAddressCount().stripTrailingZeros().toPlainString()
@@ -239,6 +265,16 @@ class AnalysisMarketContextSectionAssembler {
                             + onchainContext.marketCapUsd().stripTrailingZeros().toPlainString()
                             + ".",
                     primaryHighlight == null ? null : primaryHighlight.summary(),
+                    primaryWindowSummary == null
+                            ? null
+                            : primaryWindowSummary.windowType().name()
+                                    + " keeps active addresses "
+                                    + formattingSupport.signedRatio(primaryWindowSummary.currentActiveAddressVsAverage())
+                                    + ", transactions "
+                                    + formattingSupport.signedRatio(primaryWindowSummary.currentTransactionCountVsAverage())
+                                    + ", market cap "
+                                    + formattingSupport.signedRatio(primaryWindowSummary.currentMarketCapVsAverage())
+                                    + " versus average.",
                     onchainContext.highlights() == null
                             ? List.of()
                             : onchainContext.highlights().stream()

@@ -4,6 +4,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisContextHeadlinePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroWindowSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCategory;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
@@ -41,8 +42,50 @@ class AnalysisMacroContextSupport {
                 macroContext.us10yYieldValue(),
                 macroContext.usdKrwValue(),
                 macroContext.comparisonFacts(),
+                macroContext.windowSummaries(),
                 macroHighlights(reportType, macroContext)
         );
+    }
+
+    AnalysisMacroWindowSummary primaryWindowSummary(
+            AnalysisReportType reportType,
+            AnalysisMacroContext macroContext
+    ) {
+        if (macroContext.windowSummaries() == null || macroContext.windowSummaries().isEmpty()) {
+            return null;
+        }
+
+        Map<com.aicoinassist.batch.domain.market.enumtype.MarketWindowType, AnalysisMacroWindowSummary> summaryByType = macroContext.windowSummaries()
+                                                                                                                                   .stream()
+                                                                                                                                   .collect(Collectors.toMap(
+                                                                                                                                           AnalysisMacroWindowSummary::windowType,
+                                                                                                                                           summary -> summary,
+                                                                                                                                           (left, right) -> left
+                                                                                                                                   ));
+
+        List<com.aicoinassist.batch.domain.market.enumtype.MarketWindowType> priority = switch (reportType) {
+            case SHORT_TERM -> List.of(
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_7D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_3D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_1D
+            );
+            case MID_TERM -> List.of(
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_30D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_14D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_7D
+            );
+            case LONG_TERM -> List.of(
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_180D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_90D,
+                    com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_30D
+            );
+        };
+
+        return priority.stream()
+                       .map(summaryByType::get)
+                       .filter(java.util.Objects::nonNull)
+                       .findFirst()
+                       .orElse(macroContext.windowSummaries().get(macroContext.windowSummaries().size() - 1));
     }
 
     AnalysisContextHeadlinePayload macroContextHeadline(
@@ -173,6 +216,34 @@ class AnalysisMacroContextSupport {
                     AnalysisMacroHighlightImportance.MEDIUM,
                     primaryFact.reference()
             ));
+        }
+
+        AnalysisMacroWindowSummary primaryWindowSummary = primaryWindowSummary(reportType, macroContext);
+        if (primaryWindowSummary != null) {
+            if (primaryWindowSummary.currentDxyProxyVsAverage() != null
+                    && primaryWindowSummary.currentDxyProxyVsAverage().compareTo(new java.math.BigDecimal("0.01")) >= 0) {
+                highlights.add(new AnalysisMacroHighlight(
+                        primaryWindowSummary.windowType().name() + " dollar above average",
+                        primaryWindowSummary.windowType().name()
+                                + " keeps DXY proxy "
+                                + formattingSupport.signedRatio(primaryWindowSummary.currentDxyProxyVsAverage())
+                                + " versus its average.",
+                        AnalysisMacroHighlightImportance.MEDIUM,
+                        null
+                ));
+            }
+            if (primaryWindowSummary.currentUs10yYieldVsAverage() != null
+                    && primaryWindowSummary.currentUs10yYieldVsAverage().compareTo(new java.math.BigDecimal("0.03")) >= 0) {
+                highlights.add(new AnalysisMacroHighlight(
+                        primaryWindowSummary.windowType().name() + " yield above average",
+                        primaryWindowSummary.windowType().name()
+                                + " keeps US10Y "
+                                + formattingSupport.signedRatio(primaryWindowSummary.currentUs10yYieldVsAverage())
+                                + " versus its average.",
+                        AnalysisMacroHighlightImportance.MEDIUM,
+                        null
+                ));
+            }
         }
 
         return highlights.stream().limit(2).toList();

@@ -24,12 +24,15 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisZoneInteractionFact;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
@@ -37,9 +40,12 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.macro.entity.MacroContextSnapshotEntity;
 import com.aicoinassist.batch.domain.onchain.entity.OnchainFactSnapshotEntity;
 import com.aicoinassist.batch.domain.onchain.service.OnchainFactSnapshotPersistenceService;
+import com.aicoinassist.batch.domain.onchain.service.OnchainWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.macro.service.MacroContextSnapshotPersistenceService;
+import com.aicoinassist.batch.domain.macro.service.MacroContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.sentiment.entity.SentimentSnapshotEntity;
 import com.aicoinassist.batch.domain.sentiment.service.SentimentSnapshotPersistenceService;
+import com.aicoinassist.batch.domain.sentiment.service.SentimentWindowSummarySnapshotPersistenceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -59,8 +65,11 @@ public class AnalysisReportGenerationService {
     private final MarketContextWindowSummarySnapshotPersistenceService marketContextWindowSummarySnapshotPersistenceService;
     private final MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
     private final MacroContextSnapshotPersistenceService macroContextSnapshotPersistenceService;
+    private final MacroContextWindowSummarySnapshotPersistenceService macroContextWindowSummarySnapshotPersistenceService;
     private final SentimentSnapshotPersistenceService sentimentSnapshotPersistenceService;
+    private final SentimentWindowSummarySnapshotPersistenceService sentimentWindowSummarySnapshotPersistenceService;
     private final OnchainFactSnapshotPersistenceService onchainFactSnapshotPersistenceService;
+    private final OnchainWindowSummarySnapshotPersistenceService onchainWindowSummarySnapshotPersistenceService;
     private final AnalysisComparisonService analysisComparisonService;
     private final AnalysisLevelContextComparisonService analysisLevelContextComparisonService;
     private final AnalysisDerivativeComparisonService analysisDerivativeComparisonService;
@@ -97,19 +106,37 @@ public class AnalysisReportGenerationService {
                 reportType
         );
         MacroContextSnapshotEntity macroContextSnapshot = macroContextSnapshotPersistenceService.createAndSave();
+        List<AnalysisMacroWindowSummary> macroWindowSummaries = macroContextWindowSummarySnapshotPersistenceService
+                .createAndSaveForReportType(macroContextSnapshot, reportType)
+                .stream()
+                .map(analysisReportMarketDataMapper::toMacroWindowSummary)
+                .toList();
         AnalysisMacroContext macroContext = analysisReportMarketDataMapper.toMacroContext(
                 macroContextSnapshot,
-                analysisMacroComparisonService.buildFacts(macroContextSnapshot, reportType)
+                analysisMacroComparisonService.buildFacts(macroContextSnapshot, reportType),
+                macroWindowSummaries
         );
         SentimentSnapshotEntity sentimentSnapshot = sentimentSnapshotPersistenceService.createAndSaveFearGreedSnapshot();
+        List<AnalysisSentimentWindowSummary> sentimentWindowSummaries = sentimentWindowSummarySnapshotPersistenceService
+                .createAndSaveForReportType(sentimentSnapshot, reportType)
+                .stream()
+                .map(analysisReportMarketDataMapper::toSentimentWindowSummary)
+                .toList();
         AnalysisSentimentContext sentimentContext = analysisReportMarketDataMapper.toSentimentContext(
                 sentimentSnapshot,
-                analysisSentimentComparisonService.buildFacts(sentimentSnapshot, reportType)
+                analysisSentimentComparisonService.buildFacts(sentimentSnapshot, reportType),
+                sentimentWindowSummaries
         );
         OnchainFactSnapshotEntity onchainSnapshot = onchainFactSnapshotPersistenceService.createAndSave(symbol);
+        List<AnalysisOnchainWindowSummary> onchainWindowSummaries = onchainWindowSummarySnapshotPersistenceService
+                .createAndSaveForReportType(onchainSnapshot, reportType)
+                .stream()
+                .map(analysisReportMarketDataMapper::toOnchainWindowSummary)
+                .toList();
         AnalysisOnchainContext onchainContext = analysisReportMarketDataMapper.toOnchainContext(
                 onchainSnapshot,
-                analysisOnchainComparisonService.buildFacts(onchainSnapshot, reportType)
+                analysisOnchainComparisonService.buildFacts(onchainSnapshot, reportType),
+                onchainWindowSummaries
         );
         List<AnalysisDerivativeWindowSummary> derivativeWindowSummaries = marketContextWindowSummarySnapshotPersistenceService
                 .createAndSaveForReportType(marketContextSnapshot, reportType)

@@ -12,9 +12,11 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
@@ -22,6 +24,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisZoneInteractionFact;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisComparisonReference;
@@ -261,6 +264,7 @@ abstract class AnalysisReportServiceFixtures {
                 "Greed",
                 3600L,
                 sentimentComparisonFacts(),
+                sentimentWindowSummaries(),
                 List.of()
         );
     }
@@ -276,6 +280,7 @@ abstract class AnalysisReportServiceFixtures {
                 new BigDecimal("4.12000000"),
                 new BigDecimal("1453.22000000"),
                 macroComparisonFacts(),
+                macroWindowSummaries(),
                 List.of(
                         new AnalysisMacroHighlight(
                                 "Dollar strength regime",
@@ -298,6 +303,7 @@ abstract class AnalysisReportServiceFixtures {
                 new BigDecimal("525000.00000000"),
                 new BigDecimal("1700000000000.00000000"),
                 onchainComparisonFacts(),
+                onchainWindowSummaries(),
                 List.of(
                         new AnalysisOnchainHighlight(
                                 "D7 activity expansion",
@@ -416,6 +422,31 @@ abstract class AnalysisReportServiceFixtures {
         );
     }
 
+    protected List<AnalysisSentimentWindowSummary> sentimentWindowSummaries() {
+        return List.of(
+                new AnalysisSentimentWindowSummary(
+                        MarketWindowType.LAST_7D,
+                        Instant.parse("2026-03-02T00:00:00Z"),
+                        Instant.parse("2026-03-09T00:00:00Z"),
+                        7,
+                        new BigDecimal("61.00000000"),
+                        new BigDecimal("0.18032787"),
+                        5,
+                        0
+                ),
+                new AnalysisSentimentWindowSummary(
+                        MarketWindowType.LAST_30D,
+                        Instant.parse("2026-02-07T00:00:00Z"),
+                        Instant.parse("2026-03-09T00:00:00Z"),
+                        30,
+                        new BigDecimal("52.00000000"),
+                        new BigDecimal("0.38461538"),
+                        12,
+                        6
+                )
+        );
+    }
+
     protected List<AnalysisMacroComparisonFact> macroComparisonFacts() {
         return List.of(
                 new AnalysisMacroComparisonFact(
@@ -430,6 +461,23 @@ abstract class AnalysisReportServiceFixtures {
                         new BigDecimal("0.04040404"),
                         new BigDecimal("33.22000000"),
                         new BigDecimal("0.02339437")
+                )
+        );
+    }
+
+    protected List<AnalysisMacroWindowSummary> macroWindowSummaries() {
+        return List.of(
+                new AnalysisMacroWindowSummary(
+                        MarketWindowType.LAST_30D,
+                        Instant.parse("2026-02-07T00:00:00Z"),
+                        Instant.parse("2026-03-09T00:00:00Z"),
+                        30,
+                        new BigDecimal("118.90000000"),
+                        new BigDecimal("0.00708242"),
+                        new BigDecimal("4.00000000"),
+                        new BigDecimal("0.03000000"),
+                        new BigDecimal("1430.00000000"),
+                        new BigDecimal("0.01623776")
                 )
         );
     }
@@ -455,6 +503,23 @@ abstract class AnalysisReportServiceFixtures {
                         new BigDecimal("-0.13934426"),
                         new BigDecimal("1820000000000.00000000"),
                         new BigDecimal("-0.06593407")
+                )
+        );
+    }
+
+    protected List<AnalysisOnchainWindowSummary> onchainWindowSummaries() {
+        return List.of(
+                new AnalysisOnchainWindowSummary(
+                        MarketWindowType.LAST_30D,
+                        Instant.parse("2026-02-07T00:00:00Z"),
+                        Instant.parse("2026-03-09T00:00:00Z"),
+                        30,
+                        new BigDecimal("980000.00000000"),
+                        new BigDecimal("0.07142857"),
+                        new BigDecimal("500000.00000000"),
+                        new BigDecimal("0.05000000"),
+                        new BigDecimal("1650000000000.00000000"),
+                        new BigDecimal("0.03030303")
                 )
         );
     }
