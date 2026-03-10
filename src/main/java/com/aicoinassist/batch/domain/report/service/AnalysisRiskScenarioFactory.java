@@ -274,6 +274,13 @@ class AnalysisRiskScenarioFactory {
                 && externalContextComposite.compositeRiskScore() != null
                 && externalContextComposite.compositeRiskScore().compareTo(new BigDecimal("1.00")) >= 0
                 && externalContextComposite.primarySignalTitle() != null) {
+            String windowSummaryDetail = externalContextComposite.windowSummaries() == null
+                    || externalContextComposite.windowSummaries().isEmpty()
+                    || externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage() == null
+                    ? null
+                    : externalContextComposite.windowSummaries().get(0).windowType().name()
+                    + " composite risk vs average is "
+                    + formattingSupport.signedRatio(externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage()) + ".";
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.EXTERNAL_RISK_CONFLUENCE,
                     "External risk confluence",
@@ -282,7 +289,7 @@ class AnalysisRiskScenarioFactory {
                             + " in focus with risk score "
                             + externalContextComposite.compositeRiskScore().stripTrailingZeros().toPlainString()
                             + ".",
-                    java.util.stream.Stream.concat(
+                    java.util.stream.Stream.of(
                                     java.util.stream.Stream.of(
                                             "Dominant external direction is "
                                                     + (externalContextComposite.dominantDirection() == null
@@ -290,12 +297,16 @@ class AnalysisRiskScenarioFactory {
                                                     : externalContextComposite.dominantDirection().name().toLowerCase().replace('_', ' '))
                                                     + "."
                                     ),
+                                    windowSummaryDetail == null
+                                            ? java.util.stream.Stream.<String>empty()
+                                            : java.util.stream.Stream.of(windowSummaryDetail),
                                     externalContextComposite.highlights() == null
-                                            ? java.util.stream.Stream.empty()
+                                            ? java.util.stream.Stream.<String>empty()
                                             : externalContextComposite.highlights().stream()
                                                                       .limit(2)
                                                                       .map(AnalysisExternalContextHighlight::summary)
                             )
+                            .flatMap(java.util.function.Function.identity())
                             .toList()
             ));
         }
@@ -469,6 +480,16 @@ class AnalysisRiskScenarioFactory {
                                     .map(AnalysisExternalContextHighlight::summary)
                                     .forEach(triggers::add);
         }
+        if (externalContextComposite != null
+                && externalContextComposite.windowSummaries() != null
+                && !externalContextComposite.windowSummaries().isEmpty()
+                && externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage() != null
+                && externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage().compareTo(new BigDecimal("0.15")) >= 0) {
+            triggers.add(externalContextComposite.windowSummaries().get(0).windowType().name()
+                    + " composite external risk stays "
+                    + formattingSupport.signedRatio(externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage())
+                    + " versus average.");
+        }
 
         return triggers;
     }
@@ -506,6 +527,14 @@ class AnalysisRiskScenarioFactory {
 
         if (externalContextComposite != null && externalContextComposite.primarySignalTitle() != null) {
             clauses.add("external regime focus stays on " + externalContextComposite.primarySignalTitle());
+        }
+        if (externalContextComposite != null
+                && externalContextComposite.windowSummaries() != null
+                && !externalContextComposite.windowSummaries().isEmpty()
+                && externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage() != null) {
+            clauses.add("external composite risk remains "
+                    + formattingSupport.signedRatio(externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage())
+                    + " versus its representative average");
         }
 
         return clauses.isEmpty() ? "External context stays mixed." : String.join(", ", clauses) + ".";
@@ -552,6 +581,13 @@ class AnalysisRiskScenarioFactory {
                 && externalContextComposite.compositeRiskScore().compareTo(new BigDecimal("1.00")) >= 0) {
             clauses.add("external regime confluence keeps risk skew elevated");
         }
+        if (externalContextComposite != null
+                && externalContextComposite.windowSummaries() != null
+                && !externalContextComposite.windowSummaries().isEmpty()
+                && externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage() != null
+                && externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage().compareTo(new BigDecimal("0.15")) >= 0) {
+            clauses.add("external composite risk remains above its representative average");
+        }
 
         return clauses.isEmpty() ? "External context does not add a strong risk skew." : String.join(", ", clauses) + ".";
     }
@@ -596,6 +632,9 @@ class AnalysisRiskScenarioFactory {
 
         if (externalContextComposite != null) {
             signals.add("Composite external regime score cools back toward neutral.");
+            if (externalContextComposite.windowSummaries() != null && !externalContextComposite.windowSummaries().isEmpty()) {
+                signals.add("Composite external risk normalizes back toward its representative window average.");
+            }
         }
 
         return signals;

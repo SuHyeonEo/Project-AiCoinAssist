@@ -21,6 +21,41 @@ public record AnalysisExternalContextCompositePayload(
         String primarySignalDetail,
         List<AnalysisExternalRegimeSignal> regimeSignals,
         List<AnalysisExternalContextComparisonFact> comparisonFacts,
-        List<AnalysisExternalContextHighlight> highlights
+        List<AnalysisExternalContextHighlight> highlights,
+        List<AnalysisExternalContextWindowSummary> windowSummaries
 ) {
+    public AnalysisExternalContextCompositePayload(
+            Instant snapshotTime,
+            String sourceDataVersion,
+            BigDecimal compositeRiskScore,
+            AnalysisExternalRegimeDirection dominantDirection,
+            AnalysisExternalRegimeSeverity highestSeverity,
+            Integer supportiveSignalCount,
+            Integer cautionarySignalCount,
+            Integer headwindSignalCount,
+            com.aicoinassist.batch.domain.report.enumtype.AnalysisExternalRegimeCategory primarySignalCategory,
+            String primarySignalTitle,
+            String primarySignalDetail,
+            List<AnalysisExternalRegimeSignal> regimeSignals,
+            List<AnalysisExternalContextComparisonFact> comparisonFacts,
+            List<AnalysisExternalContextHighlight> highlights
+    ) {
+        this(
+                snapshotTime,
+                sourceDataVersion,
+                compositeRiskScore,
+                dominantDirection,
+                highestSeverity,
+                supportiveSignalCount,
+                cautionarySignalCount,
+                headwindSignalCount,
+                primarySignalCategory,
+                primarySignalTitle,
+                primarySignalDetail,
+                regimeSignals,
+                comparisonFacts,
+                highlights,
+                List.of()
+        );
+    }
 }

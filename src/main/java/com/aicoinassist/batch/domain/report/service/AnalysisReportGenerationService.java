@@ -7,6 +7,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketExternalContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
@@ -16,6 +17,7 @@ import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelZoneSnap
 import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketExternalContextSnapshotPersistenceService;
+import com.aicoinassist.batch.domain.market.service.MarketExternalContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketLevelContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
@@ -67,6 +69,7 @@ public class AnalysisReportGenerationService {
     private final MarketContextSnapshotPersistenceService marketContextSnapshotPersistenceService;
     private final MarketContextWindowSummarySnapshotPersistenceService marketContextWindowSummarySnapshotPersistenceService;
     private final MarketExternalContextSnapshotPersistenceService marketExternalContextSnapshotPersistenceService;
+    private final MarketExternalContextWindowSummarySnapshotPersistenceService marketExternalContextWindowSummarySnapshotPersistenceService;
     private final MarketWindowSummarySnapshotPersistenceService marketWindowSummarySnapshotPersistenceService;
     private final MacroContextSnapshotPersistenceService macroContextSnapshotPersistenceService;
     private final MacroContextWindowSummarySnapshotPersistenceService macroContextWindowSummarySnapshotPersistenceService;
@@ -202,8 +205,21 @@ public class AnalysisReportGenerationService {
                 externalContextSnapshot,
                 externalContextComparisonFacts
         );
+        List<MarketExternalContextWindowSummarySnapshotEntity> externalContextWindowSummarySnapshots =
+                marketExternalContextWindowSummarySnapshotPersistenceService.createAndSaveForReportType(
+                        externalContextSnapshot,
+                        reportType
+                );
+        var externalContextWindowSummaries = externalContextWindowSummarySnapshots.stream()
+                .map(analysisReportMarketDataMapper::toExternalContextWindowSummary)
+                .toList();
         AnalysisExternalContextCompositePayload externalContextComposite = analysisReportMarketDataMapper
-                .toExternalContextComposite(externalContextSnapshot, externalContextComparisonFacts, externalContextHighlights);
+                .toExternalContextComposite(
+                        externalContextSnapshot,
+                        externalContextComparisonFacts,
+                        externalContextHighlights,
+                        externalContextWindowSummaries
+                );
         AnalysisReportPayload payload = analysisReportAssembler.assemble(
                 snapshot,
                 reportType,

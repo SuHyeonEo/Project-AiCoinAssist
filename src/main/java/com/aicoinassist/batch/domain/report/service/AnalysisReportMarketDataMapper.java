@@ -5,6 +5,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnaps
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketExternalContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.macro.entity.MacroContextSnapshotEntity;
@@ -27,6 +28,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextHighlight;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeSignal;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
@@ -257,13 +259,22 @@ public class AnalysisReportMarketDataMapper {
     }
 
     public AnalysisExternalContextCompositePayload toExternalContextComposite(MarketExternalContextSnapshotEntity entity) {
-        return toExternalContextComposite(entity, List.of(), List.of());
+        return toExternalContextComposite(entity, List.of(), List.of(), List.of());
     }
 
     public AnalysisExternalContextCompositePayload toExternalContextComposite(
             MarketExternalContextSnapshotEntity entity,
             List<AnalysisExternalContextComparisonFact> comparisonFacts,
             List<AnalysisExternalContextHighlight> highlights
+    ) {
+        return toExternalContextComposite(entity, comparisonFacts, highlights, List.of());
+    }
+
+    public AnalysisExternalContextCompositePayload toExternalContextComposite(
+            MarketExternalContextSnapshotEntity entity,
+            List<AnalysisExternalContextComparisonFact> comparisonFacts,
+            List<AnalysisExternalContextHighlight> highlights,
+            List<AnalysisExternalContextWindowSummary> windowSummaries
     ) {
         return new AnalysisExternalContextCompositePayload(
                 entity.getSnapshotTime(),
@@ -279,7 +290,25 @@ public class AnalysisReportMarketDataMapper {
                 entity.getPrimarySignalDetail(),
                 externalRegimeSignals(entity),
                 comparisonFacts,
-                highlights
+                highlights,
+                windowSummaries
+        );
+    }
+
+    public AnalysisExternalContextWindowSummary toExternalContextWindowSummary(
+            MarketExternalContextWindowSummarySnapshotEntity entity
+    ) {
+        return new AnalysisExternalContextWindowSummary(
+                MarketWindowType.valueOf(entity.getWindowType()),
+                entity.getWindowStartTime(),
+                entity.getWindowEndTime(),
+                entity.getSampleCount(),
+                entity.getAverageCompositeRiskScore(),
+                entity.getCurrentCompositeRiskVsAverage(),
+                entity.getSupportiveDominanceSampleCount(),
+                entity.getCautionaryDominanceSampleCount(),
+                entity.getHeadwindDominanceSampleCount(),
+                entity.getHighSeveritySampleCount()
         );
     }
 

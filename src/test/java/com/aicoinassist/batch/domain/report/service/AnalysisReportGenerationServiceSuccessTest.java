@@ -8,6 +8,7 @@ import com.aicoinassist.batch.domain.macro.entity.MacroContextSnapshotEntity;
 import com.aicoinassist.batch.domain.onchain.entity.OnchainFactSnapshotEntity;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextCompositePayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -52,6 +54,35 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         AnalysisMacroContext macroContext = payload.macroContext();
         AnalysisSentimentContext sentimentContext = payload.sentimentContext();
         AnalysisOnchainContext onchainContext = payload.onchainContext();
+        AnalysisExternalContextWindowSummary externalWindowSummary = new AnalysisExternalContextWindowSummary(
+                com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_30D,
+                Instant.parse("2026-02-07T00:59:30Z"),
+                Instant.parse("2026-03-09T00:59:30Z"),
+                30,
+                new BigDecimal("0.95000000"),
+                new BigDecimal("0.40350877"),
+                4,
+                10,
+                16,
+                8
+        );
+        AnalysisExternalContextCompositePayload externalContextComposite = new AnalysisExternalContextCompositePayload(
+                payload.marketContext().externalContextComposite().snapshotTime(),
+                payload.marketContext().externalContextComposite().sourceDataVersion(),
+                payload.marketContext().externalContextComposite().compositeRiskScore(),
+                payload.marketContext().externalContextComposite().dominantDirection(),
+                payload.marketContext().externalContextComposite().highestSeverity(),
+                payload.marketContext().externalContextComposite().supportiveSignalCount(),
+                payload.marketContext().externalContextComposite().cautionarySignalCount(),
+                payload.marketContext().externalContextComposite().headwindSignalCount(),
+                payload.marketContext().externalContextComposite().primarySignalCategory(),
+                payload.marketContext().externalContextComposite().primarySignalTitle(),
+                payload.marketContext().externalContextComposite().primarySignalDetail(),
+                payload.marketContext().externalContextComposite().regimeSignals(),
+                payload.marketContext().externalContextComposite().comparisonFacts(),
+                payload.marketContext().externalContextComposite().highlights(),
+                java.util.List.of(externalWindowSummary)
+        );
         java.util.List<AnalysisPriceLevel> supportLevels = supportLevels();
         java.util.List<AnalysisPriceLevel> resistanceLevels = resistanceLevels();
         java.util.List<AnalysisPriceZone> supportZones = supportZones();
@@ -130,12 +161,19 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 externalContextSnapshot,
                 payload.marketContext().externalContextComposite().comparisonFacts()
         )).thenReturn(payload.marketContext().externalContextComposite().highlights());
+        when(marketExternalContextWindowSummarySnapshotPersistenceService.createAndSaveForReportType(
+                externalContextSnapshot,
+                AnalysisReportType.MID_TERM
+        )).thenReturn(externalContextWindowSummaryEntities());
+        when(analysisReportMarketDataMapper.toExternalContextWindowSummary(any()))
+                .thenReturn(externalWindowSummary);
         when(analysisReportMarketDataMapper.toExternalContextComposite(
                 externalContextSnapshot,
                 payload.marketContext().externalContextComposite().comparisonFacts(),
-                payload.marketContext().externalContextComposite().highlights()
+                payload.marketContext().externalContextComposite().highlights(),
+                java.util.List.of(externalWindowSummary)
         ))
-                .thenReturn(payload.marketContext().externalContextComposite());
+                .thenReturn(externalContextComposite);
         when(analysisReportAssembler.assemble(
                 eq(snapshot),
                 eq(AnalysisReportType.MID_TERM),
@@ -146,7 +184,7 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 eq(sentimentContext),
                 eq(onchainContext),
                 eq(midTermContinuityNotes()),
-                eq(payload.marketContext().externalContextComposite()),
+                eq(externalContextComposite),
                 any(),
                 anyList(),
                 anyList(),
