@@ -4,8 +4,10 @@ import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.macro.entity.MacroContextSnapshotEntity;
+import com.aicoinassist.batch.domain.onchain.entity.OnchainFactSnapshotEntity;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportDraft;
@@ -41,10 +43,12 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         MarketLevelContextSnapshotEntity levelContextSnapshot = levelContextSnapshotEntity();
         MacroContextSnapshotEntity macroContextSnapshot = generationMacroContextSnapshot();
         SentimentSnapshotEntity sentimentSnapshot = generationSentimentSnapshot();
+        OnchainFactSnapshotEntity onchainSnapshot = generationOnchainSnapshot();
         AnalysisReportEntity savedEntity = savedReportEntity(snapshot);
         AnalysisDerivativeContext derivativeContext = generationDerivativeContextInput();
         AnalysisMacroContext macroContext = payload.macroContext();
         AnalysisSentimentContext sentimentContext = payload.sentimentContext();
+        AnalysisOnchainContext onchainContext = payload.onchainContext();
         java.util.List<AnalysisPriceLevel> supportLevels = supportLevels();
         java.util.List<AnalysisPriceLevel> resistanceLevels = resistanceLevels();
         java.util.List<AnalysisPriceZone> supportZones = supportZones();
@@ -63,6 +67,9 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         when(sentimentSnapshotPersistenceService.createAndSaveFearGreedSnapshot()).thenReturn(sentimentSnapshot);
         when(analysisSentimentComparisonService.buildFacts(sentimentSnapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(sentimentContext.comparisonFacts());
+        when(onchainFactSnapshotPersistenceService.createAndSave("BTCUSDT")).thenReturn(onchainSnapshot);
+        when(analysisOnchainComparisonService.buildFacts(onchainSnapshot, AnalysisReportType.MID_TERM))
+                .thenReturn(onchainContext.comparisonFacts());
         when(marketContextWindowSummarySnapshotPersistenceService.createAndSaveForReportType(contextSnapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(derivativeWindowSummaryEntities());
         when(marketWindowSummarySnapshotPersistenceService.createAndSaveForReportType(snapshot, AnalysisReportType.MID_TERM))
@@ -82,6 +89,8 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 .thenReturn(macroContext);
         when(analysisReportMarketDataMapper.toSentimentContext(sentimentSnapshot, sentimentContext.comparisonFacts()))
                 .thenReturn(sentimentContext);
+        when(analysisReportMarketDataMapper.toOnchainContext(onchainSnapshot, onchainContext.comparisonFacts()))
+                .thenReturn(onchainContext);
         when(analysisReportMarketDataMapper.toWindowSummary(any())).thenReturn(payload.windowSummaries().get(0));
         when(analysisReportMarketDataMapper.toCandidateLevels(anyList(), eq("SUPPORT"), any())).thenReturn(supportLevels);
         when(analysisReportMarketDataMapper.toCandidateLevels(anyList(), eq("RESISTANCE"), any())).thenReturn(resistanceLevels);
@@ -101,6 +110,7 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 eq(derivativeContext),
                 eq(macroContext),
                 eq(sentimentContext),
+                eq(onchainContext),
                 eq(midTermContinuityNotes()),
                 any(),
                 anyList(),

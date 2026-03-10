@@ -13,6 +13,7 @@ public record AnalysisReportPayload(
         AnalysisDerivativeContext derivativeContext,
         AnalysisMacroContext macroContext,
         AnalysisSentimentContext sentimentContext,
+        AnalysisOnchainContext onchainContext,
         List<AnalysisPriceLevel> supportLevels,
         List<AnalysisPriceLevel> resistanceLevels,
         List<AnalysisPriceZone> supportZones,

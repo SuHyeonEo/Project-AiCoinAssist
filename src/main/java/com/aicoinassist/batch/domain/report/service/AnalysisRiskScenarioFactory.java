@@ -2,8 +2,10 @@ package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
-import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
@@ -36,7 +38,8 @@ class AnalysisRiskScenarioFactory {
             AnalysisReportType reportType,
             AnalysisDerivativeContext derivativeContext,
             AnalysisMacroContext macroContext,
-            AnalysisSentimentContext sentimentContext
+            AnalysisSentimentContext sentimentContext,
+            AnalysisOnchainContext onchainContext
     ) {
         List<AnalysisRiskFactor> candidates = new java.util.ArrayList<>();
 
@@ -151,6 +154,34 @@ class AnalysisRiskScenarioFactory {
                             "DXY proxy is " + macroContext.dxyProxyValue().stripTrailingZeros().toPlainString() + ".",
                             "US10Y yield is " + macroContext.us10yYieldValue().stripTrailingZeros().toPlainString() + ".",
                             "USD/KRW is " + macroContext.usdKrwValue().stripTrailingZeros().toPlainString() + "."
+                    )
+            ));
+        }
+
+        AnalysisOnchainComparisonFact primaryOnchainFact = onchainContext == null
+                || onchainContext.comparisonFacts() == null
+                || onchainContext.comparisonFacts().isEmpty()
+                ? null
+                : onchainContext.comparisonFacts().get(0);
+        if (primaryOnchainFact != null
+                && primaryOnchainFact.activeAddressChangeRate() != null
+                && primaryOnchainFact.transactionCountChangeRate() != null
+                && primaryOnchainFact.activeAddressChangeRate().compareTo(new BigDecimal("-0.10")) <= 0
+                && primaryOnchainFact.transactionCountChangeRate().compareTo(new BigDecimal("-0.10")) <= 0) {
+            candidates.add(new AnalysisRiskFactor(
+                    AnalysisRiskFactorType.ONCHAIN_ACTIVITY_CONTRACTION,
+                    "On-chain activity contraction",
+                    primaryOnchainFact.reference().name()
+                            + " keeps active addresses "
+                            + formattingSupport.signedRatio(primaryOnchainFact.activeAddressChangeRate())
+                            + " and transactions "
+                            + formattingSupport.signedRatio(primaryOnchainFact.transactionCountChangeRate())
+                            + ", which can signal weaker underlying network participation.",
+                    List.of(
+                            "Active addresses vs " + primaryOnchainFact.reference().name() + " are "
+                                    + formattingSupport.signedRatio(primaryOnchainFact.activeAddressChangeRate()) + ".",
+                            "Transactions vs " + primaryOnchainFact.reference().name() + " are "
+                                    + formattingSupport.signedRatio(primaryOnchainFact.transactionCountChangeRate()) + "."
                     )
             ));
         }

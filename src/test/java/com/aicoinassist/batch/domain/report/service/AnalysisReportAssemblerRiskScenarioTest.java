@@ -22,6 +22,7 @@ class AnalysisReportAssemblerRiskScenarioTest extends AnalysisReportServiceFixtu
                 derivativeContext(),
                 macroContext(),
                 sentimentContext(),
+                onchainContext(),
                 shortContinuityNotes(),
                 levelContext(),
                 supportLevels(),

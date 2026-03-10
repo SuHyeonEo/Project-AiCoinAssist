@@ -38,6 +38,7 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                 derivativeContext(),
                 macroContext(),
                 sentimentContext(),
+                onchainContext(),
                 shortContinuityNotes(),
                 levelContext(),
                 supportLevels(),
@@ -66,7 +67,8 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.WINDOW, "LAST_7D position"),
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.DERIVATIVE, "PREV_BATCH derivative shift"),
                         org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.MACRO, "Dollar strength regime"),
-                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime")
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime"),
+                        org.assertj.core.groups.Tuple.tuple(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion")
                 );
 
         assertThat(payload.marketContext().currentState()).extracting(
@@ -123,6 +125,14 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                         AnalysisContextHeadlinePayload::title
                 )
                 .containsExactly(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime");
+        assertThat(payload.marketContext().onchainContextSummary().currentStateSummary()).contains("Active addresses");
+        assertThat(payload.marketContext().onchainContextSummary().comparisonSummary()).contains("D7");
+        assertThat(payload.marketContext().onchainContextSummary().highlightDetails()).isNotEmpty();
+        assertThat(payload.marketContext().onchainHeadline()).extracting(
+                        AnalysisContextHeadlinePayload::category,
+                        AnalysisContextHeadlinePayload::title
+                )
+                .containsExactly(AnalysisContextHeadlineCategory.ONCHAIN, "D7 activity expansion");
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
                                              .containsExactly(MarketWindowType.LAST_1D, MarketWindowType.LAST_7D);
         assertThat(payload.comparisonHighlights()).extracting(AnalysisComparisonHighlight::reference)
@@ -151,8 +161,10 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                                                                        );
         assertThat(payload.sentimentContext()).isNotNull();
         assertThat(payload.macroContext()).isNotNull();
+        assertThat(payload.onchainContext()).isNotNull();
         assertThat(payload.macroContext().highlights()).isNotEmpty();
         assertThat(payload.sentimentContext().highlights()).isNotEmpty();
+        assertThat(payload.onchainContext().highlights()).isNotEmpty();
         assertThat(payload.riskFactors()).extracting(risk -> risk.type().name())
                                          .contains("SENTIMENT_GREED_EXTREME", "MACRO_VOLATILITY");
     }

@@ -21,6 +21,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContextSummaryPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentHighlight;
@@ -43,6 +46,7 @@ class AnalysisMarketContextSectionAssembler {
     private final AnalysisDerivativeContextSupport derivativeContextSupport;
     private final AnalysisMacroContextSupport macroContextSupport;
     private final AnalysisSentimentContextSupport sentimentContextSupport;
+    private final AnalysisOnchainContextSupport onchainContextSupport;
     private final AnalysisReportFormattingSupport formattingSupport;
 
     AnalysisMarketContextSectionAssembler(
@@ -51,6 +55,7 @@ class AnalysisMarketContextSectionAssembler {
             AnalysisDerivativeContextSupport derivativeContextSupport,
             AnalysisMacroContextSupport macroContextSupport,
             AnalysisSentimentContextSupport sentimentContextSupport,
+            AnalysisOnchainContextSupport onchainContextSupport,
             AnalysisReportFormattingSupport formattingSupport
     ) {
         this.indicatorStateSupport = indicatorStateSupport;
@@ -58,6 +63,7 @@ class AnalysisMarketContextSectionAssembler {
         this.derivativeContextSupport = derivativeContextSupport;
         this.macroContextSupport = macroContextSupport;
         this.sentimentContextSupport = sentimentContextSupport;
+        this.onchainContextSupport = onchainContextSupport;
         this.formattingSupport = formattingSupport;
     }
 
@@ -72,6 +78,7 @@ class AnalysisMarketContextSectionAssembler {
             AnalysisDerivativeContext derivativeContext,
             AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
+            AnalysisOnchainContext onchainContext,
             List<AnalysisContinuityNote> continuityNotes,
             AnalysisLevelContextPayload levelContext,
             List<AnalysisRiskFactor> riskFactors
@@ -138,6 +145,8 @@ class AnalysisMarketContextSectionAssembler {
         AnalysisContextHeadlinePayload macroHeadline = null;
         AnalysisSentimentContextSummaryPayload sentimentContextSummary = null;
         AnalysisContextHeadlinePayload sentimentHeadline = null;
+        AnalysisOnchainContextSummaryPayload onchainContextSummary = null;
+        AnalysisContextHeadlinePayload onchainHeadline = null;
         if (derivativeContext != null) {
             AnalysisDerivativeWindowSummary derivativeWindowSummary = derivativeContextSupport.primaryDerivativeWindowSummary(
                     reportType,
@@ -217,6 +226,27 @@ class AnalysisMarketContextSectionAssembler {
             );
             sentimentHeadline = sentimentContextSupport.sentimentContextHeadline(reportType, sentimentContext);
         }
+        if (onchainContext != null) {
+            AnalysisOnchainHighlight primaryHighlight = onchainContext.highlights() == null || onchainContext.highlights().isEmpty()
+                    ? null
+                    : onchainContext.highlights().get(0);
+            onchainContextSummary = new AnalysisOnchainContextSummaryPayload(
+                    "Active addresses "
+                            + onchainContext.activeAddressCount().stripTrailingZeros().toPlainString()
+                            + ", transactions "
+                            + onchainContext.transactionCount().stripTrailingZeros().toPlainString()
+                            + ", market cap "
+                            + onchainContext.marketCapUsd().stripTrailingZeros().toPlainString()
+                            + ".",
+                    primaryHighlight == null ? null : primaryHighlight.summary(),
+                    onchainContext.highlights() == null
+                            ? List.of()
+                            : onchainContext.highlights().stream()
+                                            .map(AnalysisOnchainHighlight::summary)
+                                            .toList()
+            );
+            onchainHeadline = onchainContextSupport.onchainContextHeadline(reportType, onchainContext);
+        }
 
         AnalysisContinuityContextPayload continuityContext = continuityNotes.isEmpty()
                 ? null
@@ -253,6 +283,8 @@ class AnalysisMarketContextSectionAssembler {
                 macroHeadline,
                 sentimentContextSummary,
                 sentimentHeadline,
+                onchainContextSummary,
+                onchainHeadline,
                 continuityContext
         );
     }
