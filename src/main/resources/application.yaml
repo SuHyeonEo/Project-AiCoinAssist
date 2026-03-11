@@ -9,9 +9,10 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
@@ -23,6 +24,8 @@ spring:
 logging:
   level:
     root: info
+    org.hibernate.SQL: warn
+    org.hibernate.orm.jdbc.bind: warn
 
 batch:
   admin-api:
@@ -55,7 +58,9 @@ batch:
       enabled: true
       price-fixed-delay-ms: 60000
       candle-fixed-delay-ms: 600000
-      candle-limit: 3
+      candle-limit: 168
+      four-hour-candle-limit: 180
+      one-day-candle-limit: 364
     external-raw-ingestion:
       enabled: true
       macro-enabled: true
@@ -66,6 +71,7 @@ batch:
       onchain-fixed-delay-ms: 3600000
     analysis-report-generation:
       enabled: true
+      initial-delay-ms: 60000
 
 external:
   alternative-me:

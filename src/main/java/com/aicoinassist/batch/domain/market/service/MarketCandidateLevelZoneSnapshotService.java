@@ -12,12 +12,16 @@ import com.aicoinassist.batch.domain.market.repository.MarketCandleRawRepository
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -360,14 +364,50 @@ public class MarketCandidateLevelZoneSnapshotService {
             BigDecimal zoneLow,
             BigDecimal zoneHigh
     ) {
-        String baseVersion = cluster.stream()
-                                    .map(MarketCandidateLevelSnapshotEntity::getSourceDataVersion)
-                                    .sorted()
-                                    .collect(Collectors.joining("|"));
-        return baseVersion
+        String indicatorVersion = cluster.stream()
+                                         .map(MarketCandidateLevelSnapshotEntity::getSourceDataVersion)
+                                         .map(this::extractIndicatorVersion)
+                                         .distinct()
+                                         .sorted()
+                                         .collect(Collectors.joining("|"));
+        String memberSummary = cluster.stream()
+                                      .map(entity -> entity.getLevelLabel()
+                                              + "@"
+                                              + entity.getReferenceTime()
+                                              + "#"
+                                              + entity.getSourceType())
+                                      .sorted()
+                                      .collect(Collectors.joining("|"));
+        String digest = sha256Hex(
+                cluster.stream()
+                       .map(MarketCandidateLevelSnapshotEntity::getSourceDataVersion)
+                       .sorted()
+                       .collect(Collectors.joining("|"))
+        ).substring(0, 16);
+        return "indicator=" + indicatorVersion
+                + ";members=" + memberSummary
+                + ";digest=" + digest
                 + ";zoneType=" + zoneType.name()
                 + ";zoneLow=" + zoneLow.stripTrailingZeros().toPlainString()
                 + ";zoneHigh=" + zoneHigh.stripTrailingZeros().toPlainString();
+    }
+
+    private String extractIndicatorVersion(String sourceDataVersion) {
+        int levelTypeIndex = sourceDataVersion.indexOf(";levelType=");
+        if (levelTypeIndex < 0) {
+            return sourceDataVersion;
+        }
+        return sourceDataVersion.substring(0, levelTypeIndex);
+    }
+
+    private String sha256Hex(String value) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            byte[] digest = messageDigest.digest(value.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 algorithm is not available.", exception);
+        }
     }
 
     private String percent(BigDecimal ratio) {
