@@ -26,27 +26,27 @@ public record AnalysisLlmOutputLengthPolicy(
 
     public static AnalysisLlmOutputLengthPolicy defaultPolicy() {
         return new AnalysisLlmOutputLengthPolicy(
-                280,
+                220,
+                3,
+                100,
+                7,
+                140,
                 3,
                 120,
-                7,
-                180,
-                4,
-                160,
-                220,
-                2,
-                110,
-                2,
-                110,
-                220,
-                2,
                 180,
                 2,
-                110,
+                90,
+                2,
+                90,
                 180,
-                5,
-                160,
-                180
+                2,
+                140,
+                2,
+                90,
+                150,
+                3,
+                140,
+                140
         );
     }
 }
