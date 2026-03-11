@@ -19,11 +19,11 @@ CREATE TABLE market_candidate_level_zone_snapshot (
     trigger_facts_payload TEXT NOT NULL,
     source_data_version VARCHAR(500) NOT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT uk_market_candidate_level_zone_snapshot_symbol_interval_zone_rank
+    CONSTRAINT uk_market_candidate_level_zone_snapshot_key
         UNIQUE (symbol, interval_value, snapshot_time, zone_type, zone_rank)
 );
 
-CREATE INDEX idx_market_candidate_level_zone_snapshot_symbol_interval_snapshot
+CREATE INDEX idx_market_candidate_level_zone_snapshot_key
     ON market_candidate_level_zone_snapshot (symbol, interval_value, snapshot_time);
 
 CREATE INDEX idx_market_candidate_level_zone_snapshot_source_data_version
