@@ -107,17 +107,21 @@ class AnalysisExternalContextComparisonServiceTest {
 
         assertThat(highlights).hasSize(1);
         assertThat(highlights.get(0).title()).isEqualTo("External regime direction changed");
+        assertThat(highlights.get(0).summary()).isEqualTo("D30 external regime direction shifted to headwind.");
         assertThat(highlights.get(0).importance()).isEqualTo(AnalysisContextHeadlineImportance.HIGH);
         assertThat(highlights.get(0).reference()).isEqualTo(AnalysisComparisonReference.D30);
         assertThat(transitions).hasSize(1);
         assertThat(transitions.get(0).transitionType()).isEqualTo(AnalysisExternalRegimeTransitionType.TRANSITION_TO_HEADWIND);
         assertThat(transitions.get(0).resultingDirection()).isEqualTo(AnalysisExternalRegimeDirection.HEADWIND);
+        assertThat(transitions.get(0).summary()).isEqualTo("D30 external regime transitioned to headwind.");
         assertThat(persistence).isNotNull();
         assertThat(persistence.dominantDirection()).isEqualTo(AnalysisExternalRegimeDirection.HEADWIND);
         assertThat(persistence.persistenceScore()).isEqualByComparingTo("0.45333333");
+        assertThat(persistence.summary()).contains("외부 우세 방향은 하방 부담 우세");
         assertThat(state).isNotNull();
         assertThat(state.dominantDirection()).isEqualTo(AnalysisExternalRegimeDirection.HEADWIND);
         assertThat(state.reversalRiskScore()).isGreaterThan(new BigDecimal("0.50"));
+        assertThat(state.summary()).contains("외부 체계는 하방 부담 우세");
     }
 
     private MarketExternalContextSnapshotEntity snapshot(

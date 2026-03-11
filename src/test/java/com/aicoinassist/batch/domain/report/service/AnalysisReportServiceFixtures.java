@@ -268,6 +268,49 @@ abstract class AnalysisReportServiceFixtures {
         );
     }
 
+    protected AnalysisDerivativeContext negativeDerivativeContext() {
+        return new AnalysisDerivativeContext(
+                Instant.parse("2026-03-09T00:59:30Z"),
+                Instant.parse("2026-03-09T00:59:00Z"),
+                Instant.parse("2026-03-09T00:59:30Z"),
+                "openInterestSourceEventTime=2026-03-09T00:59:00Z;premiumIndexSourceEventTime=2026-03-09T00:59:30Z;nextFundingTime=2026-03-09T08:00:00Z",
+                new BigDecimal("11950.00000000"),
+                new BigDecimal("87500.12000000"),
+                new BigDecimal("87480.02000000"),
+                new BigDecimal("-0.00035000"),
+                Instant.parse("2026-03-09T08:00:00Z"),
+                new BigDecimal("-0.05000000"),
+                derivativeComparisonFacts(),
+                List.of(
+                        new AnalysisDerivativeWindowSummary(
+                                MarketWindowType.LAST_7D,
+                                Instant.parse("2026-03-02T00:59:30Z"),
+                                Instant.parse("2026-03-09T00:59:30Z"),
+                                42,
+                                new BigDecimal("11000.00000000"),
+                                new BigDecimal("0.08636364"),
+                                new BigDecimal("0.00025000"),
+                                new BigDecimal("-0.20000000"),
+                                new BigDecimal("0.07000000"),
+                                new BigDecimal("-0.18000000")
+                        ),
+                        new AnalysisDerivativeWindowSummary(
+                                MarketWindowType.LAST_180D,
+                                Instant.parse("2025-09-10T00:59:30Z"),
+                                Instant.parse("2026-03-09T00:59:30Z"),
+                                180,
+                                new BigDecimal("9800.00000000"),
+                                new BigDecimal("0.21938776"),
+                                new BigDecimal("0.00018000"),
+                                new BigDecimal("-0.12000000"),
+                                new BigDecimal("0.04000000"),
+                                new BigDecimal("-0.08000000")
+                        )
+                ),
+                List.of()
+        );
+    }
+
     protected AnalysisSentimentContext sentimentContext() {
         return new AnalysisSentimentContext(
                 Instant.parse("2026-03-09T00:00:00Z"),
@@ -275,6 +318,20 @@ abstract class AnalysisReportServiceFixtures {
                 "metricType=FEAR_GREED_INDEX;sourceEventTime=2026-03-09T00:00:00Z",
                 new BigDecimal("72.00000000"),
                 "Greed",
+                3600L,
+                sentimentComparisonFacts(),
+                sentimentWindowSummaries(),
+                List.of()
+        );
+    }
+
+    protected AnalysisSentimentContext extremeFearSentimentContext() {
+        return new AnalysisSentimentContext(
+                Instant.parse("2026-03-09T00:00:00Z"),
+                Instant.parse("2026-03-09T00:00:00Z"),
+                "metricType=FEAR_GREED_INDEX;sourceEventTime=2026-03-09T00:00:00Z",
+                new BigDecimal("15.00000000"),
+                "Extreme Fear",
                 3600L,
                 sentimentComparisonFacts(),
                 sentimentWindowSummaries(),
@@ -754,7 +811,7 @@ abstract class AnalysisReportServiceFixtures {
                 List.of(
                         new AnalysisExternalContextHighlight(
                                 "External regime direction changed",
-                                "D7 대비 external regime direction이 headwind로 전환되었습니다.",
+                                "D7 external regime direction shifted to headwind.",
                                 AnalysisContextHeadlineImportance.HIGH,
                                 AnalysisComparisonReference.D7
                         )
@@ -807,7 +864,7 @@ abstract class AnalysisReportServiceFixtures {
                                 AnalysisExternalRegimeDirection.HEADWIND,
                                 AnalysisExternalRegimeSeverity.HIGH,
                                 new BigDecimal("1.08333333"),
-                                "D7 대비 external regime가 headwind로 전이되었습니다."
+                                "D7 external regime transitioned to headwind."
                         )
                 ),
                 new AnalysisExternalRegimePersistence(

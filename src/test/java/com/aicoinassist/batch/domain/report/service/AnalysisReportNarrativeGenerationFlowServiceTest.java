@@ -99,7 +99,7 @@ class AnalysisReportNarrativeGenerationFlowServiceTest extends AnalysisReportPay
                 analysisLlmNarrativeGenerationService,
                 new AnalysisReportNarrativeDraftFactory(objectMapper),
                 analysisReportNarrativePersistenceService,
-                new AnalysisLlmNarrativeProperties(true, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1"),
+                new AnalysisLlmNarrativeProperties(true, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1", 1),
                 new OpenAiProperties(true, "https://api.openai.com", "test-openai-key", "gpt-5.4", null, null, 5000, 30000),
                 Clock.fixed(Instant.parse("2026-03-11T00:00:00Z"), ZoneOffset.UTC)
         );
@@ -115,5 +115,87 @@ class AnalysisReportNarrativeGenerationFlowServiceTest extends AnalysisReportPay
         assertThat(draftCaptor.getValue().inputSchemaVersion()).isEqualTo("llm-input-v1");
         assertThat(draftCaptor.getValue().outputSchemaVersion()).isEqualTo("llm-output-v1");
         assertThat(draftCaptor.getValue().requestedAt()).isEqualTo(Instant.parse("2026-03-11T00:00:00Z"));
+    }
+
+    @Test
+    void generateAndStoreLatestPersistsTransportIssuesInValidationIssues() throws Exception {
+        AnalysisReportEntity analysisReport = reportEntity(
+                AnalysisReportType.SHORT_TERM,
+                Instant.parse("2026-03-09T00:59:59Z"),
+                Instant.parse("2026-03-09T00:59:30Z"),
+                "snapshotTime=2026-03-09T00:59:59Z;latestCandleOpenTime=2026-03-08T23:59:59Z;priceSourceEventTime=2026-03-09T00:59:30Z",
+                "gpt-5.4",
+                objectMapper.writeValueAsString(shortTermPayload("Narrative summary")),
+                Instant.parse("2026-03-09T01:00:30Z")
+        );
+        AnalysisLlmNarrativeGenerationResult baseResult = new AnalysisLlmNarrativeGenerationServiceTestSupport(objectMapper)
+                .successfulGenerationResult(
+                        new AnalysisLlmNarrativeInputAssembler().assemble(
+                                new AnalysisGptReportInputAssembler(new AnalysisGptCrossSignalFactory()).assemble(
+                                        analysisReport,
+                                        shortTermPayload("Narrative summary")
+                                )
+                        )
+                );
+        AnalysisLlmNarrativeGenerationResult generationResult = new AnalysisLlmNarrativeGenerationResult(
+                baseResult.promptComposition(),
+                baseResult.gatewayResponse(),
+                baseResult.outputProcessingResult(),
+                baseResult.attempts(),
+                baseResult.degraded(),
+                baseResult.failureType(),
+                List.of("OpenAI narrative request was rejected by the provider. Status: 400.")
+        );
+        when(analysisReportRepository.findTopBySymbolAndReportTypeOrderByAnalysisBasisTimeDescIdDesc("BTCUSDT", AnalysisReportType.SHORT_TERM))
+                .thenReturn(Optional.of(analysisReport));
+        when(analysisLlmNarrativeGenerationService.generateLatest("BTCUSDT", AnalysisReportType.SHORT_TERM, List.of()))
+                .thenReturn(generationResult);
+        when(analysisReportNarrativePersistenceService.save(org.mockito.ArgumentMatchers.any(AnalysisReportNarrativeDraft.class)))
+                .thenReturn(
+                        AnalysisReportNarrativeEntity.builder()
+                                .analysisReport(analysisReport)
+                                .symbol("BTCUSDT")
+                                .reportType(AnalysisReportType.SHORT_TERM)
+                                .analysisBasisTime(analysisReport.getAnalysisBasisTime())
+                                .sourceDataVersion(analysisReport.getSourceDataVersion())
+                                .analysisEngineVersion(analysisReport.getAnalysisEngineVersion())
+                                .llmProvider("openai")
+                                .llmModel("gpt-5.4")
+                                .promptTemplateVersion("llm-prompt-v1")
+                                .inputSchemaVersion("llm-input-v1")
+                                .outputSchemaVersion("llm-output-v1")
+                                .inputPayloadHash("hash")
+                                .inputPayloadJson("{}")
+                                .promptSystemText("system")
+                                .promptUserText("user")
+                                .outputLengthPolicyJson("{}")
+                                .referenceNewsJson("[]")
+                                .outputJson("{}")
+                                .fallbackUsed(false)
+                                .generationStatus(com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmNarrativeGenerationStatus.SUCCESS)
+                                .validationIssuesJson("[\"OpenAI narrative request was rejected by the provider. Status: 400.\"]")
+                                .requestedAt(Instant.parse("2026-03-11T00:00:00Z"))
+                                .completedAt(Instant.parse("2026-03-11T00:00:00Z"))
+                                .storedAt(Instant.parse("2026-03-11T00:00:00Z"))
+                                .build()
+                );
+
+        AnalysisReportNarrativeGenerationFlowService service = new AnalysisReportNarrativeGenerationFlowService(
+                analysisReportRepository,
+                analysisLlmNarrativeGenerationService,
+                new AnalysisReportNarrativeDraftFactory(objectMapper),
+                analysisReportNarrativePersistenceService,
+                new AnalysisLlmNarrativeProperties(true, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1", 1),
+                new OpenAiProperties(true, "https://api.openai.com", "test-openai-key", "gpt-5.4", null, null, 5000, 30000),
+                Clock.fixed(Instant.parse("2026-03-11T00:00:00Z"), ZoneOffset.UTC)
+        );
+
+        service.generateAndStoreLatest("BTCUSDT", AnalysisReportType.SHORT_TERM);
+
+        ArgumentCaptor<AnalysisReportNarrativeDraft> draftCaptor =
+                ArgumentCaptor.forClass(AnalysisReportNarrativeDraft.class);
+        verify(analysisReportNarrativePersistenceService).save(draftCaptor.capture());
+        assertThat(draftCaptor.getValue().validationIssuesJson())
+                .contains("OpenAI narrative request was rejected by the provider. Status: 400.");
     }
 }

@@ -141,18 +141,22 @@ class AnalysisSummarySectionAssembler {
                                                               .map(AnalysisContextHeadlinePayload::detail)
                                                               .toList());
         if (levelContext.nearestSupportZone() != null) {
-            details.add("Nearest support zone %s to %s with %d clustered levels."
+            details.add("Nearest support %s with %d clustered levels."
                                 .formatted(
-                                        levelContext.nearestSupportZone().zoneLow().stripTrailingZeros().toPlainString(),
-                                        levelContext.nearestSupportZone().zoneHigh().stripTrailingZeros().toPlainString(),
+                                        formattingSupport.zoneLabel(
+                                                levelContext.nearestSupportZone().zoneLow(),
+                                                levelContext.nearestSupportZone().zoneHigh()
+                                        ),
                                         levelContext.nearestSupportZone().levelCount()
                                 ));
         }
         if (levelContext.nearestResistanceZone() != null) {
-            details.add("Nearest resistance zone %s to %s with %d clustered levels."
+            details.add("Nearest resistance %s with %d clustered levels."
                                 .formatted(
-                                        levelContext.nearestResistanceZone().zoneLow().stripTrailingZeros().toPlainString(),
-                                        levelContext.nearestResistanceZone().zoneHigh().stripTrailingZeros().toPlainString(),
+                                        formattingSupport.zoneLabel(
+                                                levelContext.nearestResistanceZone().zoneLow(),
+                                                levelContext.nearestResistanceZone().zoneHigh()
+                                        ),
                                         levelContext.nearestResistanceZone().levelCount()
                                 ));
         }
@@ -165,7 +169,7 @@ class AnalysisSummarySectionAssembler {
         if (levelContext != null && levelContext.comparisonFacts() != null) {
             levelContext.comparisonFacts().stream()
                         .limit(2)
-                        .map(fact -> fact.reference().name() + " 대비 level context 변화 반영")
+                        .map(fact -> fact.reference().name() + " level context changes incorporated")
                         .forEach(details::add);
         }
         return details;

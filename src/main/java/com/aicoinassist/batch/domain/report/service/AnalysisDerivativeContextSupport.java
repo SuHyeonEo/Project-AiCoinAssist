@@ -83,7 +83,7 @@ class AnalysisDerivativeContextSupport {
                 primaryDerivativeFact.reference().name()
                         + " keeps OI "
                         + formattingSupport.signedRatio(primaryDerivativeFact.openInterestChangeRate())
-                        + " with funding Δ "
+                        + " with funding delta "
                         + formattingSupport.fundingRatePercentage(primaryDerivativeFact.fundingRateDelta())
                         + ".",
                 reportType == AnalysisReportType.SHORT_TERM
@@ -157,6 +157,20 @@ class AnalysisDerivativeContextSupport {
                     windowSummary.windowType().name()
             ));
         }
+        if (windowSummary != null && windowSummary.currentFundingVsAverage() != null
+                && windowSummary.currentFundingVsAverage().compareTo(new BigDecimal("-0.15")) <= 0) {
+            signals.add(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.DERIVATIVE,
+                    "Negative funding pressure",
+                    windowSummary.windowType().name()
+                            + " funding stays "
+                            + formattingSupport.signedRatio(windowSummary.currentFundingVsAverage())
+                            + " versus average.",
+                    AnalysisExternalRegimeDirection.HEADWIND,
+                    AnalysisExternalRegimeSeverity.HIGH,
+                    windowSummary.windowType().name()
+            ));
+        }
         if (windowSummary != null && windowSummary.currentOpenInterestVsAverage() != null
                 && windowSummary.currentOpenInterestVsAverage().compareTo(new BigDecimal("0.20")) >= 0) {
             signals.add(new AnalysisExternalRegimeSignal(
@@ -167,6 +181,20 @@ class AnalysisDerivativeContextSupport {
                             + formattingSupport.signedRatio(windowSummary.currentOpenInterestVsAverage())
                             + " versus average.",
                     AnalysisExternalRegimeDirection.CAUTIONARY,
+                    AnalysisExternalRegimeSeverity.MEDIUM,
+                    windowSummary.windowType().name()
+            ));
+        }
+        if (windowSummary != null && windowSummary.currentBasisVsAverage() != null
+                && windowSummary.currentBasisVsAverage().compareTo(new BigDecimal("-0.10")) <= 0) {
+            signals.add(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.DERIVATIVE,
+                    "Negative basis pressure",
+                    windowSummary.windowType().name()
+                            + " basis stays "
+                            + formattingSupport.signedRatio(windowSummary.currentBasisVsAverage())
+                            + " versus average.",
+                    AnalysisExternalRegimeDirection.HEADWIND,
                     AnalysisExternalRegimeSeverity.MEDIUM,
                     windowSummary.windowType().name()
             ));
@@ -216,9 +244,9 @@ class AnalysisDerivativeContextSupport {
                     primaryComparisonFact.reference().name()
                             + " keeps OI "
                             + formattingSupport.signedRatio(primaryComparisonFact.openInterestChangeRate())
-                            + ", funding Δ "
+                            + ", funding delta "
                             + formattingSupport.fundingRatePercentage(primaryComparisonFact.fundingRateDelta())
-                            + ", basis Δ "
+                            + ", basis delta "
                             + formattingSupport.signedPercent(primaryComparisonFact.basisRateDelta()),
                     reportType == AnalysisReportType.SHORT_TERM
                             ? AnalysisDerivativeHighlightImportance.HIGH

@@ -59,8 +59,8 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
         assertThat(payload.summary().keyMessage().primaryMessage()).contains("sentiment stays");
         assertThat(payload.summary().keyMessage().primaryMessage()).contains("on-chain activity runs");
         assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("PREV_BATCH confirms the latest impulse"));
-        assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("Nearest support zone"));
-        assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("Nearest resistance zone"));
+        assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("Nearest support"));
+        assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("Nearest resistance"));
         assertThat(payload.summary().keyMessage().continuityMessage()).contains("Previous short-term report");
         assertThat(payload.summary().signalHeadlines()).extracting(
                         AnalysisContextHeadlinePayload::category,
@@ -102,6 +102,8 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                 )
                 .containsExactly(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison");
         assertThat(payload.marketContext().comparisonContext().factSummary().primaryFact()).contains("PREV_BATCH price");
+        assertThat(payload.marketContext().comparisonContext().factSummary().primaryFact()).contains("RSI delta");
+        assertThat(payload.marketContext().comparisonContext().factSummary().primaryFact()).doesNotContain("Δ", "ツ");
         assertThat(payload.marketContext().comparisonContext().factSummary().referenceBreakdown())
                 .anySatisfy(detail -> assertThat(detail).contains("D1 price"));
         assertThat(payload.marketContext().comparisonContext().highlightDetails()).isNotEmpty();
@@ -201,5 +203,6 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
         assertThat(payload.summary().signalHeadlines()).anySatisfy(
                 headline -> assertThat(headline.detail()).contains("headwind")
         );
+        assertThat(payload.summary().keyMessage().primaryMessage()).doesNotContain("대비", "企", "Δ", "ツ");
     }
 }

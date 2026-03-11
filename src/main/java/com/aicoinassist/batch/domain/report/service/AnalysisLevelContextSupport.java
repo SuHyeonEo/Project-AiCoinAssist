@@ -76,15 +76,15 @@ class AnalysisLevelContextSupport {
                 fact.reference().name()
                         + " keeps support price "
                         + formattingSupport.signedRatio(fact.supportRepresentativePriceChangeRate())
-                        + ", support strength Δ "
+                        + ", support strength delta "
                         + formattingSupport.signed(fact.supportStrengthDelta())
-                        + ", support break risk Δ "
+                        + ", support break risk delta "
                         + formattingSupport.signedRatio(fact.supportBreakRiskDelta())
                         + ", resistance price "
                         + formattingSupport.signedRatio(fact.resistanceRepresentativePriceChangeRate())
-                        + ", resistance strength Δ "
+                        + ", resistance strength delta "
                         + formattingSupport.signed(fact.resistanceStrengthDelta())
-                        + ", resistance break risk Δ "
+                        + ", resistance break risk delta "
                         + formattingSupport.signedRatio(fact.resistanceBreakRiskDelta())
                         + ", support interaction "
                         + formattingSupport.interactionShift(fact.currentSupportInteractionType(), fact.referenceSupportInteractionType())
@@ -100,14 +100,14 @@ class AnalysisLevelContextSupport {
     ) {
         List<AnalysisZoneInteractionFact> facts = new ArrayList<>();
         if (nearestSupportZone != null) {
+            String supportLabel = formattingSupport.zoneLabel(nearestSupportZone.zoneLow(), nearestSupportZone.zoneHigh());
             facts.add(new AnalysisZoneInteractionFact(
                     AnalysisPriceZoneType.SUPPORT,
                     nearestSupportZone.zoneRank(),
                     nearestSupportZone.interactionType(),
-                    "Nearest support zone is %s to %s, currently %s with %d tests and %d breaks."
+                    "Nearest support %s is currently %s with %d tests and %d breaks."
                             .formatted(
-                                    nearestSupportZone.zoneLow().stripTrailingZeros().toPlainString(),
-                                    nearestSupportZone.zoneHigh().stripTrailingZeros().toPlainString(),
+                                    supportLabel,
                                     nearestSupportZone.interactionType().name().toLowerCase().replace('_', ' '),
                                     nearestSupportZone.recentTestCount(),
                                     nearestSupportZone.recentBreakCount()
@@ -116,14 +116,14 @@ class AnalysisLevelContextSupport {
             ));
         }
         if (nearestResistanceZone != null) {
+            String resistanceLabel = formattingSupport.zoneLabel(nearestResistanceZone.zoneLow(), nearestResistanceZone.zoneHigh());
             facts.add(new AnalysisZoneInteractionFact(
                     AnalysisPriceZoneType.RESISTANCE,
                     nearestResistanceZone.zoneRank(),
                     nearestResistanceZone.interactionType(),
-                    "Nearest resistance zone is %s to %s, currently %s with %d tests and %d rejections."
+                    "Nearest resistance %s is currently %s with %d tests and %d rejections."
                             .formatted(
-                                    nearestResistanceZone.zoneLow().stripTrailingZeros().toPlainString(),
-                                    nearestResistanceZone.zoneHigh().stripTrailingZeros().toPlainString(),
+                                    resistanceLabel,
                                     nearestResistanceZone.interactionType().name().toLowerCase().replace('_', ' '),
                                     nearestResistanceZone.recentTestCount(),
                                     nearestResistanceZone.recentRejectionCount()

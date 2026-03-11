@@ -61,6 +61,7 @@ import java.util.List;
 public class AnalysisReportMarketDataMapper {
 
     private final ObjectMapper objectMapper;
+    private final AnalysisReportFormattingSupport formattingSupport = new AnalysisReportFormattingSupport();
 
     public AnalysisWindowSummary toWindowSummary(MarketWindowSummarySnapshotEntity entity) {
         return new AnalysisWindowSummary(
@@ -396,14 +397,14 @@ public class AnalysisReportMarketDataMapper {
     ) {
         List<AnalysisZoneInteractionFact> facts = new ArrayList<>();
         if (nearestSupportZone != null && entity.getSupportInteractionType() != null) {
+            String supportLabel = formattingSupport.zoneLabel(nearestSupportZone.zoneLow(), nearestSupportZone.zoneHigh());
             facts.add(new AnalysisZoneInteractionFact(
                     AnalysisPriceZoneType.SUPPORT,
                     entity.getSupportZoneRank(),
                     AnalysisPriceZoneInteractionType.valueOf(entity.getSupportInteractionType()),
-                    "Nearest support zone is %s to %s, currently %s with %d tests and break risk %s."
+                    "Nearest support %s is currently %s with %d tests and break risk %s."
                             .formatted(
-                                    nearestSupportZone.zoneLow().stripTrailingZeros().toPlainString(),
-                                    nearestSupportZone.zoneHigh().stripTrailingZeros().toPlainString(),
+                                    supportLabel,
                                     entity.getSupportInteractionType().toLowerCase().replace('_', ' '),
                                     zeroSafe(entity.getSupportRecentTestCount()),
                                     percentage(entity.getSupportBreakRisk())
@@ -412,14 +413,14 @@ public class AnalysisReportMarketDataMapper {
             ));
         }
         if (nearestResistanceZone != null && entity.getResistanceInteractionType() != null) {
+            String resistanceLabel = formattingSupport.zoneLabel(nearestResistanceZone.zoneLow(), nearestResistanceZone.zoneHigh());
             facts.add(new AnalysisZoneInteractionFact(
                     AnalysisPriceZoneType.RESISTANCE,
                     entity.getResistanceZoneRank(),
                     AnalysisPriceZoneInteractionType.valueOf(entity.getResistanceInteractionType()),
-                    "Nearest resistance zone is %s to %s, currently %s with %d tests and break risk %s."
+                    "Nearest resistance %s is currently %s with %d tests and break risk %s."
                             .formatted(
-                                    nearestResistanceZone.zoneLow().stripTrailingZeros().toPlainString(),
-                                    nearestResistanceZone.zoneHigh().stripTrailingZeros().toPlainString(),
+                                    resistanceLabel,
                                     entity.getResistanceInteractionType().toLowerCase().replace('_', ' '),
                                     zeroSafe(entity.getResistanceRecentTestCount()),
                                     percentage(entity.getResistanceBreakRisk())

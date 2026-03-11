@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -49,7 +50,7 @@ public class AnalysisReportNarrativeDraftFactory {
                 generationResult.outputProcessingResult().fallbackUsed(),
                 generationStatus(generationResult),
                 generationResult.failureType(),
-                serialize(generationResult.outputProcessingResult().issues()),
+                serialize(mergedIssues(generationResult)),
                 generationResult.gatewayResponse() == null ? null : generationResult.gatewayResponse().providerRequestId(),
                 generationResult.gatewayResponse() == null ? null : generationResult.gatewayResponse().inputTokens(),
                 generationResult.gatewayResponse() == null ? null : generationResult.gatewayResponse().outputTokens(),
@@ -58,6 +59,19 @@ public class AnalysisReportNarrativeDraftFactory {
                 completedAt,
                 storedAt
         );
+    }
+
+    private List<String> mergedIssues(AnalysisLlmNarrativeGenerationResult generationResult) {
+        List<String> merged = new ArrayList<>();
+        if (generationResult.outputProcessingResult() != null && generationResult.outputProcessingResult().issues() != null) {
+            merged.addAll(generationResult.outputProcessingResult().issues());
+        }
+        if (generationResult.transportIssues() != null) {
+            generationResult.transportIssues().stream()
+                    .filter(issue -> issue != null && !issue.isBlank())
+                    .forEach(merged::add);
+        }
+        return merged;
     }
 
     private AnalysisLlmNarrativeGenerationStatus generationStatus(AnalysisLlmNarrativeGenerationResult generationResult) {

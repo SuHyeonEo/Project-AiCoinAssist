@@ -38,6 +38,12 @@ batch:
     prompt-template-version: llm-prompt-v1
     input-schema-version: llm-input-v1
     output-schema-version: llm-output-v1
+    max-transport-attempts: 1
+    manual-generate:
+      enabled: false
+      symbol:
+      report-type:
+      shutdown-after-run: true
   analysis-report:
     engine-version: report-assembler-v1
     asset-types:
@@ -87,7 +93,7 @@ external:
     enabled: false
     base-url: https://api.openai.com
     api-key: ${OPENAI_API_KEY:}
-    model: gpt-5.4
+    model: ${OPENAI_MODEL:gpt-5.4}
     connect-timeout-millis: 5000
     read-timeout-millis: 30000
   coinmetrics:

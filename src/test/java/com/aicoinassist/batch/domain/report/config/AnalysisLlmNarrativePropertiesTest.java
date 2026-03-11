@@ -13,7 +13,8 @@ class AnalysisLlmNarrativePropertiesTest {
                 " ",
                 "",
                 null,
-                " "
+                " ",
+                0
         );
 
         assertThat(properties.enabled()).isFalse();
@@ -21,5 +22,6 @@ class AnalysisLlmNarrativePropertiesTest {
         assertThat(properties.promptTemplateVersion()).isEqualTo("llm-prompt-v1");
         assertThat(properties.inputSchemaVersion()).isEqualTo("llm-input-v1");
         assertThat(properties.outputSchemaVersion()).isEqualTo("llm-output-v1");
+        assertThat(properties.maxTransportAttempts()).isEqualTo(1);
     }
 }

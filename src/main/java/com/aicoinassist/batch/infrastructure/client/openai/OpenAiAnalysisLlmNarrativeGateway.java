@@ -11,18 +11,20 @@ import com.aicoinassist.batch.infrastructure.client.openai.dto.OpenAiChatComplet
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientResponseException;
 
+import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Component
@@ -35,6 +37,7 @@ public class OpenAiAnalysisLlmNarrativeGateway implements AnalysisLlmNarrativeGa
     private final ObjectMapper objectMapper;
     private final OpenAiProperties openAiProperties;
 
+    @Autowired
     public OpenAiAnalysisLlmNarrativeGateway(
             RestClient.Builder restClientBuilder,
             ObjectMapper objectMapper,
@@ -61,7 +64,7 @@ public class OpenAiAnalysisLlmNarrativeGateway implements AnalysisLlmNarrativeGa
     public AnalysisLlmNarrativeGatewayResponse generate(AnalysisLlmNarrativeGatewayRequest request) {
         try {
             OpenAiChatCompletionRequest payload = toRequestPayload(request);
-            ResponseEntity<String> responseEntity = restClient.post()
+            ResponseEntity<byte[]> responseEntity = restClient.post()
                     .uri(openAiProperties.baseUrl() + CHAT_COMPLETIONS_PATH)
                     .contentType(MediaType.APPLICATION_JSON)
                     .headers(headers -> {
@@ -74,10 +77,9 @@ public class OpenAiAnalysisLlmNarrativeGateway implements AnalysisLlmNarrativeGa
                         }
                     })
                     .body(payload)
-                    .retrieve()
-                    .toEntity(String.class);
+                    .exchange((clientRequest, clientResponse) -> toResponseEntity(clientResponse));
 
-            String rawResponse = responseEntity.getBody();
+            String rawResponse = decodeResponseBody(responseEntity);
             if (rawResponse == null || rawResponse.isBlank()) {
                 throw new AnalysisLlmNarrativeGatewayException(
                         AnalysisLlmNarrativeFailureType.PROVIDER_ERROR,
@@ -94,39 +96,11 @@ public class OpenAiAnalysisLlmNarrativeGateway implements AnalysisLlmNarrativeGa
                     response.usage() == null ? null : response.usage().promptTokens(),
                     response.usage() == null ? null : response.usage().completionTokens()
             );
-        } catch (HttpClientErrorException.TooManyRequests exception) {
-            throw new AnalysisLlmNarrativeGatewayException(
-                    AnalysisLlmNarrativeFailureType.RATE_LIMIT,
-                    true,
-                    "OpenAI narrative request was rate limited.",
-                    exception
-            );
-        } catch (HttpServerErrorException exception) {
-            throw new AnalysisLlmNarrativeGatewayException(
-                    AnalysisLlmNarrativeFailureType.PROVIDER_ERROR,
-                    true,
-                    "OpenAI narrative request failed with provider server error.",
-                    exception
-            );
-        } catch (HttpClientErrorException exception) {
-            throw new AnalysisLlmNarrativeGatewayException(
-                    AnalysisLlmNarrativeFailureType.PROVIDER_ERROR,
-                    false,
-                    "OpenAI narrative request was rejected by the provider.",
-                    exception
-            );
         } catch (ResourceAccessException exception) {
             throw new AnalysisLlmNarrativeGatewayException(
                     isTimeout(exception) ? AnalysisLlmNarrativeFailureType.TIMEOUT : AnalysisLlmNarrativeFailureType.NETWORK,
                     true,
                     "OpenAI narrative request failed due to network access issue.",
-                    exception
-            );
-        } catch (RestClientResponseException exception) {
-            throw new AnalysisLlmNarrativeGatewayException(
-                    AnalysisLlmNarrativeFailureType.NETWORK,
-                    true,
-                    "OpenAI narrative request failed while reading provider response.",
                     exception
             );
         }
@@ -204,6 +178,67 @@ public class OpenAiAnalysisLlmNarrativeGateway implements AnalysisLlmNarrativeGa
         }
         String message = exception.getMessage();
         return message != null && message.toLowerCase().contains("timed out");
+    }
+
+    private String decodeResponseBody(ResponseEntity<byte[]> responseEntity) {
+        byte[] responseBody = responseEntity.getBody();
+        if (responseBody == null || responseBody.length == 0) {
+            return null;
+        }
+
+        MediaType contentType = responseEntity.getHeaders().getContentType();
+        Charset charset = contentType == null || contentType.getCharset() == null
+                ? StandardCharsets.UTF_8
+                : contentType.getCharset();
+        return new String(responseBody, charset);
+    }
+
+    private ResponseEntity<byte[]> toResponseEntity(RestClient.RequestHeadersSpec.ConvertibleClientHttpResponse clientResponse)
+            throws IOException {
+        HttpStatusCode statusCode = clientResponse.getStatusCode();
+        byte[] responseBody = clientResponse.getBody().readAllBytes();
+        ResponseEntity<byte[]> responseEntity = ResponseEntity.status(statusCode)
+                .headers(clientResponse.getHeaders())
+                .body(responseBody);
+
+        if (statusCode.is2xxSuccessful()) {
+            return responseEntity;
+        }
+
+        String responseBodyText = decodeResponseBody(responseEntity);
+        String errorSuffix = responseBodyText == null || responseBodyText.isBlank()
+                ? ""
+                : " Response body: " + responseBodyText;
+
+        if (statusCode.value() == 429) {
+            throw new AnalysisLlmNarrativeGatewayException(
+                    AnalysisLlmNarrativeFailureType.RATE_LIMIT,
+                    true,
+                    "OpenAI narrative request was rate limited." + errorSuffix
+            );
+        }
+
+        if (statusCode.is5xxServerError()) {
+            throw new AnalysisLlmNarrativeGatewayException(
+                    AnalysisLlmNarrativeFailureType.PROVIDER_ERROR,
+                    true,
+                    "OpenAI narrative request failed with provider server error. Status: " + statusCode.value() + "." + errorSuffix
+            );
+        }
+
+        if (statusCode.is4xxClientError()) {
+            throw new AnalysisLlmNarrativeGatewayException(
+                    AnalysisLlmNarrativeFailureType.PROVIDER_ERROR,
+                    false,
+                    "OpenAI narrative request was rejected by the provider. Status: " + statusCode.value() + "." + errorSuffix
+            );
+        }
+
+        throw new AnalysisLlmNarrativeGatewayException(
+                AnalysisLlmNarrativeFailureType.NETWORK,
+                true,
+                "OpenAI narrative request failed with unexpected status: " + statusCode.value() + "." + errorSuffix
+        );
     }
 
     private static SimpleClientHttpRequestFactory requestFactory(OpenAiProperties properties) {

@@ -46,6 +46,16 @@ public class AnalysisLlmPromptComposer {
             - If confidence is limited, explain why.
             - Avoid repetition across sections.
             - Keep the writing precise, restrained, and analytical.
+            - Write all explanatory text in Korean.
+            - You may keep symbols and metric names in English when needed, but do not copy enum-like labels such as MID_RANGE, NEUTRAL, CONTAINED, SUPPORTIVE, HEADWIND, mixed/neutral 그대로 into the narrative; rewrite them as natural Korean expressions.
+            - Every interpretation must be tied to explicit input evidence such as a number, ratio, classification, comparison, or structured fact.
+            - When you mention a metric, briefly explain what that metric means in the current input context without predicting the future.
+            - If you mention values like break risk, Fear & Greed classification, RSI, MACD, funding, basis, or external risk, include the observed value or label and a short factual explanation of why it matters.
+            - Do not state unsupported conclusions such as "high", "low", "strong", or "weak" unless the supporting input fact is stated in the same sentence or immediately adjacent sentence.
+            - If a fact is ambiguous, say it is ambiguous rather than resolving it with speculation.
+            - Use direct factual prose. Avoid meta-writing phrases such as "적었습니다", "썼습니다", "설명했습니다", "정리했습니다", "볼 수 있습니다" when a simpler factual sentence is possible.
+            - Use polite formal Korean consistently. All sentences must stay in -습니다 or -입니다 style. Do not use casual Korean.
+            - Rewrite raw English trigger phrases, titles, and enum-like labels from the input into natural Korean. Do not surface phrases such as "Market state", "Derivative context", "Price remains inside the active range", "unknown signal" 그대로 in the output.
 
             Output constraints:
             - Return valid JSON only.
@@ -56,6 +66,7 @@ public class AnalysisLlmPromptComposer {
     private static final String OUTPUT_SCHEMA_JSON = """
             {
               "type": "object",
+              "additionalProperties": false,
               "required": [
                 "executive_conclusion",
                 "domain_analyses",
@@ -66,31 +77,103 @@ public class AnalysisLlmPromptComposer {
               "properties": {
                 "executive_conclusion": {
                   "type": "object",
-                  "required": ["overall_tone", "top_supporting_factors", "top_risk_factors", "summary"]
+                  "additionalProperties": false,
+                  "required": ["overall_tone", "top_supporting_factors", "top_risk_factors", "summary"],
+                  "properties": {
+                    "overall_tone": { "type": "string" },
+                    "top_supporting_factors": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "top_risk_factors": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "summary": { "type": "string" }
+                  }
                 },
                 "domain_analyses": {
                   "type": "array",
                   "items": {
                     "type": "object",
-                    "required": ["domain", "current_signal", "key_facts", "interpretation", "pressure", "confidence", "caveats"]
+                    "additionalProperties": false,
+                    "required": ["domain", "current_signal", "key_facts", "interpretation", "pressure", "confidence", "caveats"],
+                    "properties": {
+                      "domain": { "type": "string" },
+                      "current_signal": { "type": "string" },
+                      "key_facts": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "interpretation": { "type": "string" },
+                      "pressure": { "type": "string" },
+                      "confidence": { "type": "string" },
+                      "caveats": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      }
+                    }
                   }
                 },
                 "cross_signal_integration": {
                   "type": "object",
-                  "required": ["aligned_signals", "conflicting_signals", "dominant_drivers", "combined_structure"]
+                  "additionalProperties": false,
+                  "required": ["aligned_signals", "conflicting_signals", "dominant_drivers", "combined_structure"],
+                  "properties": {
+                    "aligned_signals": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "conflicting_signals": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "dominant_drivers": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "combined_structure": { "type": "string" }
+                  }
                 },
                 "scenario_map": {
                   "type": "array",
                   "items": {
                     "type": "object",
-                    "required": ["scenario_type", "condition", "triggers", "confirming_signals", "invalidation_signals", "interpretation"]
+                    "additionalProperties": false,
+                    "required": ["scenario_type", "condition", "triggers", "confirming_signals", "invalidation_signals", "interpretation"],
+                    "properties": {
+                      "scenario_type": { "type": "string" },
+                      "condition": { "type": "string" },
+                      "triggers": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "confirming_signals": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "invalidation_signals": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "interpretation": { "type": "string" }
+                    }
                   }
                 },
                 "reference_news": {
                   "type": "array",
                   "items": {
                     "type": "object",
-                    "required": ["title", "source", "published_at", "url", "why_it_matters", "related_domain"]
+                    "additionalProperties": false,
+                    "required": ["title", "source", "published_at", "url", "why_it_matters", "related_domain"],
+                    "properties": {
+                      "title": { "type": "string" },
+                      "source": { "type": "string" },
+                      "published_at": { "type": "string" },
+                      "url": { "type": "string" },
+                      "why_it_matters": { "type": "string" },
+                      "related_domain": { "type": "string" }
+                    }
                   }
                 }
               }
@@ -132,6 +215,8 @@ public class AnalysisLlmPromptComposer {
         String lengthPolicyJson = serialize(lengthPolicy);
         String userPrompt = """
                 Generate output in the required JSON schema.
+                The JSON schema is enforced separately by the API response format, so do not restate it or add extra keys.
+                All narrative text in the output must be written in Korean.
 
                 Length policy:
                 - executive_conclusion.summary should stay concise and within %d characters.
@@ -147,6 +232,11 @@ public class AnalysisLlmPromptComposer {
                 - Summarize the current market state briefly.
                 - Include overall tone, top supporting factors, and top risk factors.
                 - Do not repeat detailed domain analysis.
+                - Every supporting/risk factor must include its factual basis, not just a label.
+                - In summary, explicitly state only the analysis basis time once in Korean, converted to Asia/Seoul time.
+                - Use the actual timestamp value from input metadata. Do not repeat placeholder text such as YYYY/MM/DD HH:mm literally.
+                - Preferred sentence shape: 이 해설은 <actual Asia/Seoul time> 기준 데이터를 바탕으로 생성됐습니다.
+                - Prefer direct factual Korean wording over copied enum labels.
 
                 2) domain_analyses
                 For each domain:
@@ -156,12 +246,33 @@ public class AnalysisLlmPromptComposer {
                 - describe pressure as bullish, bearish, or mixed/neutral
                 - provide confidence
                 - provide caveats
+                - interpretation and caveats must mention the concrete fact they rely on
+                - if a metric can be opaque to readers, add a short factual explanation of what it indicates in this dataset
+                - examples of acceptable style:
+                  Fear & Greed 15 (Extreme Fear) means risk appetite is currently defensive in the provided sentiment input.
+                  MACD histogram is still negative, which means momentum remains below the zero line in the provided market snapshot.
+                  Support break risk 100 percent means the structured level model currently flags maximum downside break vulnerability in the provided level context.
+                - do not add any explanation that requires future prediction or outside knowledge beyond common metric meaning
+                - rewrite raw enum labels into natural Korean, for example:
+                  MID_RANGE -> range middle zone
+                  NEUTRAL -> neutral
+                  CONTAINED -> controlled volatility
+                - if a support/resistance zone has identical lower and upper bounds, treat it as a single calculated price level, not as a range or band
+                - in that case, describe it as "단일 레벨 부근" rather than an exact target band
+                - when you mention a single calculated level, briefly state which structured evidence supports it, such as clustered level count, recent tests, interaction type, strongest source, or break risk
+                - clearly state that such a single level is a server-calculated reference for confirmation, not a forecast price
+                - do not use stiff report-writing phrases; write as a natural Korean analytical note
+                - do not narrate the reporting process itself; describe the market facts directly
+                - keep caveats short and only include the most decision-relevant limitations
 
                 3) cross_signal_integration
                 - explain alignment and conflict across domains
                 - identify dominant drivers
                 - interpret the current combined structure
                 - do not repeat domain summaries
+                - when naming a driver, cite the factual driver briefly
+                - keep this section compact; if there is no strong alignment, say so briefly instead of enumerating weak signals
+                - avoid restating facts already covered in domain_analyses unless needed for cross-domain linkage
 
                 4) scenario_map
                 - provide bullish, bearish, and neutral/range scenarios
@@ -169,6 +280,16 @@ public class AnalysisLlmPromptComposer {
                 - include triggers, confirming signals, and invalidation signals
                 - do not assign probabilities
                 - do not make forecasts
+                - use only explicit trigger and invalidation facts already present in the input
+                - rewrite trigger and invalidation items into natural Korean instead of copying raw English phrases from input
+                - prefer 2 scenarios when the input does not justify 3 clearly distinct scenarios
+                - keep each scenario brief and avoid repeating the same caveats or average-comparison lines across scenarios
+                - if you describe a range or box structure, explicitly include the lower and upper bounds when they are available in the input
+                - if nearby support or resistance zones are available, mention the closest watch levels in the scenario interpretation
+                - if the nearest support or resistance has identical lower and upper bounds, describe it as a single reference level instead of repeating the same number twice
+                - for a single reference level, prefer wording such as "63,030 부근" and explain that it is based on server-calculated structured level evidence
+                - describe those price areas as server-calculated reference levels for monitoring, not as forecasts, targets, or expected destination prices
+                - add a short caution that these are structured reference zones and should be treated as confirmation levels only
 
                 5) reference_news
                 - include up to 5 items only if relevant
@@ -176,12 +297,6 @@ public class AnalysisLlmPromptComposer {
                 - return empty list if not needed
 
                 Input JSON:
-                %s
-
-                Required output JSON schema:
-                %s
-
-                Output length policy JSON:
                 %s
                 """.formatted(
                 lengthPolicy.executiveConclusionSummaryMaxChars(),
@@ -193,9 +308,7 @@ public class AnalysisLlmPromptComposer {
                 lengthPolicy.scenarioMaxItems(),
                 lengthPolicy.scenarioListMaxItems(),
                 lengthPolicy.referenceNewsMaxItems(),
-                inputJson,
-                OUTPUT_SCHEMA_JSON,
-                lengthPolicyJson
+                inputJson
         );
 
         return new AnalysisLlmPromptComposition(
@@ -209,7 +322,7 @@ public class AnalysisLlmPromptComposer {
 
     private String serialize(Object value) {
         try {
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(value);
+            return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize LLM prompt input.", exception);
         }

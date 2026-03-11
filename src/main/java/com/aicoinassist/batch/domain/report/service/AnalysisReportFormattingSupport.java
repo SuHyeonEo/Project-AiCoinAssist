@@ -96,4 +96,17 @@ class AnalysisReportFormattingSupport {
                 + " -> "
                 + currentInteractionType.name().toLowerCase().replace('_', ' ');
     }
+
+    String zoneLabel(BigDecimal zoneLow, BigDecimal zoneHigh) {
+        String low = zoneLow.stripTrailingZeros().toPlainString();
+        String high = zoneHigh.stripTrailingZeros().toPlainString();
+        if (zoneLow.compareTo(zoneHigh) == 0) {
+            return "single level at " + low;
+        }
+        return low + " to " + high;
+    }
+
+    boolean singlePriceLevel(BigDecimal zoneLow, BigDecimal zoneHigh) {
+        return zoneLow.compareTo(zoneHigh) == 0;
+    }
 }

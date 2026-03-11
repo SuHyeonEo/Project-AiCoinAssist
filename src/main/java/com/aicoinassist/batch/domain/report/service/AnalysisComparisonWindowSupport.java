@@ -133,9 +133,9 @@ class AnalysisComparisonWindowSupport {
         return fact.reference().name()
                 + " price "
                 + formattingSupport.signed(fact.priceChangeRate())
-                + "%, RSI Δ "
+                + "%, RSI delta "
                 + formattingSupport.signed(fact.rsiDelta())
-                + ", MACD hist Δ "
+                + ", MACD hist delta "
                 + formattingSupport.signed(fact.macdHistogramDelta());
     }
 
@@ -164,17 +164,17 @@ class AnalysisComparisonWindowSupport {
             case PREV_BATCH -> new AnalysisComparisonHighlight(
                     fact.reference(),
                     "Since the previous batch, price changed " + formattingSupport.signed(fact.priceChangeRate()) + "% and RSI14 moved " + formattingSupport.signed(fact.rsiDelta()) + ".",
-                    "PREV_BATCH confirms the latest impulse with MACD histogram Δ " + formattingSupport.signed(fact.macdHistogramDelta()) + "."
+                    "PREV_BATCH confirms the latest impulse with MACD histogram delta " + formattingSupport.signed(fact.macdHistogramDelta()) + "."
             );
             case D1, D3, D7, D14, D30, D90, D180 -> new AnalysisComparisonHighlight(
                     fact.reference(),
                     fact.reference().name() + " shows price " + formattingSupport.signed(fact.priceChangeRate()) + "% versus the reference point.",
-                    fact.reference().name() + " keeps RSI Δ " + formattingSupport.signed(fact.rsiDelta()) + " and MACD hist Δ " + formattingSupport.signed(fact.macdHistogramDelta()) + "."
+                    fact.reference().name() + " keeps RSI delta " + formattingSupport.signed(fact.rsiDelta()) + " and MACD hist delta " + formattingSupport.signed(fact.macdHistogramDelta()) + "."
             );
             case PREV_SHORT_REPORT, PREV_MID_REPORT, PREV_LONG_REPORT -> new AnalysisComparisonHighlight(
                     fact.reference(),
                     "Versus " + fact.reference().name() + ", price changed " + formattingSupport.signed(fact.priceChangeRate()) + "%.",
-                    fact.reference().name() + " comparison shows RSI Δ " + formattingSupport.signed(fact.rsiDelta()) + " and ATR change " + formattingSupport.signed(fact.atrChangeRate()) + "%."
+                    fact.reference().name() + " comparison shows RSI delta " + formattingSupport.signed(fact.rsiDelta()) + " and ATR change " + formattingSupport.signed(fact.atrChangeRate()) + "%."
             );
             case Y52_HIGH -> new AnalysisComparisonHighlight(
                     fact.reference(),
