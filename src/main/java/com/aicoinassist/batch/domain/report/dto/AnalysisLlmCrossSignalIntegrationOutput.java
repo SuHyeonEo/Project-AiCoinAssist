@@ -7,9 +7,9 @@ import java.util.List;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record AnalysisLlmCrossSignalIntegrationOutput(
-        List<String> alignedSignals,
-        List<String> conflictingSignals,
+        String alignmentSummary,
         List<String> dominantDrivers,
-        String combinedStructure
+        String conflictSummary,
+        String positioningTake
 ) {
 }

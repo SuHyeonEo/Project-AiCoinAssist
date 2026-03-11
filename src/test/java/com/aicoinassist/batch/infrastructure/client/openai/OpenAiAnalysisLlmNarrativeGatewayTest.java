@@ -58,7 +58,7 @@ class OpenAiAnalysisLlmNarrativeGatewayTest {
                             {
                               "message": {
                                 "role": "assistant",
-                                "content": "{\\"executive_conclusion\\":{},\\"domain_analyses\\":[],\\"cross_signal_integration\\":{},\\"scenario_map\\":[],\\"reference_news\\":[]}"
+                                "content": "{\\"executive_conclusion\\":{},\\"domain_analyses\\":[],\\"cross_signal_integration\\":{},\\"scenario_map\\":[]}"
                               }
                             }
                           ],

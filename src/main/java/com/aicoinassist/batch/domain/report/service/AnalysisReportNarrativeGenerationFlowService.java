@@ -2,7 +2,6 @@ package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.report.config.AnalysisLlmNarrativeProperties;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeGenerationResult;
-import com.aicoinassist.batch.domain.report.dto.AnalysisLlmReferenceNewsItem;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportNarrativeDraft;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportNarrativeEntity;
@@ -15,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -31,22 +29,13 @@ public class AnalysisReportNarrativeGenerationFlowService {
 
     @Transactional
     public AnalysisReportNarrativeEntity generateAndStoreLatest(String symbol, AnalysisReportType reportType) {
-        return generateAndStoreLatest(symbol, reportType, List.of());
-    }
-
-    @Transactional
-    public AnalysisReportNarrativeEntity generateAndStoreLatest(
-            String symbol,
-            AnalysisReportType reportType,
-            List<AnalysisLlmReferenceNewsItem> optionalReferenceNews
-    ) {
         AnalysisReportEntity analysisReport = analysisReportRepository
                 .findTopBySymbolAndReportTypeOrderByAnalysisBasisTimeDescIdDesc(symbol, reportType)
                 .orElseThrow(() -> new IllegalArgumentException("Analysis report not found: " + symbol + ", " + reportType));
 
         Instant requestedAt = clock.instant();
         AnalysisLlmNarrativeGenerationResult generationResult =
-                analysisLlmNarrativeGenerationService.generateLatest(symbol, reportType, optionalReferenceNews);
+                analysisLlmNarrativeGenerationService.generateLatest(symbol, reportType);
         Instant completedAt = clock.instant();
         Instant storedAt = clock.instant();
 
@@ -58,7 +47,6 @@ public class AnalysisReportNarrativeGenerationFlowService {
                 analysisLlmNarrativeProperties.promptTemplateVersion(),
                 analysisLlmNarrativeProperties.inputSchemaVersion(),
                 analysisLlmNarrativeProperties.outputSchemaVersion(),
-                optionalReferenceNews,
                 requestedAt,
                 completedAt,
                 storedAt

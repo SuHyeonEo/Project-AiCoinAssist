@@ -7,9 +7,9 @@ import java.util.List;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record AnalysisLlmExecutiveConclusionOutput(
-        String overallTone,
-        List<String> topSupportingFactors,
-        List<String> topRiskFactors,
-        String summary
+        String summary,
+        List<String> bullishFactors,
+        List<String> bearishFactors,
+        String tacticalView
 ) {
 }

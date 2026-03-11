@@ -2,7 +2,6 @@ package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeGenerationResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeInputPayload;
-import com.aicoinassist.batch.domain.report.dto.AnalysisLlmReferenceNewsItem;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportNarrativeDraft;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmNarrativeFailureType;
@@ -13,8 +12,6 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.time.Instant;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AnalysisReportNarrativeDraftFactoryTest extends AnalysisReportPayloadTestFixtures {
@@ -50,14 +47,6 @@ class AnalysisReportNarrativeDraftFactoryTest extends AnalysisReportPayloadTestF
                 "prompt-v1",
                 "llm-input-v1",
                 "llm-output-v1",
-                List.of(new AnalysisLlmReferenceNewsItem(
-                        "ETF delay headline",
-                        "ExampleSource",
-                        Instant.parse("2026-03-09T00:30:00Z"),
-                        "https://example.com/news/1",
-                        "Why it matters",
-                        "MACRO"
-                )),
                 Instant.parse("2026-03-09T01:00:00Z"),
                 Instant.parse("2026-03-09T01:00:05Z"),
                 Instant.parse("2026-03-09T01:00:10Z")
@@ -67,7 +56,7 @@ class AnalysisReportNarrativeDraftFactoryTest extends AnalysisReportPayloadTestF
         assertThat(draft.llmProvider()).isEqualTo("OPENAI");
         assertThat(draft.llmModel()).isEqualTo("gpt-5.4");
         assertThat(draft.promptTemplateVersion()).isEqualTo("prompt-v1");
-        assertThat(draft.referenceNewsJson()).contains("ETF delay headline");
+        assertThat(draft.referenceNewsJson()).isEqualTo("[]");
         assertThat(draft.outputPayload()).isNotNull();
         assertThat(draft.generationStatus().name()).isEqualTo("SUCCESS");
         assertThat(draft.failureType()).isEqualTo(AnalysisLlmNarrativeFailureType.NONE);

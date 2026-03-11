@@ -44,8 +44,9 @@ class AnalysisLlmPromptCompositionReadServiceTest extends AnalysisReportPayloadT
 
         AnalysisLlmPromptComposition composition = service.getLatestComposition("BTCUSDT", AnalysisReportType.SHORT_TERM);
 
-        assertThat(composition.systemPrompt()).contains("structured crypto market analysis writer");
+        assertThat(composition.systemPrompt()).contains("Korean crypto market analysis writer for a structured report page");
         assertThat(composition.userPrompt()).contains("Prompt summary");
+        assertThat(composition.outputSchemaJson()).contains("hero_summary");
         assertThat(composition.outputSchemaJson()).contains("scenario_map");
     }
 }
