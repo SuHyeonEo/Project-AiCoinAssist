@@ -248,7 +248,7 @@ abstract class AnalysisReportPayloadTestFixtures {
                                 List.of(
                                         new AnalysisExternalContextHighlight(
                                                 "External regime direction changed",
-                                                "D7 대비 external regime direction이 headwind로 전환되었습니다.",
+                                                "D7 external regime direction shifted to headwind.",
                                                 AnalysisContextHeadlineImportance.HIGH,
                                                 AnalysisComparisonReference.D7
                                         )

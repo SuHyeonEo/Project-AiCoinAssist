@@ -224,13 +224,22 @@ public class MarketCandidateLevelZoneSnapshotService {
             ZoneInteraction interaction
     ) {
         List<String> facts = new ArrayList<>();
-        facts.add("%s zone spans %s to %s with %d candidate levels."
-                          .formatted(
-                                  zoneType.name(),
-                                  zoneLow.stripTrailingZeros().toPlainString(),
-                                  zoneHigh.stripTrailingZeros().toPlainString(),
-                                  cluster.size()
-                          ));
+        if (zoneLow.compareTo(zoneHigh) == 0) {
+            facts.add("%s zone is a single calculated level at %s with %d candidate levels."
+                              .formatted(
+                                      zoneType.name(),
+                                      zoneLow.stripTrailingZeros().toPlainString(),
+                                      cluster.size()
+                              ));
+        } else {
+            facts.add("%s zone spans %s to %s with %d candidate levels."
+                              .formatted(
+                                      zoneType.name(),
+                                      zoneLow.stripTrailingZeros().toPlainString(),
+                                      zoneHigh.stripTrailingZeros().toPlainString(),
+                                      cluster.size()
+                              ));
+        }
         facts.add("Strongest level is %s from %s at %s."
                           .formatted(
                                   strongest.getLevelLabel(),

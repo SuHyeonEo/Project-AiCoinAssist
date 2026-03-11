@@ -38,4 +38,24 @@ class AnalysisExternalContextSnapshotServiceTest extends AnalysisReportServiceFi
                            + snapshot.headwindSignalCount())
                 .isEqualTo(snapshot.regimeSignals().size());
     }
+
+    @Test
+    void createBuildsHeadwindSignalsFromExtremeFearAndNegativeDerivativePressure() {
+        var snapshot = service.create(
+                "BTCUSDT",
+                AnalysisReportType.MID_TERM,
+                negativeDerivativeContext(),
+                macroContext(),
+                extremeFearSentimentContext(),
+                onchainContext()
+        );
+
+        assertThat(snapshot.regimeSignals()).isNotEmpty();
+        assertThat(snapshot.headwindSignalCount()).isGreaterThan(0);
+        assertThat(snapshot.dominantDirection()).isEqualTo(AnalysisExternalRegimeDirection.HEADWIND);
+        assertThat(snapshot.primarySignalTitle()).isNotBlank();
+        assertThat(snapshot.regimeSignals())
+                .extracting(signal -> signal.title())
+                .contains("Extreme fear regime", "Negative funding pressure", "Negative basis pressure");
+    }
 }

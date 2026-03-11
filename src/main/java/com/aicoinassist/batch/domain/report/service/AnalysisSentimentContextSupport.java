@@ -119,7 +119,7 @@ class AnalysisSentimentContextSupport {
                 primaryFact.reference().name()
                         + " keeps Fear & Greed at "
                         + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
-                        + " with Δ "
+                        + " with delta "
                         + primaryFact.valueChange().stripTrailingZeros().toPlainString() + ".",
                 reportType == AnalysisReportType.SHORT_TERM
                         ? AnalysisContextHeadlineImportance.HIGH
@@ -142,13 +142,60 @@ class AnalysisSentimentContextSupport {
             return List.of();
         }
 
+        java.util.ArrayList<AnalysisExternalRegimeSignal> signals = new java.util.ArrayList<>();
+        if ("Extreme Fear".equalsIgnoreCase(sentimentContext.classification())) {
+            signals.add(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.SENTIMENT,
+                    "Extreme fear regime",
+                    "Fear & Greed is at "
+                            + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
+                            + " and classified as Extreme Fear.",
+                    AnalysisExternalRegimeDirection.HEADWIND,
+                    AnalysisExternalRegimeSeverity.HIGH,
+                    "CURRENT"
+            ));
+        } else if ("Fear".equalsIgnoreCase(sentimentContext.classification())) {
+            signals.add(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.SENTIMENT,
+                    "Fear regime",
+                    "Fear & Greed is at "
+                            + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
+                            + " and classified as Fear.",
+                    AnalysisExternalRegimeDirection.HEADWIND,
+                    AnalysisExternalRegimeSeverity.MEDIUM,
+                    "CURRENT"
+            ));
+        } else if ("Extreme Greed".equalsIgnoreCase(sentimentContext.classification())) {
+            signals.add(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.SENTIMENT,
+                    "Extreme greed regime",
+                    "Fear & Greed is at "
+                            + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
+                            + " and classified as Extreme Greed.",
+                    AnalysisExternalRegimeDirection.CAUTIONARY,
+                    AnalysisExternalRegimeSeverity.HIGH,
+                    "CURRENT"
+            ));
+        } else if ("Greed".equalsIgnoreCase(sentimentContext.classification())) {
+            signals.add(new AnalysisExternalRegimeSignal(
+                    AnalysisExternalRegimeCategory.SENTIMENT,
+                    "Greed regime",
+                    "Fear & Greed is at "
+                            + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
+                            + " and classified as Greed.",
+                    AnalysisExternalRegimeDirection.CAUTIONARY,
+                    AnalysisExternalRegimeSeverity.MEDIUM,
+                    "CURRENT"
+            ));
+        }
+
         AnalysisSentimentWindowSummary windowSummary = primaryWindowSummary(reportType, sentimentContext);
         if (windowSummary == null || windowSummary.currentIndexVsAverage() == null) {
-            return List.of();
+            return List.copyOf(signals);
         }
 
         if (windowSummary.currentIndexVsAverage().compareTo(new java.math.BigDecimal("0.15")) >= 0) {
-            return List.of(new AnalysisExternalRegimeSignal(
+            signals.add(new AnalysisExternalRegimeSignal(
                     AnalysisExternalRegimeCategory.SENTIMENT,
                     "Greed above average",
                     windowSummary.windowType().name()
@@ -161,7 +208,7 @@ class AnalysisSentimentContextSupport {
             ));
         }
         if (windowSummary.currentIndexVsAverage().compareTo(new java.math.BigDecimal("-0.15")) <= 0) {
-            return List.of(new AnalysisExternalRegimeSignal(
+            signals.add(new AnalysisExternalRegimeSignal(
                     AnalysisExternalRegimeCategory.SENTIMENT,
                     "Fear below average",
                     windowSummary.windowType().name()
@@ -173,7 +220,7 @@ class AnalysisSentimentContextSupport {
                     windowSummary.windowType().name()
             ));
         }
-        return List.of();
+        return List.copyOf(signals);
     }
 
     private AnalysisSentimentComparisonFact primaryFact(

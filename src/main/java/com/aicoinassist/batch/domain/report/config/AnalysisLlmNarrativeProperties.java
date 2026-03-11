@@ -11,7 +11,8 @@ public record AnalysisLlmNarrativeProperties(
         @NotBlank String provider,
         @NotBlank String promptTemplateVersion,
         @NotBlank String inputSchemaVersion,
-        @NotBlank String outputSchemaVersion
+        @NotBlank String outputSchemaVersion,
+        int maxTransportAttempts
 ) {
 
     public AnalysisLlmNarrativeProperties {
@@ -25,5 +26,6 @@ public record AnalysisLlmNarrativeProperties(
         outputSchemaVersion = outputSchemaVersion == null || outputSchemaVersion.isBlank()
                 ? "llm-output-v1"
                 : outputSchemaVersion;
+        maxTransportAttempts = maxTransportAttempts <= 0 ? 1 : maxTransportAttempts;
     }
 }

@@ -8,6 +8,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeGenerationRe
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeInputPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeOutputPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmScenarioOutput;
+import com.aicoinassist.batch.domain.report.config.AnalysisLlmNarrativeProperties;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmNarrativeFailureType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,7 +40,7 @@ class AnalysisLlmNarrativeGenerationServiceTest extends AnalysisReportPayloadTes
 
     @Test
     void generateLatestRetriesTransportFailureAndSucceeds() throws Exception {
-        AnalysisLlmNarrativeGenerationService service = service();
+        AnalysisLlmNarrativeGenerationService service = service(2);
         AnalysisLlmNarrativeInputPayload input = llmInput();
         when(analysisLlmNarrativeInputReadService.getLatestInput("BTCUSDT", AnalysisReportType.SHORT_TERM))
                 .thenReturn(input);
@@ -70,7 +71,7 @@ class AnalysisLlmNarrativeGenerationServiceTest extends AnalysisReportPayloadTes
 
     @Test
     void generateLatestFallsBackOnContentFailureWithoutRetry() {
-        AnalysisLlmNarrativeGenerationService service = service();
+        AnalysisLlmNarrativeGenerationService service = service(1);
         AnalysisLlmNarrativeInputPayload input = llmInput();
         when(analysisLlmNarrativeInputReadService.getLatestInput("BTCUSDT", AnalysisReportType.SHORT_TERM))
                 .thenReturn(input);
@@ -94,7 +95,7 @@ class AnalysisLlmNarrativeGenerationServiceTest extends AnalysisReportPayloadTes
 
     @Test
     void generateLatestFallsBackAfterRetryableTransportFailuresExhausted() {
-        AnalysisLlmNarrativeGenerationService service = service();
+        AnalysisLlmNarrativeGenerationService service = service(2);
         AnalysisLlmNarrativeInputPayload input = llmInput();
         when(analysisLlmNarrativeInputReadService.getLatestInput("BTCUSDT", AnalysisReportType.SHORT_TERM))
                 .thenReturn(input);
@@ -116,8 +117,16 @@ class AnalysisLlmNarrativeGenerationServiceTest extends AnalysisReportPayloadTes
         verify(analysisLlmNarrativeGateway, times(2)).generate(any());
     }
 
-    private AnalysisLlmNarrativeGenerationService service() {
+    private AnalysisLlmNarrativeGenerationService service(int maxTransportAttempts) {
         return new AnalysisLlmNarrativeGenerationService(
+                new AnalysisLlmNarrativeProperties(
+                        true,
+                        "openai",
+                        "llm-prompt-v1",
+                        "llm-input-v1",
+                        "llm-output-v1",
+                        maxTransportAttempts
+                ),
                 analysisLlmNarrativeInputReadService,
                 new AnalysisLlmPromptComposer(objectMapper),
                 analysisLlmNarrativeGateway,

@@ -9,8 +9,11 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmDomainType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Component
 @RequiredArgsConstructor
@@ -49,7 +52,7 @@ public class AnalysisLlmNarrativeInputAssembler {
 
         blocks.add(new AnalysisLlmDomainFactBlock(
                 AnalysisLlmDomainType.MARKET,
-                "Market state",
+                "시장 구조",
                 marketStateSummary(input.currentState()),
                 gather(
                         input.comparisonContext() == null || input.comparisonContext().factSummary() == null
@@ -62,7 +65,7 @@ public class AnalysisLlmNarrativeInputAssembler {
         ));
         blocks.add(new AnalysisLlmDomainFactBlock(
                 AnalysisLlmDomainType.DERIVATIVE,
-                "Derivative context",
+                "파생 맥락",
                 input.derivativeContext() == null ? null : input.derivativeContext().currentStateSummary(),
                 gather(
                         input.derivativeContext() == null ? null : input.derivativeContext().windowSummary(),
@@ -71,7 +74,7 @@ public class AnalysisLlmNarrativeInputAssembler {
         ));
         blocks.add(new AnalysisLlmDomainFactBlock(
                 AnalysisLlmDomainType.MACRO,
-                "Macro context",
+                "거시 맥락",
                 input.macroContext() == null ? null : input.macroContext().currentStateSummary(),
                 gather(
                         input.macroContext() == null ? null : input.macroContext().comparisonSummary(),
@@ -81,7 +84,7 @@ public class AnalysisLlmNarrativeInputAssembler {
         ));
         blocks.add(new AnalysisLlmDomainFactBlock(
                 AnalysisLlmDomainType.SENTIMENT,
-                "Sentiment context",
+                "심리 맥락",
                 input.sentimentContext() == null ? null : input.sentimentContext().currentStateSummary(),
                 gather(
                         input.sentimentContext() == null ? null : input.sentimentContext().comparisonSummary(),
@@ -91,7 +94,7 @@ public class AnalysisLlmNarrativeInputAssembler {
         ));
         blocks.add(new AnalysisLlmDomainFactBlock(
                 AnalysisLlmDomainType.ONCHAIN,
-                "On-chain context",
+                "온체인 맥락",
                 input.onchainContext() == null ? null : input.onchainContext().currentStateSummary(),
                 gather(
                         input.onchainContext() == null ? null : input.onchainContext().comparisonSummary(),
@@ -101,17 +104,17 @@ public class AnalysisLlmNarrativeInputAssembler {
         ));
         blocks.add(new AnalysisLlmDomainFactBlock(
                 AnalysisLlmDomainType.LEVEL,
-                "Level context",
+                "레벨 맥락",
                 input.levelContext() == null ? null : first(input.levelContext().zoneInteractionFacts().stream().map(fact -> fact.summary()).toList()),
                 gather(
-                        input.levelContext() == null ? null : "Support break risk " + safePercent(input.levelContext().supportBreakRisk()),
-                        input.levelContext() == null ? null : "Resistance break risk " + safePercent(input.levelContext().resistanceBreakRisk()),
+                        input.levelContext() == null ? null : "지지 이탈 위험 " + safePercent(input.levelContext().supportBreakRisk()),
+                        input.levelContext() == null ? null : "저항 돌파 위험 " + safePercent(input.levelContext().resistanceBreakRisk()),
                         input.levelContext() == null ? null : first(input.levelContext().highlights().stream().map(highlight -> highlight.detail()).toList())
                 )
         ));
         blocks.add(new AnalysisLlmDomainFactBlock(
                 AnalysisLlmDomainType.EXTERNAL,
-                "External composite",
+                "외부 종합 맥락",
                 input.externalContextComposite() == null
                         ? null
                         : input.externalContextComposite().state() != null
@@ -135,14 +138,15 @@ public class AnalysisLlmNarrativeInputAssembler {
         if (currentState == null) {
             return null;
         }
-        return "Current price "
-                + currentState.currentPrice().stripTrailingZeros().toPlainString()
-                + ", trend "
-                + currentState.trendLabel().name()
-                + ", volatility "
-                + currentState.volatilityLabel().name()
-                + ", range position "
-                + currentState.rangePositionLabel().name();
+        return "현재 가격은 "
+                + decimal(currentState.currentPrice())
+                + "이며, 추세는 "
+                + trendLabel(currentState.trendLabel().name())
+                + ", 변동성은 "
+                + volatilityLabel(currentState.volatilityLabel().name())
+                + ", 범위 내 위치는 "
+                + rangePositionLabel(currentState.rangePositionLabel().name())
+                + "입니다.";
     }
 
     private List<String> gather(String... values) {
@@ -156,10 +160,47 @@ public class AnalysisLlmNarrativeInputAssembler {
     }
 
     private String safePercent(java.math.BigDecimal value) {
-        return value == null ? "unavailable" : value.multiply(new java.math.BigDecimal("100"))
+        return value == null ? "확인 불가" : value.multiply(new java.math.BigDecimal("100"))
                 .setScale(2, java.math.RoundingMode.HALF_UP)
                 .stripTrailingZeros()
                 .toPlainString() + "%";
+    }
+
+    private String decimal(BigDecimal value) {
+        return value.stripTrailingZeros().toPlainString();
+    }
+
+    private String trendLabel(String value) {
+        return switch (value) {
+            case "BULLISH" -> "상승 우위";
+            case "BEARISH" -> "하락 우위";
+            case "NEUTRAL" -> "중립";
+            default -> humanizeEnum(value);
+        };
+    }
+
+    private String volatilityLabel(String value) {
+        return switch (value) {
+            case "LOW", "CONTAINED" -> "낮은 편";
+            case "MODERATE" -> "보통";
+            case "HIGH", "EXPANDING" -> "높은 편";
+            default -> humanizeEnum(value);
+        };
+    }
+
+    private String rangePositionLabel(String value) {
+        return switch (value) {
+            case "LOWER_RANGE" -> "하단 구간";
+            case "MID_RANGE" -> "중간 구간";
+            case "UPPER_RANGE" -> "상단 구간";
+            case "NEAR_RANGE_LOW" -> "하단 인접 구간";
+            case "NEAR_RANGE_HIGH" -> "상단 인접 구간";
+            default -> humanizeEnum(value);
+        };
+    }
+
+    private String humanizeEnum(String value) {
+        return value.toLowerCase(Locale.ROOT).replace('_', ' ');
     }
 
     private String first(List<String> values) {

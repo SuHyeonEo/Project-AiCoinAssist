@@ -48,6 +48,18 @@ class AnalysisLlmNarrativeInputAssemblerTest extends AnalysisReportPayloadTestFi
                         AnalysisLlmDomainType.LEVEL,
                         AnalysisLlmDomainType.EXTERNAL
                 );
+        assertThat(llmInput.domainFactBlocks())
+                .anySatisfy(block -> {
+                    assertThat(block.headline()).isEqualTo("시장 구조");
+                    assertThat(block.summary()).contains("현재 가격은");
+                    assertThat(block.summary()).contains("추세는");
+                    assertThat(block.summary()).contains("변동성은");
+                    assertThat(block.summary()).contains("범위 내 위치는");
+                });
+        assertThat(llmInput.domainFactBlocks())
+                .anySatisfy(block -> assertThat(block.headline()).isEqualTo("파생 맥락"));
+        assertThat(llmInput.domainFactBlocks())
+                .anySatisfy(block -> assertThat(block.headline()).isEqualTo("외부 종합 맥락"));
         assertThat(llmInput.crossSignals()).hasSizeLessThanOrEqualTo(5);
         assertThat(llmInput.riskFactors()).hasSizeLessThanOrEqualTo(6);
         assertThat(llmInput.scenarios()).hasSizeLessThanOrEqualTo(3);

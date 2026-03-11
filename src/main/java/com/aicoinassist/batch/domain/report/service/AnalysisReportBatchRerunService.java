@@ -30,10 +30,11 @@ public class AnalysisReportBatchRerunService {
                 .findAllByBatchRunRunIdAndExecutionStatusNotOrderByIdAsc(sourceRunId, BatchExecutionStatus.SUCCESS)
                 .stream()
                 .map(assetResult -> AssetType.fromSymbol(assetResult.getSymbol()))
+                .filter(analysisReportBatchProperties.assetTypes()::contains)
                 .toList();
 
         if (failedAssetTypes.isEmpty()) {
-            throw new IllegalStateException("No failed asset results found for runId: " + sourceRunId);
+            throw new IllegalStateException("No failed asset results matched the configured asset types for runId: " + sourceRunId);
         }
 
         return analysisReportBatchExecutionService.execute(

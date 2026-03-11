@@ -80,7 +80,7 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 AnalysisExternalRegimeDirection.HEADWIND,
                 AnalysisExternalRegimeSeverity.HIGH,
                 new BigDecimal("1.08333333"),
-                "D7 대비 external regime가 headwind로 전이되었습니다."
+                "D7 external regime transitioned to headwind."
         );
         AnalysisExternalRegimePersistence externalPersistence = new AnalysisExternalRegimePersistence(
                 com.aicoinassist.batch.domain.market.enumtype.MarketWindowType.LAST_30D,

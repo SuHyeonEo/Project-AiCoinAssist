@@ -66,7 +66,7 @@ class AnalysisReportBatchServiceTest {
                 analysisReportGenerationService,
                 analysisReportNarrativeGenerationFlowService,
                 properties,
-                new AnalysisLlmNarrativeProperties(false, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1"),
+                new AnalysisLlmNarrativeProperties(false, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1", 1),
                 FIXED_CLOCK
         );
 
@@ -122,7 +122,7 @@ class AnalysisReportBatchServiceTest {
                 analysisReportGenerationService,
                 analysisReportNarrativeGenerationFlowService,
                 properties,
-                new AnalysisLlmNarrativeProperties(false, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1"),
+                new AnalysisLlmNarrativeProperties(false, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1", 1),
                 FIXED_CLOCK
         );
 
@@ -183,7 +183,7 @@ class AnalysisReportBatchServiceTest {
                 analysisReportGenerationService,
                 analysisReportNarrativeGenerationFlowService,
                 properties,
-                new AnalysisLlmNarrativeProperties(false, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1"),
+                new AnalysisLlmNarrativeProperties(false, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1", 1),
                 FIXED_CLOCK
         );
 
@@ -250,7 +250,7 @@ class AnalysisReportBatchServiceTest {
                 analysisReportGenerationService,
                 analysisReportNarrativeGenerationFlowService,
                 properties,
-                new AnalysisLlmNarrativeProperties(true, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1"),
+                new AnalysisLlmNarrativeProperties(true, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1", 1),
                 FIXED_CLOCK
         );
 

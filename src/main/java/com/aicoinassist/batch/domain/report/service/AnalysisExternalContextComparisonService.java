@@ -91,6 +91,20 @@ public class AnalysisExternalContextComparisonService {
                 .add(highSeverityShare.multiply(new BigDecimal("0.30")))
                 .setScale(8, RoundingMode.HALF_UP);
 
+        if (currentSnapshot.getDominantDirection() == null) {
+            return new AnalysisExternalRegimePersistence(
+                    primaryWindowSummary.windowType(),
+                    null,
+                    dominantDirectionShare,
+                    highSeverityShare,
+                    persistenceScore,
+                    primaryWindowSummary.windowType().name()
+                            + " 기준으로 외부 우세 방향은 아직 뚜렷하지 않으며, 높은 심각도 비중은 "
+                            + ratioLabel(highSeverityShare)
+                            + "입니다."
+            );
+        }
+
         return new AnalysisExternalRegimePersistence(
                 primaryWindowSummary.windowType(),
                 enumValue(currentSnapshot.getDominantDirection(), AnalysisExternalRegimeDirection.class),
@@ -98,13 +112,13 @@ public class AnalysisExternalContextComparisonService {
                 highSeverityShare,
                 persistenceScore,
                 primaryWindowSummary.windowType().name()
-                        + " keeps "
-                        + label(currentSnapshot.getDominantDirection())
-                        + " dominance for "
+                        + " 기준 외부 우세 방향은 "
+                        + koreanDirection(currentSnapshot.getDominantDirection())
+                        + "이며, 해당 방향 비중은 "
                         + ratioLabel(dominantDirectionShare)
-                        + " of samples with high severity on "
+                        + ", 높은 심각도 비중은 "
                         + ratioLabel(highSeverityShare)
-                        + " of observations."
+                        + "입니다."
         );
     }
 
@@ -115,6 +129,22 @@ public class AnalysisExternalContextComparisonService {
             List<AnalysisExternalContextWindowSummary> windowSummaries
     ) {
         BigDecimal reversalRiskScore = reversalRiskScore(transitions, persistence, windowSummaries);
+        String summary;
+        if (currentSnapshot.getDominantDirection() == null && currentSnapshot.getPrimarySignalTitle() == null) {
+            summary = "외부 요인 전반에서 뚜렷한 우세 방향 신호는 아직 확인되지 않으며, 반전 위험은 "
+                    + reversalRiskScore.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
+                    + "입니다.";
+        } else {
+            summary = "외부 체계는 "
+                    + koreanDirection(currentSnapshot.getDominantDirection())
+                    + "이며, 심각도는 "
+                    + koreanSeverity(currentSnapshot.getHighestSeverity())
+                    + "입니다. 핵심 신호는 "
+                    + nullSafe(currentSnapshot.getPrimarySignalTitle())
+                    + "이며, 반전 위험은 "
+                    + reversalRiskScore.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
+                    + "입니다.";
+        }
         return new AnalysisExternalRegimeStatePayload(
                 enumValue(currentSnapshot.getDominantDirection(), AnalysisExternalRegimeDirection.class),
                 enumValue(currentSnapshot.getHighestSeverity(), AnalysisExternalRegimeSeverity.class),
@@ -122,15 +152,7 @@ public class AnalysisExternalContextComparisonService {
                 currentSnapshot.getPrimarySignalTitle(),
                 currentSnapshot.getCompositeRiskScore(),
                 reversalRiskScore,
-                "External regime is "
-                        + label(currentSnapshot.getDominantDirection())
-                        + " with "
-                        + label(currentSnapshot.getHighestSeverity())
-                        + " severity, primary signal "
-                        + nullSafe(currentSnapshot.getPrimarySignalTitle())
-                        + ", and reversal risk "
-                        + reversalRiskScore.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
-                        + "."
+                summary
         );
     }
 
@@ -232,8 +254,8 @@ public class AnalysisExternalContextComparisonService {
         if (Boolean.TRUE.equals(fact.dominantDirectionChanged())) {
             return new AnalysisExternalContextHighlight(
                     "External regime direction changed",
-                    fact.reference().name() + " 대비 external regime direction이 "
-                            + label(currentSnapshot.getDominantDirection()) + "로 전환되었습니다.",
+                    fact.reference().name() + " external regime direction shifted to "
+                            + label(currentSnapshot.getDominantDirection()) + ".",
                     AnalysisContextHeadlineImportance.HIGH,
                     fact.reference()
             );
@@ -241,8 +263,8 @@ public class AnalysisExternalContextComparisonService {
         if (Boolean.TRUE.equals(fact.highestSeverityChanged())) {
             return new AnalysisExternalContextHighlight(
                     "External regime severity shifted",
-                    fact.reference().name() + " 대비 최고 severity가 "
-                            + label(currentSnapshot.getHighestSeverity()) + "로 바뀌었습니다.",
+                    fact.reference().name() + " highest severity shifted to "
+                            + label(currentSnapshot.getHighestSeverity()) + ".",
                     AnalysisContextHeadlineImportance.HIGH,
                     fact.reference()
             );
@@ -250,8 +272,8 @@ public class AnalysisExternalContextComparisonService {
         if (Boolean.TRUE.equals(fact.primarySignalChanged())) {
             return new AnalysisExternalContextHighlight(
                     "Primary external signal changed",
-                    fact.reference().name() + "의 " + nullSafe(fact.referencePrimarySignalTitle())
-                            + "에서 " + nullSafe(currentSnapshot.getPrimarySignalTitle()) + "로 주요 external signal이 바뀌었습니다.",
+                    "Primary external signal changed from " + nullSafe(fact.referencePrimarySignalTitle())
+                            + " at " + fact.reference().name() + " to " + nullSafe(currentSnapshot.getPrimarySignalTitle()) + ".",
                     AnalysisContextHeadlineImportance.MEDIUM,
                     fact.reference()
             );
@@ -259,8 +281,8 @@ public class AnalysisExternalContextComparisonService {
         if (delta.compareTo(BigDecimal.ZERO) > 0) {
             return new AnalysisExternalContextHighlight(
                     "External risk intensified",
-                    fact.reference().name() + " 대비 composite risk score가 "
-                            + signed(delta) + "p 상승했습니다.",
+                    fact.reference().name() + " composite risk score increased by "
+                            + signed(delta) + "p.",
                     delta.abs().compareTo(HIGH_DELTA) >= 0
                             ? AnalysisContextHeadlineImportance.HIGH
                             : AnalysisContextHeadlineImportance.MEDIUM,
@@ -269,8 +291,8 @@ public class AnalysisExternalContextComparisonService {
         }
         return new AnalysisExternalContextHighlight(
                 "External risk eased",
-                fact.reference().name() + " 대비 composite risk score가 "
-                        + signed(delta) + "p 완화되었습니다.",
+                fact.reference().name() + " composite risk score eased by "
+                        + signed(delta) + "p.",
                 AnalysisContextHeadlineImportance.MEDIUM,
                 fact.reference()
         );
@@ -324,17 +346,17 @@ public class AnalysisExternalContextComparisonService {
     ) {
         return switch (transitionType) {
             case TRANSITION_TO_SUPPORTIVE, TRANSITION_TO_CAUTIONARY, TRANSITION_TO_HEADWIND ->
-                    fact.reference().name() + " 대비 external regime가 "
+                    fact.reference().name() + " external regime transitioned to "
                             + label(currentSnapshot.getDominantDirection())
-                            + "로 전이되었습니다.";
+                            + ".";
             case INTENSIFYING ->
-                    fact.reference().name() + " 대비 composite external risk가 "
-                            + signed(fact.compositeRiskScoreDelta()) + "p 확대되었습니다.";
+                    fact.reference().name() + " composite external risk expanded by "
+                            + signed(fact.compositeRiskScoreDelta()) + "p.";
             case EASING ->
-                    fact.reference().name() + " 대비 composite external risk가 "
-                            + signed(fact.compositeRiskScoreDelta()) + "p 완화되었습니다.";
+                    fact.reference().name() + " composite external risk eased by "
+                            + signed(fact.compositeRiskScoreDelta()) + "p.";
             case STABLE ->
-                    fact.reference().name() + " 대비 external regime는 대체로 안정적입니다.";
+                    fact.reference().name() + " external regime remains broadly stable.";
         };
     }
 
@@ -412,7 +434,31 @@ public class AnalysisExternalContextComparisonService {
     }
 
     private String nullSafe(String value) {
-        return value == null ? "unknown signal" : value;
+        return value == null ? "뚜렷한 핵심 신호가 확인되지 않았습니다" : value;
+    }
+
+    private String koreanDirection(String value) {
+        if (value == null) {
+            return "뚜렷하지 않은 상태";
+        }
+        return switch (value) {
+            case "SUPPORTIVE" -> "우호 우세";
+            case "CAUTIONARY" -> "경계 우세";
+            case "HEADWIND" -> "하방 부담 우세";
+            default -> value.toLowerCase().replace('_', ' ');
+        };
+    }
+
+    private String koreanSeverity(String value) {
+        if (value == null) {
+            return "뚜렷하지 않은 상태";
+        }
+        return switch (value) {
+            case "LOW" -> "낮은 편";
+            case "MEDIUM" -> "보통";
+            case "HIGH" -> "높은 편";
+            default -> value.toLowerCase().replace('_', ' ');
+        };
     }
 
     private <T extends Enum<T>> T enumValue(String value, Class<T> enumClass) {

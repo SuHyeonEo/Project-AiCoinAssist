@@ -1,5 +1,6 @@
 package com.aicoinassist.batch.domain.report.service;
 
+import com.aicoinassist.batch.domain.report.config.AnalysisLlmNarrativeProperties;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeGenerationResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeGatewayRequest;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeGatewayResponse;
@@ -20,6 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AnalysisLlmNarrativeGenerationService {
 
+    private final AnalysisLlmNarrativeProperties analysisLlmNarrativeProperties;
     private final AnalysisLlmNarrativeInputReadService analysisLlmNarrativeInputReadService;
     private final AnalysisLlmPromptComposer analysisLlmPromptComposer;
     private final AnalysisLlmNarrativeGateway analysisLlmNarrativeGateway;
@@ -41,7 +43,7 @@ public class AnalysisLlmNarrativeGenerationService {
         AnalysisLlmNarrativeInputPayload input = analysisLlmNarrativeInputReadService.getLatestInput(symbol, reportType);
         AnalysisLlmPromptComposition composition = analysisLlmPromptComposer.compose(input, optionalReferenceNews);
         AnalysisLlmNarrativeGatewayRequest request = AnalysisLlmNarrativeGatewayRequest.from(composition);
-        AnalysisLlmRetryPolicy retryPolicy = AnalysisLlmRetryPolicy.defaultPolicy();
+        AnalysisLlmRetryPolicy retryPolicy = new AnalysisLlmRetryPolicy(analysisLlmNarrativeProperties.maxTransportAttempts());
         List<String> transportIssues = new ArrayList<>();
         AnalysisLlmNarrativeFailureType failureType = AnalysisLlmNarrativeFailureType.NONE;
 
