@@ -30,7 +30,15 @@ class AnalysisReportBatchSchedulerTest {
                 "report-assembler-v1",
                 List.of(AssetType.BTC, AssetType.ETH),
                 List.of(AnalysisReportType.SHORT_TERM),
-                300000L
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L
         );
         AnalysisReportBatchScheduler scheduler = new AnalysisReportBatchScheduler(
                 analysisReportBatchExecutionService,
@@ -39,6 +47,7 @@ class AnalysisReportBatchSchedulerTest {
 
         when(analysisReportBatchExecutionService.execute(
                 properties.assetTypes(),
+                List.of(AnalysisReportType.SHORT_TERM),
                 "report-assembler-v1",
                 BatchExecutionTriggerType.SCHEDULED,
                 null
@@ -60,10 +69,11 @@ class AnalysisReportBatchSchedulerTest {
                 )
         ));
 
-        scheduler.run();
+        scheduler.runShortTerm();
 
         verify(analysisReportBatchExecutionService).execute(
                 properties.assetTypes(),
+                List.of(AnalysisReportType.SHORT_TERM),
                 "report-assembler-v1",
                 BatchExecutionTriggerType.SCHEDULED,
                 null

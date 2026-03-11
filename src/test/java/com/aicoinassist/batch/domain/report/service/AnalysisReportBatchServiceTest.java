@@ -51,7 +51,15 @@ class AnalysisReportBatchServiceTest {
                         AnalysisReportType.MID_TERM,
                         AnalysisReportType.LONG_TERM
                 ),
-                300000L
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L
         );
         AnalysisReportBatchService service = new AnalysisReportBatchService(
                 marketIndicatorSnapshotPersistenceService,
@@ -64,7 +72,13 @@ class AnalysisReportBatchServiceTest {
 
         Instant storedTime = Instant.parse("2026-03-09T01:00:30Z");
 
-        AnalysisReportBatchResult result = service.generateForAsset(AssetType.BTC, "run-001", "report-assembler-v1", storedTime);
+        AnalysisReportBatchResult result = service.generateForAsset(
+                AssetType.BTC,
+                "run-001",
+                "report-assembler-v1",
+                storedTime,
+                properties.reportTypes()
+        );
 
         InOrder inOrder = inOrder(
                 marketIndicatorSnapshotPersistenceService,
@@ -93,7 +107,15 @@ class AnalysisReportBatchServiceTest {
                 "report-assembler-v2",
                 java.util.List.of(AssetType.ETH),
                 java.util.List.of(AnalysisReportType.MID_TERM, AnalysisReportType.LONG_TERM),
-                300000L
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L
         );
         AnalysisReportBatchService service = new AnalysisReportBatchService(
                 marketIndicatorSnapshotPersistenceService,
@@ -108,7 +130,8 @@ class AnalysisReportBatchServiceTest {
                 AssetType.ETH,
                 "run-002",
                 "report-assembler-v2",
-                Instant.parse("2026-03-09T01:00:30Z")
+                Instant.parse("2026-03-09T01:00:30Z"),
+                properties.reportTypes()
         );
 
         InOrder inOrder = inOrder(
@@ -145,7 +168,15 @@ class AnalysisReportBatchServiceTest {
                         AnalysisReportType.SHORT_TERM,
                         AnalysisReportType.MID_TERM
                 ),
-                300000L
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L
         );
         AnalysisReportBatchService service = new AnalysisReportBatchService(
                 marketIndicatorSnapshotPersistenceService,
@@ -179,7 +210,8 @@ class AnalysisReportBatchServiceTest {
                 AssetType.XRP,
                 "run-003",
                 "report-assembler-v3",
-                Instant.parse("2026-03-09T01:00:30Z")
+                Instant.parse("2026-03-09T01:00:30Z"),
+                properties.reportTypes()
         );
 
         assertThat(result.runId()).isEqualTo("run-003");
@@ -203,7 +235,15 @@ class AnalysisReportBatchServiceTest {
                 "report-assembler-v4",
                 java.util.List.of(AssetType.BTC),
                 java.util.List.of(AnalysisReportType.SHORT_TERM),
-                300000L
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L
         );
         AnalysisReportBatchService service = new AnalysisReportBatchService(
                 marketIndicatorSnapshotPersistenceService,
@@ -247,7 +287,8 @@ class AnalysisReportBatchServiceTest {
                 AssetType.BTC,
                 "run-004",
                 "report-assembler-v4",
-                Instant.parse("2026-03-09T01:00:30Z")
+                Instant.parse("2026-03-09T01:00:30Z"),
+                properties.reportTypes()
         );
 
         assertThat(result.reportResults()).hasSize(1);

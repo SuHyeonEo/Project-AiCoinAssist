@@ -10,12 +10,16 @@ import com.aicoinassist.batch.infrastructure.client.fred.validator.FredObservati
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class FredMacroClient {
@@ -32,17 +36,7 @@ public class FredMacroClient {
         }
 
         String seriesId = seriesId(metricType);
-        String rawPayload = restClient.get()
-                                      .uri(
-                                              fredProperties.baseUrl()
-                                                      + "/fred/series/observations?series_id="
-                                                      + seriesId
-                                                      + "&api_key="
-                                                      + apiKey
-                                                      + "&file_type=json&sort_order=desc&limit=10"
-                                      )
-                                      .retrieve()
-                                      .body(String.class);
+        String rawPayload = fetchRawPayloadWithRetry(metricType, seriesId, apiKey);
 
         if (rawPayload == null) {
             throw new IllegalStateException("FRED API returned an empty payload for " + metricType + ".");
@@ -61,6 +55,75 @@ public class FredMacroClient {
                 parseDecimal(item == null ? null : item.value()),
                 rawPayload
         );
+    }
+
+    private String fetchRawPayloadWithRetry(
+            MacroMetricType metricType,
+            String seriesId,
+            String apiKey
+    ) {
+        int maxAttempts = fredProperties.maxAttempts();
+        RuntimeException lastException = null;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                return fetchRawPayload(seriesId, apiKey);
+            } catch (RuntimeException exception) {
+                lastException = exception;
+                if (!isRetryable(exception) || attempt == maxAttempts) {
+                    throw exception;
+                }
+
+                long backoffMillis = fredProperties.retryBackoffMillis() * attempt;
+                log.warn(
+                        "fred macro fetch retry scheduled - metric: {}, seriesId: {}, attempt: {}/{}, backoffMs: {}, error: {}",
+                        metricType,
+                        seriesId,
+                        attempt,
+                        maxAttempts,
+                        backoffMillis,
+                        exception.getMessage()
+                );
+                sleep(backoffMillis);
+            }
+        }
+
+        throw lastException == null
+                ? new IllegalStateException("FRED fetch failed without an exception.")
+                : lastException;
+    }
+
+    private String fetchRawPayload(String seriesId, String apiKey) {
+        return restClient.get()
+                         .uri(
+                                 fredProperties.baseUrl()
+                                         + "/fred/series/observations?series_id="
+                                         + seriesId
+                                         + "&api_key="
+                                         + apiKey
+                                         + "&file_type=json&sort_order=desc&limit=10"
+                         )
+                         .retrieve()
+                         .body(String.class);
+    }
+
+    private boolean isRetryable(RuntimeException exception) {
+        if (exception instanceof ResourceAccessException) {
+            return true;
+        }
+        if (exception instanceof HttpStatusCodeException statusCodeException) {
+            return statusCodeException.getStatusCode().is5xxServerError()
+                    || statusCodeException.getStatusCode().value() == 429;
+        }
+        return false;
+    }
+
+    private void sleep(long backoffMillis) {
+        try {
+            Thread.sleep(backoffMillis);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while backing off FRED retry.", exception);
+        }
     }
 
     private String seriesId(MacroMetricType metricType) {

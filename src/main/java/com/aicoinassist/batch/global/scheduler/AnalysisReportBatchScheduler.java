@@ -3,6 +3,7 @@ package com.aicoinassist.batch.global.scheduler;
 import com.aicoinassist.batch.domain.market.enumtype.AssetType;
 import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchProperties;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchRunResult;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionTriggerType;
 import com.aicoinassist.batch.domain.report.service.AnalysisReportBatchExecutionService;
 import lombok.RequiredArgsConstructor;
@@ -28,12 +29,37 @@ public class AnalysisReportBatchScheduler {
     private final AnalysisReportBatchProperties analysisReportBatchProperties;
 
     @Scheduled(
-            fixedDelayString = "${batch.analysis-report.fixed-delay-ms:300000}",
-            initialDelayString = "${batch.scheduler.analysis-report-generation.initial-delay-ms:60000}"
+            fixedDelayString = "${batch.analysis-report.short-term-fixed-delay-ms:21600000}",
+            initialDelayString = "${batch.analysis-report.short-term-initial-delay-ms:60000}"
     )
-    public void run() {
+    public void runShortTerm() {
+        runForReportType(AnalysisReportType.SHORT_TERM);
+    }
+
+    @Scheduled(
+            fixedDelayString = "${batch.analysis-report.mid-term-fixed-delay-ms:86400000}",
+            initialDelayString = "${batch.analysis-report.mid-term-initial-delay-ms:120000}"
+    )
+    public void runMidTerm() {
+        runForReportType(AnalysisReportType.MID_TERM);
+    }
+
+    @Scheduled(
+            fixedDelayString = "${batch.analysis-report.long-term-fixed-delay-ms:604800000}",
+            initialDelayString = "${batch.analysis-report.long-term-initial-delay-ms:180000}"
+    )
+    public void runLongTerm() {
+        runForReportType(AnalysisReportType.LONG_TERM);
+    }
+
+    private void runForReportType(AnalysisReportType reportType) {
+        if (!analysisReportBatchProperties.isEnabled(reportType)) {
+            return;
+        }
+
         AnalysisReportBatchRunResult runResult = analysisReportBatchExecutionService.execute(
                 analysisReportBatchProperties.assetTypes(),
+                List.of(reportType),
                 analysisReportBatchProperties.engineVersion(),
                 BatchExecutionTriggerType.SCHEDULED,
                 null
@@ -52,13 +78,14 @@ public class AnalysisReportBatchScheduler {
                         analysisReportBatchProperties.engineVersion(),
                         runResult.triggerType()
                 );
-                log.warn("snapshot step results - runId: {}, symbol: {}, results: {}", result.runId(), result.symbol(), result.snapshotResults());
-                log.warn("report step results - runId: {}, symbol: {}, results: {}", result.runId(), result.symbol(), result.reportResults());
+                log.warn("snapshot step results - runId: {}, symbol: {}, reportType: {}, results: {}", result.runId(), result.symbol(), reportType, result.snapshotResults());
+                log.warn("report step results - runId: {}, symbol: {}, reportType: {}, results: {}", result.runId(), result.symbol(), reportType, result.reportResults());
                 if (result.crashed()) {
                     log.error(
-                            "analysis report batch crashed - runId: {}, symbol: {}, durationMs: {}, engineVersion: {}, triggerType: {}, error: {}",
+                            "analysis report batch crashed - runId: {}, symbol: {}, reportType: {}, durationMs: {}, engineVersion: {}, triggerType: {}, error: {}",
                             result.runId(),
                             result.symbol(),
+                            reportType,
                             result.durationMillis(),
                             analysisReportBatchProperties.engineVersion(),
                             runResult.triggerType(),
@@ -67,9 +94,10 @@ public class AnalysisReportBatchScheduler {
                 }
             } else {
                 log.info(
-                        "analysis report batch completed - runId: {}, symbol: {}, durationMs: {}, snapshots: {}, reports: {}, engineVersion: {}, triggerType: {}",
+                        "analysis report batch completed - runId: {}, symbol: {}, reportType: {}, durationMs: {}, snapshots: {}, reports: {}, engineVersion: {}, triggerType: {}",
                         result.runId(),
                         result.symbol(),
+                        reportType,
                         result.durationMillis(),
                         result.snapshotSuccessCount(),
                         result.reportSuccessCount(),
@@ -79,8 +107,9 @@ public class AnalysisReportBatchScheduler {
             }
         }
         log.info(
-                "analysis report batch run finished - runId: {}, triggerType: {}, rerunSourceRunId: {}, status: {}, durationMs: {}, assetSuccess: {}, assetFailure: {}, engineVersion: {}",
+                "analysis report batch run finished - runId: {}, reportType: {}, triggerType: {}, rerunSourceRunId: {}, status: {}, durationMs: {}, assetSuccess: {}, assetFailure: {}, engineVersion: {}",
                 runResult.runId(),
+                reportType,
                 runResult.triggerType(),
                 runResult.rerunSourceRunId(),
                 runResult.status(),

@@ -3,6 +3,7 @@ package com.aicoinassist.batch.domain.report.service;
 import com.aicoinassist.batch.domain.market.enumtype.AssetType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchRunResult;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionTriggerType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +44,13 @@ class AnalysisReportBatchExecutionServiceTest {
                 FIXED_CLOCK
         );
 
-        when(analysisReportBatchService.generateForAsset(eq(AssetType.BTC), any(), eq("report-assembler-v1"), eq(Instant.parse("2026-03-09T01:00:30Z"))))
+        when(analysisReportBatchService.generateForAsset(
+                eq(AssetType.BTC),
+                any(),
+                eq("report-assembler-v1"),
+                eq(Instant.parse("2026-03-09T01:00:30Z")),
+                eq(List.of(AnalysisReportType.SHORT_TERM))
+        ))
                 .thenAnswer(invocation -> new AnalysisReportBatchResult(
                         invocation.getArgument(1),
                         "BTCUSDT",
@@ -54,11 +61,18 @@ class AnalysisReportBatchExecutionServiceTest {
                         List.of(),
                         null
                 ));
-        when(analysisReportBatchService.generateForAsset(eq(AssetType.ETH), any(), eq("report-assembler-v1"), eq(Instant.parse("2026-03-09T01:00:30Z"))))
+        when(analysisReportBatchService.generateForAsset(
+                eq(AssetType.ETH),
+                any(),
+                eq("report-assembler-v1"),
+                eq(Instant.parse("2026-03-09T01:00:30Z")),
+                eq(List.of(AnalysisReportType.SHORT_TERM))
+        ))
                 .thenThrow(new IllegalStateException("scheduler path crash"));
 
         AnalysisReportBatchRunResult runResult = service.execute(
                 List.of(AssetType.BTC, AssetType.ETH),
+                List.of(AnalysisReportType.SHORT_TERM),
                 "report-assembler-v1",
                 BatchExecutionTriggerType.SCHEDULED,
                 null

@@ -3,6 +3,7 @@ package com.aicoinassist.batch.domain.report.service;
 import com.aicoinassist.batch.domain.market.enumtype.AssetType;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchRunResult;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionTriggerType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class AnalysisReportBatchExecutionService {
 
     public AnalysisReportBatchRunResult execute(
             List<AssetType> assetTypes,
+            List<AnalysisReportType> reportTypes,
             String engineVersion,
             BatchExecutionTriggerType triggerType,
             String rerunSourceRunId
@@ -40,7 +42,8 @@ public class AnalysisReportBatchExecutionService {
                                 assetType,
                                 runId,
                                 engineVersion,
-                                storedTime
+                                storedTime,
+                                reportTypes
                         )
                 );
             } catch (Exception exception) {

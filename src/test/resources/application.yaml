@@ -39,7 +39,15 @@ batch:
       - SHORT_TERM
       - MID_TERM
       - LONG_TERM
-    fixed-delay-ms: 300000
+    short-term-enabled: true
+    short-term-fixed-delay-ms: 21600000
+    short-term-initial-delay-ms: 60000
+    mid-term-enabled: true
+    mid-term-fixed-delay-ms: 86400000
+    mid-term-initial-delay-ms: 120000
+    long-term-enabled: true
+    long-term-fixed-delay-ms: 604800000
+    long-term-initial-delay-ms: 180000
     manual-rerun:
       enabled: false
       source-run-id:
@@ -76,6 +84,8 @@ external:
   fred:
     base-url: https://api.stlouisfed.org
     api-key: test-fred-api-key
+    max-attempts: 3
+    retry-backoff-millis: 2000
     series:
       dxy-proxy: DTWEXBGS
       us10y-yield: DGS10

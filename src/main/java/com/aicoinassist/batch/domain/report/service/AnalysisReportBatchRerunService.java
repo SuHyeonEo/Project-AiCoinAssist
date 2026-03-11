@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.enumtype.AssetType;
+import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchProperties;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchRunResult;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportBatchRunEntity;
 import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionStatus;
@@ -16,6 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AnalysisReportBatchRerunService {
 
+    private final AnalysisReportBatchProperties analysisReportBatchProperties;
     private final AnalysisReportBatchRunRepository analysisReportBatchRunRepository;
     private final AnalysisReportBatchAssetResultRepository analysisReportBatchAssetResultRepository;
     private final AnalysisReportBatchExecutionService analysisReportBatchExecutionService;
@@ -36,6 +38,7 @@ public class AnalysisReportBatchRerunService {
 
         return analysisReportBatchExecutionService.execute(
                 failedAssetTypes,
+                analysisReportBatchProperties.reportTypes(),
                 sourceRun.getEngineVersion(),
                 BatchExecutionTriggerType.MANUAL_RERUN,
                 sourceRunId
