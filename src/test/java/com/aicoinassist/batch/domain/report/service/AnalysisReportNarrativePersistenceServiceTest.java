@@ -129,7 +129,7 @@ class AnalysisReportNarrativePersistenceServiceTest extends AnalysisReportPayloa
         assertThat(result.getPromptTemplateVersion()).isEqualTo("prompt-v1");
         assertThat(result.getGenerationStatus()).isEqualTo(AnalysisLlmNarrativeGenerationStatus.SUCCESS);
         assertThat(result.getOutputJson()).contains("Short summary");
-        assertThat(result.getReferenceNewsJson()).contains("ETF delay headline");
+        assertThat(result.getReferenceNewsJson()).isEqualTo("[]");
     }
 
     private AnalysisReportNarrativeDraft draft(AnalysisReportEntity reportEntity, String summary) throws Exception {
@@ -146,14 +146,6 @@ class AnalysisReportNarrativePersistenceServiceTest extends AnalysisReportPayloa
                 "prompt-v1",
                 "llm-input-v1",
                 "llm-output-v1",
-                java.util.List.of(new com.aicoinassist.batch.domain.report.dto.AnalysisLlmReferenceNewsItem(
-                        "ETF delay headline",
-                        "ExampleSource",
-                        Instant.parse("2026-03-09T00:30:00Z"),
-                        "https://example.com/news/1",
-                        "Why it matters",
-                        "MACRO"
-                )),
                 Instant.parse("2026-03-09T01:00:00Z"),
                 Instant.parse("2026-03-09T01:00:05Z"),
                 Instant.parse("2026-03-09T01:00:10Z")

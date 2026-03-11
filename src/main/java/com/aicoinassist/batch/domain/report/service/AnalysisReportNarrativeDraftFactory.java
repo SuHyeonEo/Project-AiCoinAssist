@@ -1,7 +1,6 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeGenerationResult;
-import com.aicoinassist.batch.domain.report.dto.AnalysisLlmReferenceNewsItem;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportNarrativeDraft;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmNarrativeGenerationStatus;
@@ -28,7 +27,6 @@ public class AnalysisReportNarrativeDraftFactory {
             String promptTemplateVersion,
             String inputSchemaVersion,
             String outputSchemaVersion,
-            List<AnalysisLlmReferenceNewsItem> referenceNews,
             Instant requestedAt,
             Instant completedAt,
             Instant storedAt
@@ -44,7 +42,7 @@ public class AnalysisReportNarrativeDraftFactory {
                 generationResult.promptComposition().systemPrompt(),
                 generationResult.promptComposition().userPrompt(),
                 generationResult.promptComposition().outputLengthPolicyJson(),
-                serialize(referenceNews == null ? List.of() : referenceNews),
+                "[]",
                 generationResult.gatewayResponse() == null ? null : generationResult.gatewayResponse().rawOutputJson(),
                 generationResult.outputProcessingResult().output(),
                 generationResult.outputProcessingResult().fallbackUsed(),

@@ -9,9 +9,20 @@ import java.util.List;
 public record AnalysisLlmPromptInputPayload(
         AnalysisLlmPromptMetadata metadata,
         AnalysisLlmExecutiveSummary executiveSummary,
+        List<AnalysisContextHeadlinePayload> signalHeadlines,
+        List<String> primaryFacts,
+        List<String> marketStructureFacts,
+        List<String> derivativeStructureFacts,
+        List<String> macroStructureFacts,
+        List<String> sentimentStructureFacts,
+        List<String> onchainStructureFacts,
+        List<String> externalStructureFacts,
+        AnalysisLlmServerMarketStructureInput serverMarketStructure,
+        List<String> levelStructureFacts,
+        List<String> marketStructureBoxFacts,
         List<AnalysisLlmDomainFactBlock> domainFactBlocks,
         List<AnalysisGptCrossSignal> crossSignals,
-        AnalysisLlmRiskScenarioInput limitedRisksScenarios,
-        List<AnalysisLlmReferenceNewsItem> optionalReferenceNews
+        List<AnalysisLlmScenarioGuidance> scenarioGuidance,
+        AnalysisLlmRiskScenarioInput limitedRisksScenarios
 ) {
 }

@@ -7,10 +7,11 @@ import java.util.List;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record AnalysisLlmNarrativeOutputPayload(
+        AnalysisLlmHeroSummaryOutput heroSummary,
         AnalysisLlmExecutiveConclusionOutput executiveConclusion,
         List<AnalysisLlmDomainAnalysisOutput> domainAnalyses,
+        AnalysisLlmMarketStructureBoxOutput marketStructureBox,
         AnalysisLlmCrossSignalIntegrationOutput crossSignalIntegration,
-        List<AnalysisLlmScenarioOutput> scenarioMap,
-        List<AnalysisLlmReferenceNewsItem> referenceNews
+        List<AnalysisLlmScenarioOutput> scenarioMap
 ) {
 }

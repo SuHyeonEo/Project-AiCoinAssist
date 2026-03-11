@@ -62,7 +62,7 @@ class AnalysisReportNarrativeGenerationFlowServiceTest extends AnalysisReportPay
                 );
         when(analysisReportRepository.findTopBySymbolAndReportTypeOrderByAnalysisBasisTimeDescIdDesc("BTCUSDT", AnalysisReportType.SHORT_TERM))
                 .thenReturn(Optional.of(analysisReport));
-        when(analysisLlmNarrativeGenerationService.generateLatest("BTCUSDT", AnalysisReportType.SHORT_TERM, List.of()))
+        when(analysisLlmNarrativeGenerationService.generateLatest("BTCUSDT", AnalysisReportType.SHORT_TERM))
                 .thenReturn(generationResult);
         when(analysisReportNarrativePersistenceService.save(org.mockito.ArgumentMatchers.any(AnalysisReportNarrativeDraft.class)))
                 .thenReturn(
@@ -148,7 +148,7 @@ class AnalysisReportNarrativeGenerationFlowServiceTest extends AnalysisReportPay
         );
         when(analysisReportRepository.findTopBySymbolAndReportTypeOrderByAnalysisBasisTimeDescIdDesc("BTCUSDT", AnalysisReportType.SHORT_TERM))
                 .thenReturn(Optional.of(analysisReport));
-        when(analysisLlmNarrativeGenerationService.generateLatest("BTCUSDT", AnalysisReportType.SHORT_TERM, List.of()))
+        when(analysisLlmNarrativeGenerationService.generateLatest("BTCUSDT", AnalysisReportType.SHORT_TERM))
                 .thenReturn(generationResult);
         when(analysisReportNarrativePersistenceService.save(org.mockito.ArgumentMatchers.any(AnalysisReportNarrativeDraft.class)))
                 .thenReturn(
