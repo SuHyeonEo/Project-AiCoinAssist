@@ -1,0 +1,72 @@
+package com.aicoinassist.batch.global.scheduler;
+
+import com.aicoinassist.batch.domain.macro.service.MacroRawIngestionService;
+import com.aicoinassist.batch.domain.market.config.ExternalRawIngestionProperties;
+import com.aicoinassist.batch.domain.market.enumtype.AssetType;
+import com.aicoinassist.batch.domain.onchain.service.OnchainRawIngestionService;
+import com.aicoinassist.batch.domain.sentiment.service.SentimentRawIngestionService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+@ConditionalOnProperty(
+        prefix = "batch.scheduler.external-raw-ingestion",
+        name = "enabled",
+        havingValue = "true"
+)
+public class ExternalRawIngestionScheduler {
+
+    private final MacroRawIngestionService macroRawIngestionService;
+    private final SentimentRawIngestionService sentimentRawIngestionService;
+    private final OnchainRawIngestionService onchainRawIngestionService;
+    private final ExternalRawIngestionProperties externalRawIngestionProperties;
+
+    @Scheduled(fixedDelayString = "${batch.scheduler.external-raw-ingestion.macro-fixed-delay-ms:3600000}")
+    public void ingestMacro() {
+        if (!externalRawIngestionProperties.macroEnabled()) {
+            return;
+        }
+
+        try {
+            macroRawIngestionService.ingestAll();
+            log.info("macro raw ingestion saved - metrics: {}", 3);
+        } catch (Exception exception) {
+            log.error("macro raw ingestion failed", exception);
+        }
+    }
+
+    @Scheduled(fixedDelayString = "${batch.scheduler.external-raw-ingestion.sentiment-fixed-delay-ms:3600000}")
+    public void ingestSentiment() {
+        if (!externalRawIngestionProperties.sentimentEnabled()) {
+            return;
+        }
+
+        try {
+            sentimentRawIngestionService.ingestFearGreed();
+            log.info("sentiment raw ingestion saved - metric: FEAR_GREED_INDEX");
+        } catch (Exception exception) {
+            log.error("sentiment raw ingestion failed - metric: FEAR_GREED_INDEX", exception);
+        }
+    }
+
+    @Scheduled(fixedDelayString = "${batch.scheduler.external-raw-ingestion.onchain-fixed-delay-ms:3600000}")
+    public void ingestOnchain() {
+        if (!externalRawIngestionProperties.onchainEnabled()) {
+            return;
+        }
+
+        for (AssetType assetType : AssetType.values()) {
+            try {
+                onchainRawIngestionService.ingestAll(assetType);
+                log.info("onchain raw ingestion saved - symbol: {}", assetType.symbol());
+            } catch (Exception exception) {
+                log.error("onchain raw ingestion failed - symbol: {}", assetType.symbol(), exception);
+            }
+        }
+    }
+}
