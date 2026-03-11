@@ -27,7 +27,10 @@ public class AnalysisReportBatchScheduler {
     private final AnalysisReportBatchExecutionService analysisReportBatchExecutionService;
     private final AnalysisReportBatchProperties analysisReportBatchProperties;
 
-    @Scheduled(fixedDelayString = "${batch.analysis-report.fixed-delay-ms:300000}")
+    @Scheduled(
+            fixedDelayString = "${batch.analysis-report.fixed-delay-ms:300000}",
+            initialDelayString = "${batch.scheduler.analysis-report-generation.initial-delay-ms:60000}"
+    )
     public void run() {
         AnalysisReportBatchRunResult runResult = analysisReportBatchExecutionService.execute(
                 analysisReportBatchProperties.assetTypes(),

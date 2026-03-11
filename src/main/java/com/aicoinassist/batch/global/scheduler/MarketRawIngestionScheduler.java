@@ -12,6 +12,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -47,24 +49,39 @@ public class MarketRawIngestionScheduler {
     @Scheduled(fixedDelayString = "${batch.scheduler.market-raw-ingestion.candle-fixed-delay-ms:600000}")
     public void ingestCandles() {
         for (AssetType assetType : AssetType.values()) {
-            try {
-                MarketRawIngestionResult result =
-                        marketRawIngestionService.ingestCandles(
-                                assetType.symbol(),
-                                CandleInterval.ONE_HOUR,
-                                marketRawIngestionProperties.candleLimit()
-                        );
+            for (CandleInterval interval : List.of(CandleInterval.ONE_HOUR, CandleInterval.FOUR_HOUR, CandleInterval.ONE_DAY)) {
+                try {
+                    MarketRawIngestionResult result =
+                            marketRawIngestionService.ingestCandles(
+                                    assetType.symbol(),
+                                    interval,
+                                    candleLimit(interval)
+                            );
 
-                log.info(
-                        "candle raw ingestion saved - symbol: {}, interval: {}, candles: {}, invalidCandles: {}",
-                        result.symbol(),
-                        result.interval().value(),
-                        result.candleCount(),
-                        result.invalidCandleCount()
-                );
-            } catch (Exception exception) {
-                log.error("candle raw ingestion failed - symbol: {}, interval: {}", assetType.symbol(), CandleInterval.ONE_HOUR.value(), exception);
+                    log.info(
+                            "candle raw ingestion saved - symbol: {}, interval: {}, candles: {}, invalidCandles: {}",
+                            result.symbol(),
+                            result.interval().value(),
+                            result.candleCount(),
+                            result.invalidCandleCount()
+                    );
+                } catch (Exception exception) {
+                    log.error(
+                            "candle raw ingestion failed - symbol: {}, interval: {}",
+                            assetType.symbol(),
+                            interval.value(),
+                            exception
+                    );
+                }
             }
         }
+    }
+
+    private int candleLimit(CandleInterval interval) {
+        return switch (interval) {
+            case ONE_HOUR -> marketRawIngestionProperties.candleLimit();
+            case FOUR_HOUR -> marketRawIngestionProperties.fourHourCandleLimit();
+            case ONE_DAY -> marketRawIngestionProperties.oneDayCandleLimit();
+        };
     }
 }

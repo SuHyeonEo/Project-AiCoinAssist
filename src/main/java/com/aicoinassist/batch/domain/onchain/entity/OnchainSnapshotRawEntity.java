@@ -67,7 +67,7 @@ public class OnchainSnapshotRawEntity {
     @Column(columnDefinition = "TEXT")
     private String validationDetails;
 
-    @Column(precision = 19, scale = 8)
+    @Column(precision = 24, scale = 8)
     private BigDecimal metricValue;
 
     @Column(nullable = false, columnDefinition = "TEXT")

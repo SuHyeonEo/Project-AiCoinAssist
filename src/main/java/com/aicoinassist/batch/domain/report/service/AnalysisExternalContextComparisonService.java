@@ -297,7 +297,11 @@ public class AnalysisExternalContextComparisonService {
             AnalysisExternalContextComparisonFact fact
     ) {
         if (Boolean.TRUE.equals(fact.dominantDirectionChanged())) {
-            return switch (currentSnapshot.getDominantDirection()) {
+            String dominantDirection = currentSnapshot.getDominantDirection();
+            if (dominantDirection == null) {
+                return AnalysisExternalRegimeTransitionType.STABLE;
+            }
+            return switch (dominantDirection) {
                 case "SUPPORTIVE" -> AnalysisExternalRegimeTransitionType.TRANSITION_TO_SUPPORTIVE;
                 case "CAUTIONARY" -> AnalysisExternalRegimeTransitionType.TRANSITION_TO_CAUTIONARY;
                 case "HEADWIND" -> AnalysisExternalRegimeTransitionType.TRANSITION_TO_HEADWIND;
@@ -370,6 +374,9 @@ public class AnalysisExternalContextComparisonService {
             AnalysisExternalContextWindowSummary primaryWindowSummary
     ) {
         if (primaryWindowSummary.sampleCount() == null || primaryWindowSummary.sampleCount() == 0) {
+            return BigDecimal.ZERO;
+        }
+        if (dominantDirection == null) {
             return BigDecimal.ZERO;
         }
         int dominantSampleCount = switch (dominantDirection) {

@@ -6,10 +6,14 @@ import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
 import com.aicoinassist.batch.domain.market.repository.MarketExternalContextSnapshotRepository;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HexFormat;
 import java.util.List;
 
 @Service
@@ -111,10 +115,21 @@ public class MarketExternalContextWindowSummarySnapshotService {
             Instant windowEndTime,
             int sampleCount
     ) {
-        return currentSnapshot.getSourceDataVersion()
+        return "snapshotTime=" + currentSnapshot.getSnapshotTime()
+                + ";snapshotDigest=" + sha256Hex(currentSnapshot.getSourceDataVersion()).substring(0, 16)
                 + ";windowType=" + windowType.name()
                 + ";windowStartTime=" + windowStartTime
                 + ";windowEndTime=" + windowEndTime
                 + ";sampleCount=" + sampleCount;
+    }
+
+    private String sha256Hex(String value) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            byte[] digest = messageDigest.digest(value.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 algorithm is not available.", exception);
+        }
     }
 }
