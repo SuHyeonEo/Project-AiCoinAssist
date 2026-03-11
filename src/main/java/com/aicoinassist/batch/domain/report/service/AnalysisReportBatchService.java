@@ -33,12 +33,13 @@ public class AnalysisReportBatchService {
             AssetType assetType,
             String runId,
             String engineVersion,
-            Instant storedTime
+            Instant storedTime,
+            List<com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType> targetReportTypes
     ) {
         Instant startedAt = Instant.now(clock);
         String symbol = assetType.symbol();
         List<AnalysisReportSnapshotStepResult> snapshotResults = new ArrayList<>();
-        for (CandleInterval interval : analysisReportBatchProperties.snapshotIntervals()) {
+        for (CandleInterval interval : analysisReportBatchProperties.snapshotIntervals(targetReportTypes)) {
             try {
                 marketIndicatorSnapshotPersistenceService.createAndSave(symbol, interval);
                 snapshotResults.add(new AnalysisReportSnapshotStepResult(interval, true, null));
@@ -48,7 +49,7 @@ public class AnalysisReportBatchService {
         }
 
         List<AnalysisReportStepResult> reportResults = new ArrayList<>();
-        for (var reportType : analysisReportBatchProperties.reportTypes()) {
+        for (var reportType : targetReportTypes) {
             try {
                 analysisReportGenerationService.generateAndSave(
                         symbol,

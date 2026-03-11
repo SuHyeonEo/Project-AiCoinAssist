@@ -22,10 +22,18 @@ class AnalysisReportBatchPropertiesTest {
                         AnalysisReportType.MID_TERM,
                         AnalysisReportType.SHORT_TERM
                 ),
-                300000L
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L
         );
 
-        assertThat(properties.snapshotIntervals()).containsExactly(
+        assertThat(properties.snapshotIntervals(properties.reportTypes())).containsExactly(
                 CandleInterval.ONE_HOUR,
                 CandleInterval.ONE_DAY,
                 CandleInterval.FOUR_HOUR

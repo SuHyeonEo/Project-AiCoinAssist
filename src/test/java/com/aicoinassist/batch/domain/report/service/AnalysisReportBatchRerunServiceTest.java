@@ -1,9 +1,11 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.enumtype.AssetType;
+import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchProperties;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchRunResult;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportBatchAssetResultEntity;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportBatchRunEntity;
+import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionStatus;
 import com.aicoinassist.batch.domain.report.enumtype.BatchExecutionTriggerType;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportBatchAssetResultRepository;
@@ -35,7 +37,22 @@ class AnalysisReportBatchRerunServiceTest {
 
     @Test
     void rerunFailedAssetsUsesOriginalEngineVersionAndFailedAssetSubset() {
+        AnalysisReportBatchProperties properties = new AnalysisReportBatchProperties(
+                "report-assembler-v1",
+                List.of(AssetType.BTC, AssetType.ETH, AssetType.XRP),
+                List.of(AnalysisReportType.SHORT_TERM, AnalysisReportType.MID_TERM, AnalysisReportType.LONG_TERM),
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L,
+                true,
+                60000L,
+                0L
+        );
         AnalysisReportBatchRerunService service = new AnalysisReportBatchRerunService(
+                properties,
                 analysisReportBatchRunRepository,
                 analysisReportBatchAssetResultRepository,
                 analysisReportBatchExecutionService
@@ -88,6 +105,7 @@ class AnalysisReportBatchRerunServiceTest {
         );
         when(analysisReportBatchExecutionService.execute(
                 List.of(AssetType.ETH),
+                properties.reportTypes(),
                 "report-assembler-v1",
                 BatchExecutionTriggerType.MANUAL_RERUN,
                 "run-001"
@@ -98,6 +116,7 @@ class AnalysisReportBatchRerunServiceTest {
         assertThat(result).isSameAs(rerunResult);
         verify(analysisReportBatchExecutionService).execute(
                 List.of(AssetType.ETH),
+                properties.reportTypes(),
                 "report-assembler-v1",
                 BatchExecutionTriggerType.MANUAL_RERUN,
                 "run-001"

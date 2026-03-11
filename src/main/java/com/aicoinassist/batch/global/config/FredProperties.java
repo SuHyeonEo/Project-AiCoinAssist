@@ -6,6 +6,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record FredProperties(
         String baseUrl,
         String apiKey,
+        Integer maxAttempts,
+        Long retryBackoffMillis,
         Series series
 ) {
 
@@ -13,6 +15,8 @@ public record FredProperties(
         baseUrl = baseUrl == null || baseUrl.isBlank()
                 ? "https://api.stlouisfed.org"
                 : baseUrl;
+        maxAttempts = maxAttempts == null || maxAttempts <= 0 ? 3 : maxAttempts;
+        retryBackoffMillis = retryBackoffMillis == null || retryBackoffMillis < 0 ? 2000L : retryBackoffMillis;
         series = series == null ? new Series(null, null, null) : series;
     }
 
