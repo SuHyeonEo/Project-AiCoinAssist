@@ -69,8 +69,8 @@ class AnalysisLlmSharedContextGenerationServiceTest extends AnalysisReportPayloa
                         80
                 ));
         when(analysisReportSharedContextRepository
-                .findTopByReportTypeAndContextVersionAndLlmProviderAndLlmModelAndPromptTemplateVersionAndInputSchemaVersionAndOutputSchemaVersionAndInputPayloadHashOrderByIdDesc(
-                        any(), any(), any(), any(), any(), any(), any(), any()))
+                .findTopByContextVersionAndLlmProviderAndLlmModelAndPromptTemplateVersionAndInputSchemaVersionAndOutputSchemaVersionAndInputPayloadHashOrderByIdDesc(
+                        any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(Optional.empty(), Optional.of(storedEntity));
         when(analysisReportSharedContextPersistenceService.save(any()))
                 .thenReturn(storedEntity);
@@ -90,8 +90,8 @@ class AnalysisLlmSharedContextGenerationServiceTest extends AnalysisReportPayloa
         AnalysisLlmSharedContextGenerationService service = service();
         AnalysisLlmSharedContextReference storedReference = sharedContextReference();
         when(analysisReportSharedContextRepository
-                .findTopByReportTypeAndContextVersionAndLlmProviderAndLlmModelAndPromptTemplateVersionAndInputSchemaVersionAndOutputSchemaVersionAndInputPayloadHashOrderByIdDesc(
-                        any(), any(), any(), any(), any(), any(), any(), any()))
+                .findTopByContextVersionAndLlmProviderAndLlmModelAndPromptTemplateVersionAndInputSchemaVersionAndOutputSchemaVersionAndInputPayloadHashOrderByIdDesc(
+                        any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(Optional.of(sharedContextEntity(storedReference)));
 
         AnalysisLlmSharedContextResolution result = service.getOrGenerate(reportInput(Instant.parse("2026-03-09T01:00:30Z")));
@@ -159,7 +159,7 @@ class AnalysisLlmSharedContextGenerationServiceTest extends AnalysisReportPayloa
 
     private AnalysisReportSharedContextEntity sharedContextEntity(AnalysisLlmSharedContextReference output) throws Exception {
         AnalysisReportSharedContextEntity entity = AnalysisReportSharedContextEntity.builder()
-                .reportType(AnalysisReportType.SHORT_TERM)
+                .reportType(null)
                 .analysisBasisTime(Instant.parse("2026-03-09T00:59:59Z"))
                 .rawReferenceTime(Instant.parse("2026-03-09T00:59:30Z"))
                 .contextVersion(output.contextVersion())

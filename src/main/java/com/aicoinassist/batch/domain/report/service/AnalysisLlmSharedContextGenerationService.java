@@ -51,10 +51,11 @@ public class AnalysisLlmSharedContextGenerationService {
         }
 
         AnalysisLlmPromptComposition composition = analysisLlmSharedContextPromptComposer.compose(input);
-        return generateAndStore(input, composition);
+        return generateAndStore(reportInput, input, composition);
     }
 
     private AnalysisLlmSharedContextResolution generateAndStore(
+            AnalysisGptReportInputPayload reportInput,
             AnalysisLlmSharedContextInputPayload input,
             AnalysisLlmPromptComposition composition
     ) {
@@ -64,6 +65,7 @@ public class AnalysisLlmSharedContextGenerationService {
         Instant storedAt = clock.instant();
         AnalysisReportSharedContextEntity entity = analysisReportSharedContextPersistenceService.save(
                 analysisReportSharedContextDraftFactory.create(
+                        reportInput,
                         input,
                         generationResult,
                         analysisLlmNarrativeProperties.provider(),
@@ -236,8 +238,7 @@ public class AnalysisLlmSharedContextGenerationService {
 
     private AnalysisLlmSharedContextResolution findStored(AnalysisLlmSharedContextInputPayload input) {
         return analysisReportSharedContextRepository
-                .findTopByReportTypeAndContextVersionAndLlmProviderAndLlmModelAndPromptTemplateVersionAndInputSchemaVersionAndOutputSchemaVersionAndInputPayloadHashOrderByIdDesc(
-                        input.reportType(),
+                .findTopByContextVersionAndLlmProviderAndLlmModelAndPromptTemplateVersionAndInputSchemaVersionAndOutputSchemaVersionAndInputPayloadHashOrderByIdDesc(
                         input.sharedContextVersion(),
                         analysisLlmNarrativeProperties.provider(),
                         openAiProperties.model(),

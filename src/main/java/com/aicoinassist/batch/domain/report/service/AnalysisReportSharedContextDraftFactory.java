@@ -1,5 +1,6 @@
 package com.aicoinassist.batch.domain.report.service;
 
+import com.aicoinassist.batch.domain.report.dto.AnalysisGptReportInputPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextGenerationResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextInputPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportSharedContextDraft;
@@ -20,6 +21,7 @@ public class AnalysisReportSharedContextDraftFactory {
     private final ObjectMapper objectMapper;
 
     public AnalysisReportSharedContextDraft create(
+            AnalysisGptReportInputPayload reportInput,
             AnalysisLlmSharedContextInputPayload input,
             AnalysisLlmSharedContextGenerationResult generationResult,
             String llmProvider,
@@ -32,9 +34,8 @@ public class AnalysisReportSharedContextDraftFactory {
             Instant storedAt
     ) {
         return new AnalysisReportSharedContextDraft(
-                input.reportType(),
-                input.analysisBasisTime(),
-                input.rawReferenceTime(),
+                reportInput.analysisBasisTime(),
+                reportInput.rawReferenceTime(),
                 input.sharedContextVersion(),
                 input.analysisEngineVersion(),
                 llmProvider,

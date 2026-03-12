@@ -28,7 +28,6 @@ import java.time.Instant;
                 @UniqueConstraint(
                         name = "uk_analysis_report_shared_context_identity",
                         columnNames = {
-                                "report_type",
                                 "context_version",
                                 "llm_provider",
                                 "llm_model",
@@ -41,8 +40,8 @@ import java.time.Instant;
         },
         indexes = {
                 @Index(
-                        name = "idx_analysis_report_shared_context_type_basis",
-                        columnList = "report_type, analysis_basis_time"
+                        name = "idx_analysis_report_shared_context_basis",
+                        columnList = "analysis_basis_time"
                 ),
                 @Index(
                         name = "idx_analysis_report_shared_context_status_stored_time",
@@ -58,7 +57,7 @@ public class AnalysisReportSharedContextEntity {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(length = 20)
     private AnalysisReportType reportType;
 
     @Column(nullable = false)

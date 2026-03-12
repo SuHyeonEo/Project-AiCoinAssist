@@ -2,7 +2,6 @@ package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmPromptComposition;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextInputPayload;
-import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
@@ -21,9 +20,6 @@ class AnalysisLlmSharedContextPromptComposerTest {
     @Test
     void composeBuildsSharedContextSpecificPromptGuidance() {
         AnalysisLlmSharedContextInputPayload input = new AnalysisLlmSharedContextInputPayload(
-                AnalysisReportType.SHORT_TERM,
-                Instant.parse("2026-03-09T00:59:59Z"),
-                Instant.parse("2026-03-09T00:59:30Z"),
                 "shared-v1",
                 "gpt-5.4",
                 List.of(
@@ -41,8 +37,7 @@ class AnalysisLlmSharedContextPromptComposerTest {
         assertThat(composition.systemPrompt()).contains("shared macro and sentiment context");
         assertThat(composition.systemPrompt()).contains("Every sentence must end in expressions such as");
         assertThat(composition.systemPrompt()).contains("Rewrite enum-like English labels into natural Korean");
-        assertThat(composition.userPrompt()).contains("SHORT_TERM: explain how macro and sentiment may affect near-term risk appetite");
-        assertThat(composition.userPrompt()).contains("focus on immediate pressure or relief rather than long-cycle meaning");
+        assertThat(composition.userPrompt()).contains("Generate a shared context reference that can be reused across short-term, mid-term, and long-term crypto narratives.");
         assertThat(composition.userPrompt()).contains("shared_summary should act as a market-wide backdrop");
         assertThat(composition.userPrompt()).contains("macro.summary should use only macro facts");
         assertThat(composition.userPrompt()).contains("sentiment.summary should use only sentiment facts");
@@ -50,6 +45,7 @@ class AnalysisLlmSharedContextPromptComposerTest {
         assertThat(composition.userPrompt()).contains("If sentiment facts include concrete values such as Fear & Greed value");
         assertThat(composition.userPrompt()).contains("Do not write generic prose that could fit any day");
         assertThat(composition.userPrompt()).contains("Do not restate the same meaning in shared_summary and the domain summaries");
+        assertThat(composition.userPrompt()).contains("Do not optimize this output for only one report horizon");
         assertThat(composition.inputPayloadJson()).contains("\"macro_facts\"");
         assertThat(composition.inputPayloadJson()).contains("\"sentiment_facts\"");
         assertThat(composition.outputSchemaJson()).contains("\"shared_summary\"");
