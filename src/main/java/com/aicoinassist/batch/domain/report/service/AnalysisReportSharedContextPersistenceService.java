@@ -27,8 +27,7 @@ public class AnalysisReportSharedContextPersistenceService {
         String serializedOutput = serialize(draft.outputPayload());
 
         AnalysisReportSharedContextEntity existingEntity = analysisReportSharedContextRepository
-                .findTopByReportTypeAndContextVersionAndLlmProviderAndLlmModelAndPromptTemplateVersionAndInputSchemaVersionAndOutputSchemaVersionAndInputPayloadHashOrderByIdDesc(
-                        draft.reportType(),
+                .findTopByContextVersionAndLlmProviderAndLlmModelAndPromptTemplateVersionAndInputSchemaVersionAndOutputSchemaVersionAndInputPayloadHashOrderByIdDesc(
                         draft.contextVersion(),
                         draft.llmProvider(),
                         draft.llmModel(),
@@ -41,7 +40,7 @@ public class AnalysisReportSharedContextPersistenceService {
 
         if (existingEntity == null) {
             AnalysisReportSharedContextEntity entity = AnalysisReportSharedContextEntity.builder()
-                    .reportType(draft.reportType())
+                    .reportType(null)
                     .analysisBasisTime(draft.analysisBasisTime())
                     .rawReferenceTime(draft.rawReferenceTime())
                     .contextVersion(draft.contextVersion())

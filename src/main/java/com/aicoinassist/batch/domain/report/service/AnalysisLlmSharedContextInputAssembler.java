@@ -1,9 +1,12 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.report.dto.AnalysisGptReportInputPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisSentimentContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextInputPayload;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -17,9 +20,6 @@ public class AnalysisLlmSharedContextInputAssembler {
 
     public AnalysisLlmSharedContextInputPayload assemble(AnalysisGptReportInputPayload input) {
         return new AnalysisLlmSharedContextInputPayload(
-                input.reportType(),
-                input.analysisBasisTime(),
-                input.rawReferenceTime(),
                 sharedContextVersion(input),
                 input.analysisEngineVersion(),
                 macroFacts(input),
@@ -29,47 +29,64 @@ public class AnalysisLlmSharedContextInputAssembler {
 
     private List<String> macroFacts(AnalysisGptReportInputPayload input) {
         LinkedHashSet<String> facts = new LinkedHashSet<>();
-        if (input.macroContext() != null) {
-            addIfPresent(facts, input.macroContext().currentStateSummary());
-            addIfPresent(facts, input.macroContext().comparisonSummary());
-            addIfPresent(facts, input.macroContext().windowSummary());
-            if (input.macroContext().highlightDetails() != null) {
-                input.macroContext().highlightDetails().stream().limit(3).forEach(value -> addIfPresent(facts, value));
-            }
-        }
-        if (input.macroFactContext() != null && input.macroFactContext().highlights() != null) {
-            input.macroFactContext().highlights().stream()
-                    .map(highlight -> highlight.summary())
-                    .limit(2)
-                    .forEach(value -> addIfPresent(facts, value));
+        AnalysisMacroContext context = input.macroFactContext();
+        if (context != null) {
+            addIfPresent(facts, macroValueFact(context));
+            addIfPresent(facts, macroObservationFact(context));
         }
         return new ArrayList<>(facts).stream().limit(6).toList();
     }
 
     private List<String> sentimentFacts(AnalysisGptReportInputPayload input) {
         LinkedHashSet<String> facts = new LinkedHashSet<>();
-        if (input.sentimentContext() != null) {
-            addIfPresent(facts, input.sentimentContext().currentStateSummary());
-            addIfPresent(facts, input.sentimentContext().comparisonSummary());
-            addIfPresent(facts, input.sentimentContext().windowSummary());
-            if (input.sentimentContext().highlightDetails() != null) {
-                input.sentimentContext().highlightDetails().stream().limit(3).forEach(value -> addIfPresent(facts, value));
-            }
-        }
-        if (input.sentimentFactContext() != null && input.sentimentFactContext().highlights() != null) {
-            input.sentimentFactContext().highlights().stream()
-                    .map(highlight -> highlight.summary())
-                    .limit(2)
-                    .forEach(value -> addIfPresent(facts, value));
+        AnalysisSentimentContext context = input.sentimentFactContext();
+        if (context != null) {
+            addIfPresent(facts, sentimentValueFact(context));
         }
         return new ArrayList<>(facts).stream().limit(6).toList();
     }
 
     private String sharedContextVersion(AnalysisGptReportInputPayload input) {
-        String basis = input.reportType()
-                + "|macro=" + (input.macroFactContext() == null ? "none" : input.macroFactContext().sourceDataVersion())
+        String basis = "macro=" + (input.macroFactContext() == null ? "none" : input.macroFactContext().sourceDataVersion())
                 + "|sentiment=" + (input.sentimentFactContext() == null ? "none" : input.sentimentFactContext().sourceDataVersion());
         return sha256(basis).substring(0, 16);
+    }
+
+    private String macroValueFact(AnalysisMacroContext context) {
+        if (context.dxyProxyValue() == null && context.us10yYieldValue() == null && context.usdKrwValue() == null) {
+            return null;
+        }
+        return "거시 현재값은 DXY "
+                + decimal(context.dxyProxyValue())
+                + ", US10Y "
+                + decimal(context.us10yYieldValue())
+                + ", USD/KRW "
+                + decimal(context.usdKrwValue())
+                + "입니다.";
+    }
+
+    private String macroObservationFact(AnalysisMacroContext context) {
+        if (context.dxyObservationDate() == null && context.us10yYieldObservationDate() == null && context.usdKrwObservationDate() == null) {
+            return null;
+        }
+        return "거시 관측일은 DXY "
+                + safeDate(context.dxyObservationDate() == null ? null : context.dxyObservationDate().toString())
+                + ", US10Y "
+                + safeDate(context.us10yYieldObservationDate() == null ? null : context.us10yYieldObservationDate().toString())
+                + ", USD/KRW "
+                + safeDate(context.usdKrwObservationDate() == null ? null : context.usdKrwObservationDate().toString())
+                + "입니다.";
+    }
+
+    private String sentimentValueFact(AnalysisSentimentContext context) {
+        if (context.indexValue() == null && context.classification() == null) {
+            return null;
+        }
+        return "Fear & Greed 지수는 "
+                + decimal(context.indexValue())
+                + "이며 분류는 "
+                + (context.classification() == null ? "확인 필요" : context.classification())
+                + "입니다.";
     }
 
     private void addIfPresent(LinkedHashSet<String> facts, String value) {
@@ -87,4 +104,13 @@ public class AnalysisLlmSharedContextInputAssembler {
             throw new IllegalStateException("SHA-256 algorithm is not available.", exception);
         }
     }
+
+    private String decimal(BigDecimal value) {
+        return value == null ? "확인 필요" : value.stripTrailingZeros().toPlainString();
+    }
+
+    private String safeDate(String value) {
+        return value == null || value.isBlank() ? "확인 필요" : value;
+    }
+
 }
