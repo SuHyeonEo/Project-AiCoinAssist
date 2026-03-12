@@ -10,6 +10,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisLlmMarketStructureBoxOut
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeInputPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeOutputPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmScenarioOutput;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextDomainReference;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmValueLabelBasisOutput;
 import com.aicoinassist.batch.domain.report.dto.AnalysisRiskFactor;
 import com.aicoinassist.batch.domain.report.dto.AnalysisScenario;
@@ -81,15 +82,14 @@ public class AnalysisLlmOutputFallbackFactory {
     }
 
     private List<AnalysisLlmDomainAnalysisOutput> domainAnalyses(AnalysisLlmNarrativeInputPayload input) {
-        return input.domainFactBlocks().stream()
-                .limit(6)
-                .map(block -> new AnalysisLlmDomainAnalysisOutput(
-                        block.domainType().name(),
-                        inferStatus(block),
-                        firstNonBlank(first(block.keyFacts()), block.summary(), "구조화된 서버 팩트를 바탕으로 해석했습니다."),
-                        firstNonBlank(first(block.keyFacts()), "다음 구조 변화 여부를 계속 확인할 필요가 있습니다.")
-                ))
-                .toList();
+        return List.of(
+                domainFromBlock(input, "MARKET"),
+                domainFromBlock(input, "DERIVATIVE"),
+                domainFromSharedOrBlock(input, "MACRO"),
+                domainFromSharedOrBlock(input, "SENTIMENT"),
+                domainFromBlock(input, "ONCHAIN"),
+                domainFromBlock(input, "LEVEL")
+        );
     }
 
     private AnalysisLlmCrossSignalIntegrationOutput crossSignalIntegration(AnalysisLlmNarrativeInputPayload input) {
@@ -238,6 +238,50 @@ public class AnalysisLlmOutputFallbackFactory {
             return "BULLISH";
         }
         return "MIXED";
+    }
+
+    private AnalysisLlmDomainAnalysisOutput domainFromSharedOrBlock(
+            AnalysisLlmNarrativeInputPayload input,
+            String domain
+    ) {
+        AnalysisLlmSharedContextDomainReference reference = switch (domain) {
+            case "MACRO" -> input.sharedContextReference() == null ? null : input.sharedContextReference().macro();
+            case "SENTIMENT" -> input.sharedContextReference() == null ? null : input.sharedContextReference().sentiment();
+            default -> null;
+        };
+        if (reference != null) {
+            return new AnalysisLlmDomainAnalysisOutput(
+                    domain,
+                    firstNonBlank(reference.status(), "MIXED"),
+                    firstNonBlank(reference.summary(), "구조화된 공통 맥락을 바탕으로 해석했습니다."),
+                    firstNonBlank(reference.watchPoint(), "다음 공통 맥락 변화를 확인할 필요가 있습니다.")
+            );
+        }
+        return domainFromBlock(input, domain);
+    }
+
+    private AnalysisLlmDomainAnalysisOutput domainFromBlock(
+            AnalysisLlmNarrativeInputPayload input,
+            String domain
+    ) {
+        AnalysisLlmDomainFactBlock block = input.domainFactBlocks().stream()
+                .filter(value -> value.domainType().name().equals(domain))
+                .findFirst()
+                .orElse(null);
+        if (block == null) {
+            return new AnalysisLlmDomainAnalysisOutput(
+                    domain,
+                    "MIXED",
+                    "구조화된 서버 팩트를 바탕으로 해석했습니다.",
+                    "다음 구조 변화 여부를 계속 확인할 필요가 있습니다."
+            );
+        }
+        return new AnalysisLlmDomainAnalysisOutput(
+                domain,
+                inferStatus(block),
+                firstNonBlank(first(block.keyFacts()), block.summary(), "구조화된 서버 팩트를 바탕으로 해석했습니다."),
+                firstNonBlank(first(block.keyFacts()), "다음 구조 변화 여부를 계속 확인할 필요가 있습니다.")
+        );
     }
 
     private String normalizeScenarioType(AnalysisScenario scenario) {

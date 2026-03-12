@@ -10,6 +10,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisLlmScenarioGuidance;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmDomainFactBlock;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmExecutiveSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeInputPayload;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextReference;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmServerMarketStructureInput;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmValueLabelBasisOutput;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroComparisonFact;
@@ -44,7 +45,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AnalysisLlmNarrativeInputAssembler {
 
+    private final AnalysisTextLocalizationSupport textLocalizationSupport = new AnalysisTextLocalizationSupport();
+
     public AnalysisLlmNarrativeInputPayload assemble(AnalysisGptReportInputPayload input) {
+        return assemble(input, null);
+    }
+
+    public AnalysisLlmNarrativeInputPayload assemble(
+            AnalysisGptReportInputPayload input,
+            AnalysisLlmSharedContextReference sharedContextReference
+    ) {
         return new AnalysisLlmNarrativeInputPayload(
                 input.symbol(),
                 input.reportType(),
@@ -52,19 +62,20 @@ public class AnalysisLlmNarrativeInputAssembler {
                 input.rawReferenceTime(),
                 input.sourceDataVersion(),
                 input.analysisEngineVersion(),
+                sharedContextReference,
                 executiveSummary(input),
                 limit(input.signalHeadlines(), 8),
                 limit(input.primaryFacts(), 10),
                 marketStructureFacts(input),
                 derivativeStructureFacts(input),
-                macroStructureFacts(input),
-                sentimentStructureFacts(input),
+                sharedContextReference == null ? macroStructureFacts(input) : List.of(),
+                sharedContextReference == null ? sentimentStructureFacts(input) : List.of(),
                 onchainStructureFacts(input),
                 externalStructureFacts(input),
                 serverMarketStructure(input),
                 levelStructureFacts(input),
                 marketStructureBoxFacts(input),
-                domainFactBlocks(input),
+                domainFactBlocks(input, sharedContextReference),
                 limit(input.crossSignals(), 5),
                 scenarioGuidance(input),
                 limit(input.riskFactors(), 6),
@@ -82,7 +93,10 @@ public class AnalysisLlmNarrativeInputAssembler {
         );
     }
 
-    private List<AnalysisLlmDomainFactBlock> domainFactBlocks(AnalysisGptReportInputPayload input) {
+    private List<AnalysisLlmDomainFactBlock> domainFactBlocks(
+            AnalysisGptReportInputPayload input,
+            AnalysisLlmSharedContextReference sharedContextReference
+    ) {
         List<AnalysisLlmDomainFactBlock> blocks = new ArrayList<>();
 
         blocks.add(new AnalysisLlmDomainFactBlock(
@@ -109,26 +123,28 @@ public class AnalysisLlmNarrativeInputAssembler {
                         input.derivativeContext() == null ? null : first(input.derivativeContext().highlightDetails())
                 )
         ));
-        blocks.add(new AnalysisLlmDomainFactBlock(
-                AnalysisLlmDomainType.MACRO,
-                "거시 맥락",
-                input.macroContext() == null ? null : input.macroContext().currentStateSummary(),
-                gather(
-                        input.macroContext() == null ? null : input.macroContext().comparisonSummary(),
-                        input.macroContext() == null ? null : input.macroContext().windowSummary(),
-                        input.macroContext() == null ? null : first(input.macroContext().highlightDetails())
-                )
-        ));
-        blocks.add(new AnalysisLlmDomainFactBlock(
-                AnalysisLlmDomainType.SENTIMENT,
-                "심리 맥락",
-                input.sentimentContext() == null ? null : input.sentimentContext().currentStateSummary(),
-                gather(
-                        input.sentimentContext() == null ? null : input.sentimentContext().comparisonSummary(),
-                        input.sentimentContext() == null ? null : input.sentimentContext().windowSummary(),
-                        input.sentimentContext() == null ? null : first(input.sentimentContext().highlightDetails())
-                )
-        ));
+        if (sharedContextReference == null) {
+            blocks.add(new AnalysisLlmDomainFactBlock(
+                    AnalysisLlmDomainType.MACRO,
+                    "거시 맥락",
+                    input.macroContext() == null ? null : input.macroContext().currentStateSummary(),
+                    gather(
+                            input.macroContext() == null ? null : input.macroContext().comparisonSummary(),
+                            input.macroContext() == null ? null : input.macroContext().windowSummary(),
+                            input.macroContext() == null ? null : first(input.macroContext().highlightDetails())
+                    )
+            ));
+            blocks.add(new AnalysisLlmDomainFactBlock(
+                    AnalysisLlmDomainType.SENTIMENT,
+                    "심리 맥락",
+                    input.sentimentContext() == null ? null : input.sentimentContext().currentStateSummary(),
+                    gather(
+                            input.sentimentContext() == null ? null : input.sentimentContext().comparisonSummary(),
+                            input.sentimentContext() == null ? null : input.sentimentContext().windowSummary(),
+                            input.sentimentContext() == null ? null : first(input.sentimentContext().highlightDetails())
+                    )
+            ));
+        }
         blocks.add(new AnalysisLlmDomainFactBlock(
                 AnalysisLlmDomainType.ONCHAIN,
                 "온체인 맥락",
@@ -238,7 +254,7 @@ public class AnalysisLlmNarrativeInputAssembler {
                 isSingleLevel(zone) ? side + " 기준점" : side + " 구간",
                 joinFacts(
                         zone.distanceToZone() == null ? null : "현재가 대비 거리 " + safeAbsolutePercent(zone.distanceToZone()),
-                        zone.strongestSourceType() == null ? null : "기준 소스 " + humanizeEnum(zone.strongestSourceType().name()),
+                        zone.strongestSourceType() == null ? null : "기준 소스 " + textLocalizationSupport.priceLevelSourceLabel(zone.strongestSourceType()),
                         zone.recentTestCount() == null ? null : "테스트 " + zone.recentTestCount() + "회",
                         zone.recentRejectionCount() == null ? null : "리젝션 " + zone.recentRejectionCount() + "회",
                         zone.recentBreakCount() == null ? null : "이탈 " + zone.recentBreakCount() + "회"
@@ -566,7 +582,7 @@ public class AnalysisLlmNarrativeInputAssembler {
         return "upside_reference_basis: " + String.join(", ", gather(
                 nearestReferenceSummary("저항", zone),
                 nearestZoneDistanceFact("가까운 저항 구간", zone),
-                zone.strongestSourceType() == null ? null : "기준 소스 " + zone.strongestSourceType().name(),
+                zone.strongestSourceType() == null ? null : "기준 소스 " + textLocalizationSupport.priceLevelSourceLabel(zone.strongestSourceType()),
                 zoneTestFacts(zone)
         ));
     }
@@ -579,7 +595,7 @@ public class AnalysisLlmNarrativeInputAssembler {
         return "downside_reference_basis: " + String.join(", ", gather(
                 nearestReferenceSummary("지지", zone),
                 nearestZoneDistanceFact("가까운 지지 구간", zone),
-                zone.strongestSourceType() == null ? null : "기준 소스 " + zone.strongestSourceType().name(),
+                zone.strongestSourceType() == null ? null : "기준 소스 " + textLocalizationSupport.priceLevelSourceLabel(zone.strongestSourceType()),
                 zoneTestFacts(zone)
         ));
     }

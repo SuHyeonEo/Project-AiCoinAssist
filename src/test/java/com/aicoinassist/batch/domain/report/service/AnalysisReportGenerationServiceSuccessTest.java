@@ -1,5 +1,6 @@
 package com.aicoinassist.batch.domain.report.service;
 
+import com.aicoinassist.batch.domain.market.dto.MarketIndicatorSnapshotContext;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
@@ -33,7 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Optional;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -49,6 +50,7 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
     void generateAndSaveBuildsDraftFromLatestMappedSnapshot() {
         AnalysisReportGenerationService service = createService();
         MarketIndicatorSnapshotEntity snapshot = snapshot("4h");
+        MarketIndicatorSnapshotContext snapshotContext = new MarketIndicatorSnapshotContext(snapshot, List.of());
         AnalysisReportPayload payload = midTermPayload();
         MarketContextSnapshotEntity contextSnapshot = marketContextSnapshotEntity();
         MarketLevelContextSnapshotEntity levelContextSnapshot = levelContextSnapshotEntity();
@@ -124,8 +126,8 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         java.util.List<AnalysisPriceZone> supportZones = supportZones();
         java.util.List<AnalysisPriceZone> resistanceZones = resistanceZones();
 
-        when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueOrderBySnapshotTimeDescIdDesc("BTCUSDT", "4h"))
-                .thenReturn(Optional.of(snapshot));
+        when(marketIndicatorSnapshotPersistenceService.createAndSaveContext("BTCUSDT", com.aicoinassist.batch.domain.market.enumtype.CandleInterval.FOUR_HOUR))
+                .thenReturn(snapshotContext);
         when(analysisReportContinuityService.buildNotes("BTCUSDT", AnalysisReportType.MID_TERM, snapshot.getSnapshotTime()))
                 .thenReturn(midTermContinuityNotes());
         when(marketContextSnapshotPersistenceService.createAndSave("BTCUSDT")).thenReturn(contextSnapshot);
@@ -148,10 +150,10 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 .thenReturn(onchainContext.comparisonFacts());
         when(marketContextWindowSummarySnapshotPersistenceService.createAndSaveForReportType(contextSnapshot, AnalysisReportType.MID_TERM))
                 .thenReturn(derivativeWindowSummaryEntities());
-        when(marketWindowSummarySnapshotPersistenceService.createAndSaveForReportType(snapshot, AnalysisReportType.MID_TERM))
+        when(marketWindowSummarySnapshotPersistenceService.createAndSaveForReportType(snapshot, AnalysisReportType.MID_TERM, snapshotContext.candles()))
                 .thenReturn(windowSummaryEntities(snapshot));
-        when(marketCandidateLevelSnapshotPersistenceService.createAndSaveAll(snapshot)).thenReturn(candidateLevelEntities());
-        when(marketCandidateLevelZoneSnapshotPersistenceService.createAndSaveAll(anyList()))
+        when(marketCandidateLevelSnapshotPersistenceService.createAndSaveAll(snapshot, snapshotContext.candles())).thenReturn(candidateLevelEntities());
+        when(marketCandidateLevelZoneSnapshotPersistenceService.createAndSaveAll(anyList(), eq(snapshotContext.candles())))
                 .thenReturn(candidateLevelZoneEntities());
         when(marketLevelContextSnapshotPersistenceService.createAndSave(eq(snapshot), anyList()))
                 .thenReturn(levelContextSnapshot);

@@ -2,7 +2,9 @@ package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportNarrativeDraft;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportNarrativeEntity;
+import com.aicoinassist.batch.domain.report.entity.AnalysisReportSharedContextEntity;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportNarrativeRepository;
+import com.aicoinassist.batch.domain.report.repository.AnalysisReportSharedContextRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -19,12 +21,14 @@ import java.util.HexFormat;
 public class AnalysisReportNarrativePersistenceService {
 
     private final AnalysisReportNarrativeRepository analysisReportNarrativeRepository;
+    private final AnalysisReportSharedContextRepository analysisReportSharedContextRepository;
     private final ObjectMapper objectMapper;
 
     @Transactional
     public AnalysisReportNarrativeEntity save(AnalysisReportNarrativeDraft draft) {
         String inputPayloadHash = sha256(draft.inputPayloadJson());
         String serializedOutput = serialize(draft.outputPayload());
+        AnalysisReportSharedContextEntity sharedContext = resolveSharedContext(draft.sharedContextId());
 
         AnalysisReportNarrativeEntity existingEntity = analysisReportNarrativeRepository
                 .findTopByAnalysisReportIdAndLlmProviderAndLlmModelAndPromptTemplateVersionAndInputSchemaVersionAndOutputSchemaVersionAndInputPayloadHashOrderByIdDesc(
@@ -41,6 +45,7 @@ public class AnalysisReportNarrativePersistenceService {
         if (existingEntity == null) {
             AnalysisReportNarrativeEntity entity = AnalysisReportNarrativeEntity.builder()
                     .analysisReport(draft.analysisReport())
+                    .sharedContext(sharedContext)
                     .symbol(draft.analysisReport().getSymbol())
                     .reportType(draft.analysisReport().getReportType())
                     .analysisBasisTime(draft.analysisReport().getAnalysisBasisTime())
@@ -75,6 +80,7 @@ public class AnalysisReportNarrativePersistenceService {
         }
 
         existingEntity.refresh(
+                sharedContext,
                 draft.inputPayloadJson(),
                 draft.promptSystemText(),
                 draft.promptUserText(),
@@ -96,6 +102,14 @@ public class AnalysisReportNarrativePersistenceService {
         );
 
         return existingEntity;
+    }
+
+    private AnalysisReportSharedContextEntity resolveSharedContext(Long sharedContextId) {
+        if (sharedContextId == null) {
+            return null;
+        }
+        return analysisReportSharedContextRepository.findById(sharedContextId)
+                .orElseThrow(() -> new IllegalArgumentException("Shared context not found: " + sharedContextId));
     }
 
     private String serialize(Object value) {

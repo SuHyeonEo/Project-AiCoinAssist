@@ -1,35 +1,24 @@
 package com.aicoinassist.batch.domain.market.service;
 
+import com.aicoinassist.batch.domain.market.dto.Candle;
 import com.aicoinassist.batch.domain.market.dto.MarketCandidateLevelZoneSnapshot;
-import com.aicoinassist.batch.domain.market.entity.MarketCandleRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelLabel;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelSourceType;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelType;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelZoneInteractionType;
-import com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus;
-import com.aicoinassist.batch.domain.market.repository.MarketCandleRawRepository;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
-@ExtendWith(MockitoExtension.class)
 class MarketCandidateLevelZoneSnapshotServiceTest {
-
-    @Mock
-    private MarketCandleRawRepository marketCandleRawRepository;
 
     @Test
     void createAllClustersNearbySupportAndResistanceLevelsIntoZones() {
-        MarketCandidateLevelZoneSnapshotService service = new MarketCandidateLevelZoneSnapshotService(marketCandleRawRepository);
+        MarketCandidateLevelZoneSnapshotService service = new MarketCandidateLevelZoneSnapshotService();
         List<MarketCandidateLevelSnapshotEntity> levelEntities = List.of(
                 level("SUPPORT", "MA20", "MOVING_AVERAGE", "87000.00", "0.64428571", 2, 1),
                 level("SUPPORT", "PIVOT_LOW", "PIVOT_LEVEL", "86850.00", "0.80285714", 4, 2),
@@ -37,16 +26,8 @@ class MarketCandidateLevelZoneSnapshotServiceTest {
                 level("RESISTANCE", "BB_UPPER", "BOLLINGER_BAND", "88500.00", "0.63857143", 1, 1),
                 level("RESISTANCE", "PIVOT_HIGH", "PIVOT_LEVEL", "88620.00", "0.81285714", 3, 2)
         );
-        when(marketCandleRawRepository.findAllBySourceAndSymbolAndIntervalValueAndValidationStatusAndOpenTimeGreaterThanEqualAndOpenTimeLessThanEqualOrderByOpenTimeAsc(
-                "BINANCE",
-                "BTCUSDT",
-                "1h",
-                RawDataValidationStatus.VALID,
-                Instant.parse("2026-02-24T00:59:59Z"),
-                Instant.parse("2026-03-10T00:59:59Z")
-        )).thenReturn(recentCandles());
 
-        List<MarketCandidateLevelZoneSnapshot> zones = service.createAll(levelEntities);
+        List<MarketCandidateLevelZoneSnapshot> zones = service.createAll(levelEntities, recentCandles());
 
         assertThat(zones).hasSize(3);
 
@@ -80,7 +61,7 @@ class MarketCandidateLevelZoneSnapshotServiceTest {
         assertThat(resistanceZone.levelCount()).isEqualTo(2);
     }
 
-    private List<MarketCandleRawEntity> recentCandles() {
+    private List<Candle> recentCandles() {
         return List.of(
                 candle("2026-03-08T00:59:59Z", "87200", "87800", "86920", "87250"),
                 candle("2026-03-08T04:59:59Z", "88300", "88640", "88220", "88410"),
@@ -117,7 +98,7 @@ class MarketCandidateLevelZoneSnapshotServiceTest {
                                                  .build();
     }
 
-    private MarketCandleRawEntity candle(
+    private Candle candle(
             String openTime,
             String openPrice,
             String highPrice,
@@ -125,20 +106,14 @@ class MarketCandidateLevelZoneSnapshotServiceTest {
             String closePrice
     ) {
         Instant start = Instant.parse(openTime);
-        return MarketCandleRawEntity.builder()
-                                    .source("BINANCE")
-                                    .symbol("BTCUSDT")
-                                    .intervalValue("1h")
-                                    .openTime(start)
-                                    .closeTime(start.plusSeconds(3599))
-                                    .openPrice(new BigDecimal(openPrice))
-                                    .highPrice(new BigDecimal(highPrice))
-                                    .lowPrice(new BigDecimal(lowPrice))
-                                    .closePrice(new BigDecimal(closePrice))
-                                    .volume(new BigDecimal("100"))
-                                    .collectedTime(start.plusSeconds(60))
-                                    .validationStatus(RawDataValidationStatus.VALID)
-                                    .rawPayload("[]")
-                                    .build();
+        return new Candle(
+                start,
+                start.plusSeconds(3599),
+                new BigDecimal(openPrice),
+                new BigDecimal(highPrice),
+                new BigDecimal(lowPrice),
+                new BigDecimal(closePrice),
+                new BigDecimal("100")
+        );
     }
 }

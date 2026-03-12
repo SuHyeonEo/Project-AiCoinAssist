@@ -1,11 +1,9 @@
 package com.aicoinassist.batch.domain.market.service;
 
+import com.aicoinassist.batch.domain.market.dto.Candle;
 import com.aicoinassist.batch.domain.market.dto.MarketWindowSummarySnapshot;
-import com.aicoinassist.batch.domain.market.entity.MarketCandleRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
-import com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus;
-import com.aicoinassist.batch.domain.market.repository.MarketCandleRawRepository;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,32 +19,25 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MarketWindowSummarySnapshotService {
 
-    private static final String BINANCE_SOURCE = "BINANCE";
     private static final int RATIO_SCALE = 8;
 
-    private final MarketCandleRawRepository marketCandleRawRepository;
     private final MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
 
     public MarketWindowSummarySnapshot create(
             MarketIndicatorSnapshotEntity currentSnapshot,
-            MarketWindowType windowType
+            MarketWindowType windowType,
+            List<Candle> candles
     ) {
         Instant windowEndTime = currentSnapshot.getSnapshotTime();
         Instant windowStartTime = windowEndTime.minus(windowType.days(), ChronoUnit.DAYS);
+        List<Candle> windowCandles = candles.stream()
+                .filter(candle -> !candle.openTime().isBefore(windowStartTime))
+                .filter(candle -> !candle.openTime().isAfter(windowEndTime))
+                .toList();
 
-        List<MarketCandleRawEntity> candles = marketCandleRawRepository
-                .findAllBySourceAndSymbolAndIntervalValueAndValidationStatusAndOpenTimeGreaterThanEqualAndOpenTimeLessThanEqualOrderByOpenTimeAsc(
-                        BINANCE_SOURCE,
-                        currentSnapshot.getSymbol(),
-                        currentSnapshot.getIntervalValue(),
-                        RawDataValidationStatus.VALID,
-                        windowStartTime,
-                        windowEndTime
-                );
-
-        if (candles.isEmpty()) {
+        if (windowCandles.isEmpty()) {
             throw new IllegalStateException(
-                    "No valid candle raw rows found for window summary: symbol=%s interval=%s window=%s end=%s"
+                    "No live candles found for window summary: symbol=%s interval=%s window=%s end=%s"
                             .formatted(
                                     currentSnapshot.getSymbol(),
                                     currentSnapshot.getIntervalValue(),
@@ -56,6 +47,16 @@ public class MarketWindowSummarySnapshotService {
             );
         }
 
+        return createFromCandles(currentSnapshot, windowType, windowStartTime, windowEndTime, windowCandles);
+    }
+
+    private MarketWindowSummarySnapshot createFromCandles(
+            MarketIndicatorSnapshotEntity currentSnapshot,
+            MarketWindowType windowType,
+            Instant windowStartTime,
+            Instant windowEndTime,
+            List<Candle> candles
+    ) {
         List<MarketIndicatorSnapshotEntity> indicatorSnapshots = marketIndicatorSnapshotRepository
                 .findAllBySymbolAndIntervalValueAndSnapshotTimeGreaterThanEqualAndSnapshotTimeLessThanEqualOrderBySnapshotTimeAsc(
                         currentSnapshot.getSymbol(),
@@ -77,17 +78,17 @@ public class MarketWindowSummarySnapshotService {
         }
 
         BigDecimal windowHigh = candles.stream()
-                                       .map(MarketCandleRawEntity::getHighPrice)
+                                       .map(Candle::high)
                                        .max(Comparator.naturalOrder())
                                        .orElseThrow();
         BigDecimal windowLow = candles.stream()
-                                      .map(MarketCandleRawEntity::getLowPrice)
+                                      .map(Candle::low)
                                       .min(Comparator.naturalOrder())
                                       .orElseThrow();
         BigDecimal windowRange = windowHigh.subtract(windowLow);
-        BigDecimal averageVolume = average(candles.stream().map(MarketCandleRawEntity::getVolume).toList());
+        BigDecimal averageVolume = average(candles.stream().map(Candle::volume).toList());
         BigDecimal averageAtr = average(indicatorSnapshots.stream().map(MarketIndicatorSnapshotEntity::getAtr14).toList());
-        BigDecimal currentVolume = candles.get(candles.size() - 1).getVolume();
+        BigDecimal currentVolume = candles.get(candles.size() - 1).volume();
         BigDecimal currentAtr = currentSnapshot.getAtr14();
 
         return new MarketWindowSummarySnapshot(

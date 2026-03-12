@@ -8,6 +8,8 @@ import java.time.Instant;
 
 public record AnalysisReportNarrativeDraft(
         AnalysisReportEntity analysisReport,
+        Long sharedContextId,
+        String sharedContextVersion,
         String llmProvider,
         String llmModel,
         String promptTemplateVersion,

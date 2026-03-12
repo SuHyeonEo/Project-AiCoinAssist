@@ -1,5 +1,6 @@
 package com.aicoinassist.batch.domain.market.service;
 
+import com.aicoinassist.batch.domain.market.dto.Candle;
 import com.aicoinassist.batch.domain.market.dto.MarketCandidateLevelSnapshot;
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
@@ -42,6 +43,7 @@ class MarketCandidateLevelSnapshotPersistenceServiceTest {
         );
 
         MarketIndicatorSnapshotEntity currentSnapshot = currentSnapshot();
+        List<Candle> candles = List.of();
         MarketCandidateLevelSnapshot snapshot = snapshot();
         MarketCandidateLevelSnapshotEntity existingEntity = MarketCandidateLevelSnapshotEntity.builder()
                                                                                               .symbol("BTCUSDT")
@@ -62,7 +64,7 @@ class MarketCandidateLevelSnapshotPersistenceServiceTest {
                                                                                               .sourceDataVersion("old")
                                                                                               .build();
 
-        when(marketCandidateLevelSnapshotService.createAll(currentSnapshot)).thenReturn(List.of(snapshot));
+        when(marketCandidateLevelSnapshotService.createAll(currentSnapshot, candles)).thenReturn(List.of(snapshot));
         when(marketCandidateLevelSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeAndLevelTypeAndLevelLabelOrderByIdDesc(
                 "BTCUSDT",
                 "1h",
@@ -71,7 +73,7 @@ class MarketCandidateLevelSnapshotPersistenceServiceTest {
                 "MA20"
         )).thenReturn(Optional.of(existingEntity));
 
-        List<MarketCandidateLevelSnapshotEntity> result = service.createAndSaveAll(currentSnapshot);
+        List<MarketCandidateLevelSnapshotEntity> result = service.createAndSaveAll(currentSnapshot, candles);
 
         verify(marketCandidateLevelSnapshotRepository, never()).save(any(MarketCandidateLevelSnapshotEntity.class));
         assertThat(result).containsExactly(existingEntity);
@@ -90,9 +92,10 @@ class MarketCandidateLevelSnapshotPersistenceServiceTest {
         );
 
         MarketIndicatorSnapshotEntity currentSnapshot = currentSnapshot();
+        List<Candle> candles = List.of();
         MarketCandidateLevelSnapshot snapshot = snapshot();
 
-        when(marketCandidateLevelSnapshotService.createAll(currentSnapshot)).thenReturn(List.of(snapshot));
+        when(marketCandidateLevelSnapshotService.createAll(currentSnapshot, candles)).thenReturn(List.of(snapshot));
         when(marketCandidateLevelSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeAndLevelTypeAndLevelLabelOrderByIdDesc(
                 "BTCUSDT",
                 "1h",
@@ -103,7 +106,7 @@ class MarketCandidateLevelSnapshotPersistenceServiceTest {
         when(marketCandidateLevelSnapshotRepository.save(any(MarketCandidateLevelSnapshotEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        List<MarketCandidateLevelSnapshotEntity> result = service.createAndSaveAll(currentSnapshot);
+        List<MarketCandidateLevelSnapshotEntity> result = service.createAndSaveAll(currentSnapshot, candles);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getLevelLabel()).isEqualTo("MA20");

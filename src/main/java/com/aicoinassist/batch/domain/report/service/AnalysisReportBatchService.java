@@ -2,6 +2,7 @@ package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
 import com.aicoinassist.batch.domain.market.enumtype.AssetType;
+import com.aicoinassist.batch.domain.market.dto.MarketIndicatorSnapshotContext;
 import com.aicoinassist.batch.domain.market.service.MarketIndicatorSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchProperties;
 import com.aicoinassist.batch.domain.report.config.AnalysisLlmNarrativeProperties;
@@ -16,7 +17,9 @@ import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -39,9 +42,12 @@ public class AnalysisReportBatchService {
         Instant startedAt = Instant.now(clock);
         String symbol = assetType.symbol();
         List<AnalysisReportSnapshotStepResult> snapshotResults = new ArrayList<>();
+        Map<CandleInterval, MarketIndicatorSnapshotContext> snapshotContexts = new EnumMap<>(CandleInterval.class);
         for (CandleInterval interval : analysisReportBatchProperties.snapshotIntervals(targetReportTypes)) {
             try {
-                marketIndicatorSnapshotPersistenceService.createAndSave(symbol, interval);
+                MarketIndicatorSnapshotContext snapshotContext =
+                        marketIndicatorSnapshotPersistenceService.createAndSaveContext(symbol, interval);
+                snapshotContexts.put(interval, snapshotContext);
                 snapshotResults.add(new AnalysisReportSnapshotStepResult(interval, true, null));
             } catch (Exception exception) {
                 snapshotResults.add(new AnalysisReportSnapshotStepResult(interval, false, exception.getMessage()));
@@ -51,8 +57,12 @@ public class AnalysisReportBatchService {
         List<AnalysisReportStepResult> reportResults = new ArrayList<>();
         for (var reportType : targetReportTypes) {
             try {
+                MarketIndicatorSnapshotContext snapshotContext = snapshotContexts.get(intervalFor(reportType));
+                if (snapshotContext == null) {
+                    throw new IllegalStateException("No live candle snapshot context available for reportType=" + reportType);
+                }
                 analysisReportGenerationService.generateAndSave(
-                        symbol,
+                        snapshotContext,
                         reportType,
                         engineVersion,
                         storedTime
@@ -74,6 +84,14 @@ public class AnalysisReportBatchService {
                 reportResults,
                 null
         );
+    }
+
+    private CandleInterval intervalFor(com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType reportType) {
+        return switch (reportType) {
+            case SHORT_TERM -> CandleInterval.ONE_HOUR;
+            case MID_TERM -> CandleInterval.FOUR_HOUR;
+            case LONG_TERM -> CandleInterval.ONE_DAY;
+        };
     }
 
     private AnalysisReportStepResult generateNarrativeResult(

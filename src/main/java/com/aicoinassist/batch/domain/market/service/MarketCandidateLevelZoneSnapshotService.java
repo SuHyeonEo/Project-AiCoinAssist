@@ -1,14 +1,12 @@
 package com.aicoinassist.batch.domain.market.service;
 
+import com.aicoinassist.batch.domain.market.dto.Candle;
 import com.aicoinassist.batch.domain.market.dto.MarketCandidateLevelZoneSnapshot;
-import com.aicoinassist.batch.domain.market.entity.MarketCandleRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelLabel;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelSourceType;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelType;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelZoneInteractionType;
-import com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus;
-import com.aicoinassist.batch.domain.market.repository.MarketCandleRawRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -33,34 +31,35 @@ import java.util.stream.Collectors;
 public class MarketCandidateLevelZoneSnapshotService {
 
     private static final int SCALE = 8;
-    private static final String BINANCE_SOURCE = "BINANCE";
     private static final int INTERACTION_LOOKBACK_DAYS = 14;
 
-    private final MarketCandleRawRepository marketCandleRawRepository;
-
-    public List<MarketCandidateLevelZoneSnapshot> createAll(List<MarketCandidateLevelSnapshotEntity> levelEntities) {
+    public List<MarketCandidateLevelZoneSnapshot> createAll(
+            List<MarketCandidateLevelSnapshotEntity> levelEntities,
+            List<Candle> candles
+    ) {
         if (levelEntities.isEmpty()) {
             return List.of();
         }
 
         List<MarketCandidateLevelZoneSnapshot> zones = new ArrayList<>();
-        zones.addAll(createForType(levelEntities, MarketCandidateLevelType.SUPPORT));
-        zones.addAll(createForType(levelEntities, MarketCandidateLevelType.RESISTANCE));
+        zones.addAll(createForTypeWithCandles(levelEntities, MarketCandidateLevelType.SUPPORT, candles));
+        zones.addAll(createForTypeWithCandles(levelEntities, MarketCandidateLevelType.RESISTANCE, candles));
         return zones;
     }
 
-    private List<MarketCandidateLevelZoneSnapshot> createForType(
+    private List<MarketCandidateLevelZoneSnapshot> createForTypeWithCandles(
             List<MarketCandidateLevelSnapshotEntity> levelEntities,
-            MarketCandidateLevelType zoneType
+            MarketCandidateLevelType zoneType,
+            List<Candle> candles
     ) {
         List<MarketCandidateLevelSnapshotEntity> candidates = levelEntities.stream()
-                                                                           .filter(entity -> entity.getLevelType().equals(zoneType.name()))
-                                                                           .sorted(Comparator.comparing(MarketCandidateLevelSnapshotEntity::getLevelPrice))
-                                                                           .toList();
+                .filter(entity -> entity.getLevelType().equals(zoneType.name()))
+                .sorted(Comparator.comparing(MarketCandidateLevelSnapshotEntity::getLevelPrice))
+                .toList();
         if (candidates.isEmpty()) {
             return List.of();
         }
-        List<MarketCandleRawEntity> recentCandles = recentCandles(candidates.get(0));
+        List<Candle> recentCandles = recentCandles(candidates.get(0), candles);
 
         BigDecimal tolerance = zoneTolerance(candidates.get(0));
         List<List<MarketCandidateLevelSnapshotEntity>> clusters = new ArrayList<>();
@@ -73,9 +72,9 @@ public class MarketCandidateLevelZoneSnapshotService {
             }
 
             BigDecimal clusterHigh = currentCluster.stream()
-                                                   .map(MarketCandidateLevelSnapshotEntity::getLevelPrice)
-                                                   .max(Comparator.naturalOrder())
-                                                   .orElse(candidate.getLevelPrice());
+                    .map(MarketCandidateLevelSnapshotEntity::getLevelPrice)
+                    .max(Comparator.naturalOrder())
+                    .orElse(candidate.getLevelPrice());
             if (candidate.getLevelPrice().subtract(clusterHigh).compareTo(tolerance) <= 0) {
                 currentCluster.add(candidate);
                 continue;
@@ -91,9 +90,9 @@ public class MarketCandidateLevelZoneSnapshotService {
         }
 
         List<ZoneDraft> drafts = clusters.stream()
-                                         .map(cluster -> toZoneDraft(zoneType, cluster, recentCandles))
-                                         .sorted(zoneComparator(zoneType))
-                                         .toList();
+                .map(cluster -> toZoneDraftFromLiveCandles(zoneType, cluster, recentCandles))
+                .sorted(zoneComparator(zoneType))
+                .toList();
 
         List<MarketCandidateLevelZoneSnapshot> snapshots = new ArrayList<>();
         for (int index = 0; index < drafts.size(); index++) {
@@ -109,31 +108,31 @@ public class MarketCandidateLevelZoneSnapshotService {
         };
     }
 
-    private ZoneDraft toZoneDraft(
+    private ZoneDraft toZoneDraftFromLiveCandles(
             MarketCandidateLevelType zoneType,
             List<MarketCandidateLevelSnapshotEntity> cluster,
-            List<MarketCandleRawEntity> recentCandles
+            List<Candle> recentCandles
     ) {
         MarketCandidateLevelSnapshotEntity strongest = cluster.stream()
-                                                              .max(Comparator.comparing(MarketCandidateLevelSnapshotEntity::getStrengthScore)
-                                                                             .thenComparing(MarketCandidateLevelSnapshotEntity::getClusterSize)
-                                                                             .thenComparing(MarketCandidateLevelSnapshotEntity::getReactionCount))
-                                                              .orElseThrow();
+                .max(Comparator.comparing(MarketCandidateLevelSnapshotEntity::getStrengthScore)
+                        .thenComparing(MarketCandidateLevelSnapshotEntity::getClusterSize)
+                        .thenComparing(MarketCandidateLevelSnapshotEntity::getReactionCount))
+                .orElseThrow();
         BigDecimal zoneLow = cluster.stream()
-                                    .map(MarketCandidateLevelSnapshotEntity::getLevelPrice)
-                                    .min(Comparator.naturalOrder())
-                                    .orElseThrow();
+                .map(MarketCandidateLevelSnapshotEntity::getLevelPrice)
+                .min(Comparator.naturalOrder())
+                .orElseThrow();
         BigDecimal zoneHigh = cluster.stream()
-                                     .map(MarketCandidateLevelSnapshotEntity::getLevelPrice)
-                                     .max(Comparator.naturalOrder())
-                                     .orElseThrow();
+                .map(MarketCandidateLevelSnapshotEntity::getLevelPrice)
+                .max(Comparator.naturalOrder())
+                .orElseThrow();
         Set<String> includedLevelLabels = cluster.stream()
-                                                 .map(MarketCandidateLevelSnapshotEntity::getLevelLabel)
-                                                 .collect(Collectors.toCollection(LinkedHashSet::new));
+                .map(MarketCandidateLevelSnapshotEntity::getLevelLabel)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         Set<String> includedSourceTypes = cluster.stream()
-                                                 .map(MarketCandidateLevelSnapshotEntity::getSourceType)
-                                                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        ZoneInteraction interaction = zoneInteraction(zoneType, strongest.getCurrentPrice(), zoneLow, zoneHigh, recentCandles);
+                .map(MarketCandidateLevelSnapshotEntity::getSourceType)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        ZoneInteraction interaction = zoneInteractionFromLiveCandles(zoneType, strongest.getCurrentPrice(), zoneLow, zoneHigh, recentCandles);
         List<String> triggerFacts = zoneTriggerFacts(zoneType, cluster, strongest, zoneLow, zoneHigh, interaction);
 
         return new ZoneDraft(
@@ -162,17 +161,12 @@ public class MarketCandidateLevelZoneSnapshotService {
         );
     }
 
-    private List<MarketCandleRawEntity> recentCandles(MarketCandidateLevelSnapshotEntity anchor) {
+    private List<Candle> recentCandles(MarketCandidateLevelSnapshotEntity anchor, List<Candle> candles) {
         Instant openTimeFrom = anchor.getSnapshotTime().minus(INTERACTION_LOOKBACK_DAYS, ChronoUnit.DAYS);
-        return marketCandleRawRepository
-                .findAllBySourceAndSymbolAndIntervalValueAndValidationStatusAndOpenTimeGreaterThanEqualAndOpenTimeLessThanEqualOrderByOpenTimeAsc(
-                        BINANCE_SOURCE,
-                        anchor.getSymbol(),
-                        anchor.getIntervalValue(),
-                        RawDataValidationStatus.VALID,
-                        openTimeFrom,
-                        anchor.getSnapshotTime()
-                );
+        return candles.stream()
+                .filter(candle -> !candle.openTime().isBefore(openTimeFrom))
+                .filter(candle -> !candle.openTime().isAfter(anchor.getSnapshotTime()))
+                .toList();
     }
 
     private BigDecimal zoneTolerance(MarketCandidateLevelSnapshotEntity anchor) {
@@ -273,25 +267,25 @@ public class MarketCandidateLevelZoneSnapshotService {
         return facts;
     }
 
-    private ZoneInteraction zoneInteraction(
+    private ZoneInteraction zoneInteractionFromLiveCandles(
             MarketCandidateLevelType zoneType,
             BigDecimal currentPrice,
             BigDecimal zoneLow,
             BigDecimal zoneHigh,
-            List<MarketCandleRawEntity> recentCandles
+            List<Candle> recentCandles
     ) {
         MarketCandidateLevelZoneInteractionType interactionType = interactionType(currentPrice, zoneLow, zoneHigh);
         BigDecimal distanceToZone = distanceToZone(currentPrice, zoneLow, zoneHigh);
         int recentTestCount = (int) recentCandles.stream()
-                                                 .filter(candle -> touchesZone(candle, zoneLow, zoneHigh))
-                                                 .count();
+                .filter(candle -> touchesZone(candle, zoneLow, zoneHigh))
+                .count();
         int recentRejectionCount = (int) recentCandles.stream()
-                                                      .filter(candle -> touchesZone(candle, zoneLow, zoneHigh))
-                                                      .filter(candle -> rejectedFromZone(zoneType, candle, zoneLow, zoneHigh))
-                                                      .count();
+                .filter(candle -> touchesZone(candle, zoneLow, zoneHigh))
+                .filter(candle -> rejectedFromZone(zoneType, candle, zoneLow, zoneHigh))
+                .count();
         int recentBreakCount = (int) recentCandles.stream()
-                                                  .filter(candle -> breaksZone(zoneType, candle, zoneLow, zoneHigh))
-                                                  .count();
+                .filter(candle -> breaksZone(zoneType, candle, zoneLow, zoneHigh))
+                .count();
         return new ZoneInteraction(interactionType, distanceToZone, recentTestCount, recentRejectionCount, recentBreakCount);
     }
 
@@ -323,32 +317,32 @@ public class MarketCandidateLevelZoneSnapshotService {
                            .divide(currentPrice, SCALE, RoundingMode.HALF_UP);
     }
 
-    private boolean touchesZone(MarketCandleRawEntity candle, BigDecimal zoneLow, BigDecimal zoneHigh) {
-        return candle.getHighPrice().compareTo(zoneLow) >= 0
-                && candle.getLowPrice().compareTo(zoneHigh) <= 0;
+    private boolean touchesZone(Candle candle, BigDecimal zoneLow, BigDecimal zoneHigh) {
+        return candle.high().compareTo(zoneLow) >= 0
+                && candle.low().compareTo(zoneHigh) <= 0;
     }
 
     private boolean rejectedFromZone(
             MarketCandidateLevelType zoneType,
-            MarketCandleRawEntity candle,
+            Candle candle,
             BigDecimal zoneLow,
             BigDecimal zoneHigh
     ) {
         return switch (zoneType) {
-            case SUPPORT -> candle.getClosePrice().compareTo(zoneHigh) >= 0;
-            case RESISTANCE -> candle.getClosePrice().compareTo(zoneLow) <= 0;
+            case SUPPORT -> candle.close().compareTo(zoneHigh) >= 0;
+            case RESISTANCE -> candle.close().compareTo(zoneLow) <= 0;
         };
     }
 
     private boolean breaksZone(
             MarketCandidateLevelType zoneType,
-            MarketCandleRawEntity candle,
+            Candle candle,
             BigDecimal zoneLow,
             BigDecimal zoneHigh
     ) {
         return switch (zoneType) {
-            case SUPPORT -> candle.getClosePrice().compareTo(zoneLow) < 0;
-            case RESISTANCE -> candle.getClosePrice().compareTo(zoneHigh) > 0;
+            case SUPPORT -> candle.close().compareTo(zoneLow) < 0;
+            case RESISTANCE -> candle.close().compareTo(zoneHigh) > 0;
         };
     }
 

@@ -8,6 +8,7 @@ import java.util.List;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record AnalysisLlmPromptInputPayload(
         AnalysisLlmPromptMetadata metadata,
+        AnalysisLlmSharedContextReference sharedContextReference,
         AnalysisLlmExecutiveSummary executiveSummary,
         List<AnalysisContextHeadlinePayload> signalHeadlines,
         List<String> primaryFacts,

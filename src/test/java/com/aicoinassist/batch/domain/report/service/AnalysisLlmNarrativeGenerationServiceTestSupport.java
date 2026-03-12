@@ -12,6 +12,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeOutputPayloa
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmOutputProcessingResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmPromptComposition;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmScenarioOutput;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextResolution;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmValueLabelBasisOutput;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmNarrativeFailureType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,6 +70,13 @@ class AnalysisLlmNarrativeGenerationServiceTestSupport {
         );
         AnalysisLlmPromptComposition composition = promptComposer.compose(input);
         return new AnalysisLlmNarrativeGenerationResult(
+                input.sharedContextReference() == null
+                        ? null
+                        : new AnalysisLlmSharedContextResolution(
+                        1L,
+                        input.sharedContextReference().contextVersion(),
+                        input.sharedContextReference()
+                ),
                 composition,
                 new AnalysisLlmNarrativeGatewayResponse(
                         objectMapper.writeValueAsString(output),

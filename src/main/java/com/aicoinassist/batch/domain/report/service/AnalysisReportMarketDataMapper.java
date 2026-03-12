@@ -62,6 +62,7 @@ public class AnalysisReportMarketDataMapper {
 
     private final ObjectMapper objectMapper;
     private final AnalysisReportFormattingSupport formattingSupport = new AnalysisReportFormattingSupport();
+    private final AnalysisTextLocalizationSupport textLocalizationSupport = new AnalysisTextLocalizationSupport();
 
     public AnalysisWindowSummary toWindowSummary(MarketWindowSummarySnapshotEntity entity) {
         return new AnalysisWindowSummary(
@@ -352,8 +353,8 @@ public class AnalysisReportMarketDataMapper {
                 entity.getReferenceTime(),
                 entity.getReactionCount(),
                 entity.getClusterSize(),
-                entity.getRationale(),
-                stringListPayload(entity.getTriggerFactsPayload(), "Failed to deserialize market candidate level trigger facts.")
+                textLocalizationSupport.localizeSentence(entity.getRationale()),
+                localizeSentences(stringListPayload(entity.getTriggerFactsPayload(), "Failed to deserialize market candidate level trigger facts."))
         );
     }
 
@@ -376,7 +377,7 @@ public class AnalysisReportMarketDataMapper {
                 entity.getRecentBreakCount(),
                 enumPayload(entity.getIncludedLevelLabelsPayload(), AnalysisPriceLevelLabel.class),
                 enumPayload(entity.getIncludedSourceTypesPayload(), AnalysisPriceLevelSourceType.class),
-                stringListPayload(entity.getTriggerFactsPayload(), "Failed to deserialize market candidate level zone trigger facts.")
+                localizeSentences(stringListPayload(entity.getTriggerFactsPayload(), "Failed to deserialize market candidate level zone trigger facts."))
         );
     }
 
@@ -402,12 +403,12 @@ public class AnalysisReportMarketDataMapper {
                     AnalysisPriceZoneType.SUPPORT,
                     entity.getSupportZoneRank(),
                     AnalysisPriceZoneInteractionType.valueOf(entity.getSupportInteractionType()),
-                    "Nearest support %s is currently %s with %d tests and break risk %s."
+                    "가까운 지지 구간 %s은 현재 %s 상태이며 테스트는 %d회, 이탈 위험은 %s입니다."
                             .formatted(
                                     supportLabel,
-                                    entity.getSupportInteractionType().toLowerCase().replace('_', ' '),
+                                    formattingSupport.interactionLabel(AnalysisPriceZoneInteractionType.valueOf(entity.getSupportInteractionType())),
                                     zeroSafe(entity.getSupportRecentTestCount()),
-                                    percentage(entity.getSupportBreakRisk())
+                                    formattingSupport.percentage(entity.getSupportBreakRisk())
                             ),
                     nearestSupportZone.triggerFacts()
             ));
@@ -418,12 +419,12 @@ public class AnalysisReportMarketDataMapper {
                     AnalysisPriceZoneType.RESISTANCE,
                     entity.getResistanceZoneRank(),
                     AnalysisPriceZoneInteractionType.valueOf(entity.getResistanceInteractionType()),
-                    "Nearest resistance %s is currently %s with %d tests and break risk %s."
+                    "가까운 저항 구간 %s은 현재 %s 상태이며 테스트는 %d회, 돌파 위험은 %s입니다."
                             .formatted(
                                     resistanceLabel,
-                                    entity.getResistanceInteractionType().toLowerCase().replace('_', ' '),
+                                    formattingSupport.interactionLabel(AnalysisPriceZoneInteractionType.valueOf(entity.getResistanceInteractionType())),
                                     zeroSafe(entity.getResistanceRecentTestCount()),
-                                    percentage(entity.getResistanceBreakRisk())
+                                    formattingSupport.percentage(entity.getResistanceBreakRisk())
                             ),
                     nearestResistanceZone.triggerFacts()
             ));
@@ -435,14 +436,10 @@ public class AnalysisReportMarketDataMapper {
         return value == null ? 0 : value;
     }
 
-    private String percentage(BigDecimal value) {
-        if (value == null) {
-            return "unavailable";
-        }
-        return value.multiply(new BigDecimal("100"))
-                    .setScale(2, RoundingMode.HALF_UP)
-                    .stripTrailingZeros()
-                    .toPlainString() + "%";
+    private List<String> localizeSentences(List<String> values) {
+        return values.stream()
+                     .map(textLocalizationSupport::localizeSentence)
+                     .toList();
     }
 
     private List<String> stringListPayload(String payload, String message) {

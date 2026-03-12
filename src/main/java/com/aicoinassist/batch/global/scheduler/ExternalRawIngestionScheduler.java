@@ -26,7 +26,10 @@ public class ExternalRawIngestionScheduler {
     private final OnchainRawIngestionService onchainRawIngestionService;
     private final ExternalRawIngestionProperties externalRawIngestionProperties;
 
-    @Scheduled(fixedDelayString = "${batch.scheduler.external-raw-ingestion.macro-fixed-delay-ms:3600000}")
+    @Scheduled(
+            fixedDelayString = "${batch.scheduler.external-raw-ingestion.macro-fixed-delay-ms:3600000}",
+            initialDelayString = "${batch.scheduler.external-raw-ingestion.macro-initial-delay-ms:0}"
+    )
     public void ingestMacro() {
         if (!externalRawIngestionProperties.macroEnabled()) {
             return;
@@ -40,7 +43,10 @@ public class ExternalRawIngestionScheduler {
         }
     }
 
-    @Scheduled(fixedDelayString = "${batch.scheduler.external-raw-ingestion.sentiment-fixed-delay-ms:3600000}")
+    @Scheduled(
+            fixedDelayString = "${batch.scheduler.external-raw-ingestion.sentiment-fixed-delay-ms:21600000}",
+            initialDelayString = "${batch.scheduler.external-raw-ingestion.sentiment-initial-delay-ms:0}"
+    )
     public void ingestSentiment() {
         if (!externalRawIngestionProperties.sentimentEnabled()) {
             return;
@@ -54,7 +60,10 @@ public class ExternalRawIngestionScheduler {
         }
     }
 
-    @Scheduled(fixedDelayString = "${batch.scheduler.external-raw-ingestion.onchain-fixed-delay-ms:3600000}")
+    @Scheduled(
+            fixedDelayString = "${batch.scheduler.external-raw-ingestion.onchain-fixed-delay-ms:43200000}",
+            initialDelayString = "${batch.scheduler.external-raw-ingestion.onchain-initial-delay-ms:0}"
+    )
     public void ingestOnchain() {
         if (!externalRawIngestionProperties.onchainEnabled()) {
             return;

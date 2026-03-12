@@ -6,7 +6,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
@@ -18,8 +17,10 @@ class AnalysisReportGenerationServiceFailureTest extends AnalysisReportGeneratio
     void generateAndSaveFailsWhenNoSnapshotExistsForMappedInterval() {
         AnalysisReportGenerationService service = createService();
 
-        when(marketIndicatorSnapshotRepository.findTopBySymbolAndIntervalValueOrderBySnapshotTimeDescIdDesc("BTCUSDT", "1d"))
-                .thenReturn(Optional.empty());
+        when(marketIndicatorSnapshotPersistenceService.createAndSaveContext(
+                "BTCUSDT",
+                com.aicoinassist.batch.domain.market.enumtype.CandleInterval.ONE_DAY
+        )).thenThrow(new IllegalStateException("No live candle snapshot context available for symbol=BTCUSDT interval=1d"));
 
         assertThatThrownBy(() -> service.generateAndSave(
                 "BTCUSDT",

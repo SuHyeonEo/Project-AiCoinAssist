@@ -67,6 +67,10 @@ public class AnalysisReportNarrativeEntity {
     @JoinColumn(name = "analysis_report_id", nullable = false)
     private AnalysisReportEntity analysisReport;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shared_context_id")
+    private AnalysisReportSharedContextEntity sharedContext;
+
     @Column(nullable = false, length = 20)
     private String symbol;
 
@@ -157,6 +161,7 @@ public class AnalysisReportNarrativeEntity {
     @Builder
     public AnalysisReportNarrativeEntity(
             AnalysisReportEntity analysisReport,
+            AnalysisReportSharedContextEntity sharedContext,
             String symbol,
             AnalysisReportType reportType,
             Instant analysisBasisTime,
@@ -188,6 +193,7 @@ public class AnalysisReportNarrativeEntity {
             Instant storedAt
     ) {
         this.analysisReport = analysisReport;
+        this.sharedContext = sharedContext;
         this.symbol = symbol;
         this.reportType = reportType;
         this.analysisBasisTime = analysisBasisTime;
@@ -220,6 +226,7 @@ public class AnalysisReportNarrativeEntity {
     }
 
     public void refresh(
+            AnalysisReportSharedContextEntity sharedContext,
             String inputPayloadJson,
             String promptSystemText,
             String promptUserText,
@@ -239,6 +246,7 @@ public class AnalysisReportNarrativeEntity {
             Instant completedAt,
             Instant storedAt
     ) {
+        this.sharedContext = sharedContext;
         this.inputPayloadJson = inputPayloadJson;
         this.promptSystemText = promptSystemText;
         this.promptUserText = promptUserText;

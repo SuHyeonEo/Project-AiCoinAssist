@@ -81,8 +81,8 @@ class AnalysisRiskScenarioFactory {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.BAND_EXTENSION,
                     "Band extension",
-                    "Price is trading at an outer Bollinger band, which raises reversion risk.",
-                    List.of("Current price is touching an outer Bollinger band.")
+                    "가격이 볼린저 밴드 외곽에 위치해 있어 평균 회귀 위험이 커질 수 있습니다.",
+                    List.of("현재 가격이 볼린저 밴드 외곽에 닿아 있습니다.")
             ));
         }
 
@@ -99,9 +99,9 @@ class AnalysisRiskScenarioFactory {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.FUNDING_SKEW,
                     "Funding skew",
-                    "Funding is running at " + formattingSupport.fundingRatePercentage(derivativeContext.lastFundingRate())
-                            + ", which can signal crowded directional leverage.",
-                    List.of("Current funding rate is " + formattingSupport.fundingRatePercentage(derivativeContext.lastFundingRate()) + ".")
+                    "펀딩은 " + formattingSupport.fundingRatePercentage(derivativeContext.lastFundingRate())
+                            + " 수준으로, 방향성 레버리지 쏠림을 시사할 수 있습니다.",
+                    List.of("현재 펀딩 비율은 " + formattingSupport.fundingRatePercentage(derivativeContext.lastFundingRate()) + "입니다.")
             ));
         }
 
@@ -109,9 +109,9 @@ class AnalysisRiskScenarioFactory {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.BASIS_EXPANSION,
                     "Basis expansion",
-                    "Mark/index basis is " + formattingSupport.signedPercent(derivativeContext.markIndexBasisRate())
-                            + ", so futures positioning is trading away from spot.",
-                    List.of("Mark/index basis rate is " + formattingSupport.signedPercent(derivativeContext.markIndexBasisRate()) + ".")
+                    "마크-인덱스 베이시스는 " + formattingSupport.signedPercent(derivativeContext.markIndexBasisRate())
+                            + "로, 선물 가격이 현물과 괴리를 보이고 있습니다.",
+                    List.of("마크-인덱스 베이시스 비율은 " + formattingSupport.signedPercent(derivativeContext.markIndexBasisRate()) + "입니다.")
             ));
         }
 
@@ -124,9 +124,9 @@ class AnalysisRiskScenarioFactory {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.OPEN_INTEREST_CROWDING,
                     "Open interest crowding",
-                    "Open interest is running " + formattingSupport.signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage())
-                            + " versus the representative window average.",
-                    List.of("Open interest vs average is " + formattingSupport.signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage()) + ".")
+                    "미결제약정은 대표 윈도우 평균 대비 " + formattingSupport.signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage())
+                            + " 수준으로 형성돼 있습니다.",
+                    List.of("미결제약정은 평균 대비 " + formattingSupport.signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage()) + "입니다.")
             ));
         }
 
@@ -142,14 +142,14 @@ class AnalysisRiskScenarioFactory {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.SENTIMENT_GREED_EXTREME,
                     "Sentiment greed extreme",
-                    "Fear & Greed is at " + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
-                            + " (" + sentimentContext.classification() + "), so chase risk can rise near resistance.",
+                    "공포탐욕 지수는 " + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
+                            + " (" + sentimentContext.classification() + ")로, 저항 부근에서 추격 매수 위험이 커질 수 있습니다.",
                     List.of(
-                            "Fear & Greed classification is " + sentimentContext.classification() + ".",
+                            "공포탐욕 분류는 " + sentimentContext.classification() + "입니다.",
                             primarySentimentWindowSummary == null || primarySentimentWindowSummary.currentIndexVsAverage() == null
-                                    ? "Current sentiment is elevated."
+                                    ? "현재 심리는 높은 상태입니다."
                                     : primarySentimentWindowSummary.windowType().name()
-                                    + " sentiment vs average is "
+                                    + " 심리는 평균 대비 "
                                     + formattingSupport.signedRatio(primarySentimentWindowSummary.currentIndexVsAverage()) + "."
                     )
             ));
@@ -164,14 +164,14 @@ class AnalysisRiskScenarioFactory {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.SENTIMENT_FEAR_EXTREME,
                     "Sentiment fear extreme",
-                    "Fear & Greed is at " + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
-                            + " (" + sentimentContext.classification() + "), so reactive selloffs and whipsaws can expand.",
+                    "공포탐욕 지수는 " + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
+                            + " (" + sentimentContext.classification() + ")로, 반응성 매도와 변동 확대 가능성이 있습니다.",
                     List.of(
-                            "Fear & Greed classification is " + sentimentContext.classification() + ".",
+                            "공포탐욕 분류는 " + sentimentContext.classification() + "입니다.",
                             primarySentimentWindowSummary == null || primarySentimentWindowSummary.currentIndexVsAverage() == null
-                                    ? "Current sentiment is depressed."
+                                    ? "현재 심리는 위축된 상태입니다."
                                     : primarySentimentWindowSummary.windowType().name()
-                                    + " sentiment vs average is "
+                                    + " 심리는 평균 대비 "
                                     + formattingSupport.signedRatio(primarySentimentWindowSummary.currentIndexVsAverage()) + "."
                     )
             ));
@@ -194,25 +194,25 @@ class AnalysisRiskScenarioFactory {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.MACRO_VOLATILITY,
                     "Macro volatility",
-                    "Macro backdrop is firm with DXY "
+                    "거시 환경은 DXY "
                             + macroContext.dxyProxyValue().stripTrailingZeros().toPlainString()
                             + ", US10Y "
                             + macroContext.us10yYieldValue().stripTrailingZeros().toPlainString()
                             + ", USD/KRW "
                             + macroContext.usdKrwValue().stripTrailingZeros().toPlainString()
-                            + ", which can pressure crypto risk appetite.",
+                            + " 조합으로 가상자산 위험 선호를 압박할 수 있습니다.",
                     List.of(
-                            "DXY proxy is " + macroContext.dxyProxyValue().stripTrailingZeros().toPlainString() + ".",
-                            "US10Y yield is " + macroContext.us10yYieldValue().stripTrailingZeros().toPlainString() + ".",
-                            "USD/KRW is " + macroContext.usdKrwValue().stripTrailingZeros().toPlainString() + ".",
+                            "DXY 프록시는 " + macroContext.dxyProxyValue().stripTrailingZeros().toPlainString() + "입니다.",
+                            "미국 10년물 금리는 " + macroContext.us10yYieldValue().stripTrailingZeros().toPlainString() + "입니다.",
+                            "USD/KRW는 " + macroContext.usdKrwValue().stripTrailingZeros().toPlainString() + "입니다.",
                             primaryMacroWindowSummary == null
-                                    ? "Macro backdrop is firm."
+                                    ? "거시 환경은 강한 편입니다."
                                     : primaryMacroWindowSummary.windowType().name()
-                                    + " DXY vs average "
+                                    + " 기준 DXY는 평균 대비 "
                                     + formattingSupport.signedRatio(primaryMacroWindowSummary.currentDxyProxyVsAverage())
-                                    + ", US10Y vs average "
+                                    + ", US10Y는 평균 대비 "
                                     + formattingSupport.signedRatio(primaryMacroWindowSummary.currentUs10yYieldVsAverage())
-                                    + ", USD/KRW vs average "
+                                    + ", USD/KRW는 평균 대비 "
                                     + formattingSupport.signedRatio(primaryMacroWindowSummary.currentUsdKrwVsAverage()) + "."
                     )
             ));
@@ -242,29 +242,29 @@ class AnalysisRiskScenarioFactory {
                     "On-chain activity contraction",
                     primaryOnchainFact != null
                             ? primaryOnchainFact.reference().name()
-                            + " keeps active addresses "
+                            + " 기준 활성 주소는 "
                             + formattingSupport.signedRatio(primaryOnchainFact.activeAddressChangeRate())
-                            + " and transactions "
+                            + ", 트랜잭션은 "
                             + formattingSupport.signedRatio(primaryOnchainFact.transactionCountChangeRate())
-                            + ", which can signal weaker underlying network participation."
+                            + " 수준으로 기초 네트워크 참여 약화를 시사할 수 있습니다."
                             : primaryOnchainWindowSummary.windowType().name()
-                            + " keeps active addresses "
+                            + " 기준 활성 주소는 "
                             + formattingSupport.signedRatio(primaryOnchainWindowSummary.currentActiveAddressVsAverage())
-                            + " and transactions "
+                            + ", 트랜잭션은 "
                             + formattingSupport.signedRatio(primaryOnchainWindowSummary.currentTransactionCountVsAverage())
-                            + " versus average, which can signal weaker network participation.",
+                            + " 수준으로 네트워크 참여 약화를 시사할 수 있습니다.",
                     List.of(
                             primaryOnchainFact == null
                                     ? primaryOnchainWindowSummary.windowType().name()
-                                    + " active addresses vs average are "
+                                    + " 기준 활성 주소는 평균 대비 "
                                     + formattingSupport.signedRatio(primaryOnchainWindowSummary.currentActiveAddressVsAverage()) + "."
-                                    : "Active addresses vs " + primaryOnchainFact.reference().name() + " are "
+                                    : primaryOnchainFact.reference().name() + " 대비 활성 주소는 "
                                     + formattingSupport.signedRatio(primaryOnchainFact.activeAddressChangeRate()) + ".",
                             primaryOnchainFact == null
                                     ? primaryOnchainWindowSummary.windowType().name()
-                                    + " transactions vs average are "
+                                    + " 기준 트랜잭션 수는 평균 대비 "
                                     + formattingSupport.signedRatio(primaryOnchainWindowSummary.currentTransactionCountVsAverage()) + "."
-                                    : "Transactions vs " + primaryOnchainFact.reference().name() + " are "
+                                    : primaryOnchainFact.reference().name() + " 대비 트랜잭션 수는 "
                                     + formattingSupport.signedRatio(primaryOnchainFact.transactionCountChangeRate()) + "."
                     )
             ));
@@ -279,23 +279,23 @@ class AnalysisRiskScenarioFactory {
                     || externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage() == null
                     ? null
                     : externalContextComposite.windowSummaries().get(0).windowType().name()
-                    + " composite risk vs average is "
-                    + formattingSupport.signedRatio(externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage()) + ".";
+                    + " 외부 복합 리스크는 평균 대비 "
+                    + formattingSupport.signedRatio(externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage()) + "입니다.";
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.EXTERNAL_RISK_CONFLUENCE,
                     "External risk confluence",
-                    "Composite external regime keeps "
+                    "외부 복합 국면은 "
                             + externalContextComposite.primarySignalTitle()
-                            + " in focus with risk score "
+                            + " 신호를 중심으로 리스크 점수 "
                             + externalContextComposite.compositeRiskScore().stripTrailingZeros().toPlainString()
-                            + ".",
+                            + "를 유지하고 있습니다.",
                     java.util.stream.Stream.of(
                                     java.util.stream.Stream.of(
-                                            "Dominant external direction is "
+                                            "지배적인 외부 방향은 "
                                                     + (externalContextComposite.dominantDirection() == null
                                                     ? "mixed"
                                                     : externalContextComposite.dominantDirection().name().toLowerCase().replace('_', ' '))
-                                                    + "."
+                                                    + "입니다."
                                     ),
                                     windowSummaryDetail == null
                                             ? java.util.stream.Stream.<String>empty()
@@ -306,9 +306,9 @@ class AnalysisRiskScenarioFactory {
                                     externalContextComposite.state() == null
                                             ? java.util.stream.Stream.<String>empty()
                                             : java.util.stream.Stream.of(
-                                            "External reversal risk score is "
+                                            "외부 반전 리스크 점수는 "
                                                     + externalContextComposite.state().reversalRiskScore().setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
-                                                    + "."
+                                                    + "입니다."
                                     ),
                                     externalContextComposite.highlights() == null
                                             ? java.util.stream.Stream.<String>empty()
@@ -325,8 +325,8 @@ class AnalysisRiskScenarioFactory {
             candidates.add(new AnalysisRiskFactor(
                     AnalysisRiskFactorType.MOMENTUM_TRANSITION,
                     "Momentum transition",
-                    "Momentum is not one-sided, so follow-through can slow near key levels.",
-                    List.of("Current signals are mixed enough that follow-through may stall near nearby levels.")
+                    "모멘텀이 한쪽으로 확정되지 않아 핵심 레벨 부근에서 추세 연장이 둔화될 수 있습니다.",
+                    List.of("현재 신호가 혼재돼 있어 인접 레벨 부근에서 흐름이 멈출 수 있습니다.")
             ));
         }
 
@@ -373,56 +373,58 @@ class AnalysisRiskScenarioFactory {
                     new AnalysisScenario(
                             "Base case",
                             AnalysisScenarioBias.BULLISH,
-                            appendAll(List.of("Price holds above MA20.", "Momentum remains constructive."), externalTriggers),
-                            "Price holds above MA20 and extends toward "
+                            appendAll(List.of("가격이 MA20 위를 유지합니다.", "모멘텀은 우호적인 상태를 유지합니다."), externalTriggers),
+                            "가격이 MA20 위를 유지하며 "
                                     + snapshot.getBollingerUpperBand().stripTrailingZeros().toPlainString()
-                                    + ". " + externalPath,
-                            appendAll(List.of("A loss of MA20 weakens the bullish continuation path."), externalInvalidations)
+                                    + " 부근까지 확장될 수 있습니다. " + externalPath,
+                            appendAll(List.of("MA20 이탈 시 상승 지속 경로는 약해집니다."), externalInvalidations)
                     ),
                     new AnalysisScenario(
                             "Risk case",
                             AnalysisScenarioBias.NEUTRAL,
-                            appendAll(List.of("Price loses MA20 support."), externalTriggers),
-                            "A loss of MA20 can trigger a pullback toward "
+                            appendAll(List.of("가격이 MA20 지지를 이탈합니다."), externalTriggers),
+                            "MA20 이탈 시 "
                                     + snapshot.getMa60().stripTrailingZeros().toPlainString()
-                                    + ". " + externalRiskPathSummary(reportType, macroContext, sentimentContext, onchainContext, externalContextComposite),
-                            appendAll(List.of("A fast recovery above MA20 invalidates the pullback case."), externalInvalidations)
+                                    + " 부근까지 되돌림이 전개될 수 있습니다. "
+                                    + externalRiskPathSummary(reportType, macroContext, sentimentContext, onchainContext, externalContextComposite),
+                            appendAll(List.of("빠르게 MA20을 회복하면 되돌림 시나리오는 무효화됩니다."), externalInvalidations)
                     )
             );
             case BEARISH -> List.of(
                     new AnalysisScenario(
                             "Base case",
                             AnalysisScenarioBias.BEARISH,
-                            appendAll(List.of("Price stays below MA20.", "Momentum remains weak."), externalTriggers),
-                            "Price stays below MA20 and can probe "
+                            appendAll(List.of("가격이 MA20 아래에 머뭅니다.", "모멘텀은 약한 상태입니다."), externalTriggers),
+                            "가격이 MA20 아래에 머물며 "
                                     + snapshot.getBollingerLowerBand().stripTrailingZeros().toPlainString()
-                                    + ". " + externalRiskPathSummary(reportType, macroContext, sentimentContext, onchainContext, externalContextComposite),
-                            appendAll(List.of("A recovery above MA20 weakens the bearish continuation case."), externalInvalidations)
+                                    + " 부근을 재차 시험할 수 있습니다. "
+                                    + externalRiskPathSummary(reportType, macroContext, sentimentContext, onchainContext, externalContextComposite),
+                            appendAll(List.of("MA20 회복 시 하락 지속 시나리오는 약해집니다."), externalInvalidations)
                     ),
                     new AnalysisScenario(
                             "Risk case",
                             AnalysisScenarioBias.NEUTRAL,
-                            appendAll(List.of("Price reclaims MA20."), externalTriggers),
-                            "A recovery above MA20 can force short-covering toward "
+                            appendAll(List.of("가격이 MA20을 회복합니다."), externalTriggers),
+                            "가격이 MA20을 회복하면 "
                                     + snapshot.getMa60().stripTrailingZeros().toPlainString()
-                                    + ". " + externalPath,
-                            appendAll(List.of("Failure back below MA20 invalidates the squeeze scenario."), externalInvalidations)
+                                    + " 부근까지 숏커버링이 전개될 수 있습니다. " + externalPath,
+                            appendAll(List.of("다시 MA20 아래로 밀리면 숏커버링 시나리오는 무효화됩니다."), externalInvalidations)
                     )
             );
             case NEUTRAL -> List.of(
                     new AnalysisScenario(
                             "Base case",
                             AnalysisScenarioBias.NEUTRAL,
-                            appendAll(List.of("Price remains inside the active range.", "Trend strength stays mixed."), externalTriggers),
-                            "Price oscillates between support and resistance while waiting for directional confirmation. " + externalPath,
-                            appendAll(List.of("A decisive break beyond range extremes invalidates the range case."), externalInvalidations)
+                            appendAll(List.of("가격이 현재 활성 범위 안에 머뭅니다.", "추세 강도는 혼재된 상태입니다."), externalTriggers),
+                            "가격은 방향 확인 전까지 지지와 저항 사이에서 등락할 가능성이 큽니다. " + externalPath,
+                            appendAll(List.of("범위 상하단을 분명하게 돌파하면 박스권 시나리오는 무효화됩니다."), externalInvalidations)
                     ),
                     new AnalysisScenario(
                             "Breakout case",
                             AnalysisScenarioBias.DIRECTIONAL,
-                            appendAll(List.of("Price breaks beyond the current band extremes."), externalTriggers),
-                            "A decisive move beyond the current band extremes can set the next short-term direction. " + externalPath,
-                            appendAll(List.of("Failure to hold the breakout level invalidates the directional case."), externalInvalidations)
+                            appendAll(List.of("가격이 현재 밴드 상하단을 돌파합니다."), externalTriggers),
+                            "현재 밴드 극단값을 분명하게 이탈하면 다음 단기 방향이 정해질 수 있습니다. " + externalPath,
+                            appendAll(List.of("돌파 레벨을 지키지 못하면 방향성 시나리오는 무효화됩니다."), externalInvalidations)
                     )
             );
         };
@@ -443,9 +445,9 @@ class AnalysisRiskScenarioFactory {
                 : derivativeContextSupport.primaryDerivativeWindowSummary(reportType, derivativeContext);
         if (derivativeWindowSummary != null && derivativeWindowSummary.currentOpenInterestVsAverage() != null
                 && derivativeWindowSummary.currentOpenInterestVsAverage().abs().compareTo(new BigDecimal("0.20")) >= 0) {
-            triggers.add(derivativeWindowSummary.windowType().name() + " open interest remains "
+            triggers.add(derivativeWindowSummary.windowType().name() + " 미결제약정은 평균 대비 "
                     + formattingSupport.signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage())
-                    + " versus average.");
+                    + " 수준을 유지합니다.");
         }
 
         AnalysisMacroWindowSummary macroWindowSummary = macroContext == null
@@ -464,9 +466,9 @@ class AnalysisRiskScenarioFactory {
                 : sentimentContextSupport.primaryWindowSummary(reportType, sentimentContext);
         if (sentimentWindowSummary != null && sentimentWindowSummary.currentIndexVsAverage() != null
                 && sentimentWindowSummary.currentIndexVsAverage().abs().compareTo(new BigDecimal("0.15")) >= 0) {
-            triggers.add(sentimentWindowSummary.windowType().name() + " sentiment remains "
+            triggers.add(sentimentWindowSummary.windowType().name() + " 심리는 평균 대비 "
                     + formattingSupport.signedRatio(sentimentWindowSummary.currentIndexVsAverage())
-                    + " versus average.");
+                    + " 수준을 유지합니다.");
         }
 
         AnalysisOnchainWindowSummary onchainWindowSummary = onchainContext == null
@@ -477,10 +479,10 @@ class AnalysisRiskScenarioFactory {
                 && onchainWindowSummary.currentTransactionCountVsAverage() != null) {
             if (onchainWindowSummary.currentActiveAddressVsAverage().compareTo(new BigDecimal("0.10")) >= 0
                     && onchainWindowSummary.currentTransactionCountVsAverage().compareTo(new BigDecimal("0.10")) >= 0) {
-                triggers.add(onchainWindowSummary.windowType().name() + " on-chain activity remains above average.");
+                triggers.add(onchainWindowSummary.windowType().name() + " 온체인 활동은 평균을 웃도는 상태입니다.");
             } else if (onchainWindowSummary.currentActiveAddressVsAverage().compareTo(new BigDecimal("-0.10")) <= 0
                     && onchainWindowSummary.currentTransactionCountVsAverage().compareTo(new BigDecimal("-0.10")) <= 0) {
-                triggers.add(onchainWindowSummary.windowType().name() + " on-chain activity remains below average.");
+                triggers.add(onchainWindowSummary.windowType().name() + " 온체인 활동은 평균을 밑도는 상태입니다.");
             }
         }
 
@@ -502,16 +504,16 @@ class AnalysisRiskScenarioFactory {
                 && externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage() != null
                 && externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage().compareTo(new BigDecimal("0.15")) >= 0) {
             triggers.add(externalContextComposite.windowSummaries().get(0).windowType().name()
-                    + " composite external risk stays "
+                    + " 외부 복합 리스크는 평균 대비 "
                     + formattingSupport.signedRatio(externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage())
-                    + " versus average.");
+                    + " 수준으로 유지됩니다.");
         }
         if (externalContextComposite != null
                 && externalContextComposite.state() != null
                 && externalContextComposite.state().reversalRiskScore().compareTo(new BigDecimal("0.55")) >= 0) {
-            triggers.add("External regime reversal risk remains elevated at "
+            triggers.add("외부 국면 반전 리스크는 "
                     + externalContextComposite.state().reversalRiskScore().setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
-                    + ".");
+                    + " 수준으로 높게 유지됩니다.");
         }
 
         return triggers;
@@ -531,25 +533,25 @@ class AnalysisRiskScenarioFactory {
                 ? null
                 : sentimentContextSupport.primaryWindowSummary(reportType, sentimentContext);
         if (sentimentContext != null && sentimentWindowSummary != null && sentimentWindowSummary.currentIndexVsAverage() != null) {
-            clauses.add("Sentiment remains " + formattingSupport.signedRatio(sentimentWindowSummary.currentIndexVsAverage()) + " versus average");
+            clauses.add("심리는 평균 대비 " + formattingSupport.signedRatio(sentimentWindowSummary.currentIndexVsAverage()) + " 수준입니다");
         }
 
         AnalysisMacroWindowSummary macroWindowSummary = macroContext == null
                 ? null
                 : macroContextSupport.primaryWindowSummary(reportType, macroContext);
         if (macroWindowSummary != null) {
-            clauses.add("macro backdrop keeps DXY " + formattingSupport.signedRatio(macroWindowSummary.currentDxyProxyVsAverage()) + " versus average");
+            clauses.add("거시 환경에서 DXY는 평균 대비 " + formattingSupport.signedRatio(macroWindowSummary.currentDxyProxyVsAverage()) + " 수준입니다");
         }
 
         AnalysisOnchainWindowSummary onchainWindowSummary = onchainContext == null
                 ? null
                 : onchainContextSupport.primaryWindowSummary(reportType, onchainContext);
         if (onchainWindowSummary != null) {
-            clauses.add("on-chain activity sits " + formattingSupport.signedRatio(onchainWindowSummary.currentActiveAddressVsAverage()) + " versus average");
+            clauses.add("온체인 활동은 평균 대비 " + formattingSupport.signedRatio(onchainWindowSummary.currentActiveAddressVsAverage()) + " 수준입니다");
         }
 
         if (externalContextComposite != null && externalContextComposite.primarySignalTitle() != null) {
-            clauses.add("external regime focus stays on " + externalContextComposite.primarySignalTitle());
+            clauses.add("외부 국면의 중심 신호는 " + externalContextComposite.primarySignalTitle() + "입니다");
         }
         if (externalContextComposite != null && externalContextComposite.persistence() != null) {
             clauses.add(externalContextComposite.persistence().summary());
@@ -558,16 +560,16 @@ class AnalysisRiskScenarioFactory {
                 && externalContextComposite.windowSummaries() != null
                 && !externalContextComposite.windowSummaries().isEmpty()
                 && externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage() != null) {
-            clauses.add("external composite risk remains "
+            clauses.add("외부 복합 리스크는 대표 평균 대비 "
                     + formattingSupport.signedRatio(externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage())
-                    + " versus its representative average");
+                    + " 수준입니다");
         }
         if (externalContextComposite != null && externalContextComposite.state() != null) {
-            clauses.add("reversal risk stays at "
+            clauses.add("반전 리스크는 "
                     + externalContextComposite.state().reversalRiskScore().setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString());
         }
 
-        return clauses.isEmpty() ? "External context stays mixed." : String.join(", ", clauses) + ".";
+        return clauses.isEmpty() ? "외부 컨텍스트는 혼재된 상태입니다." : String.join(", ", clauses) + ".";
     }
 
     private String externalRiskPathSummary(
@@ -609,27 +611,27 @@ class AnalysisRiskScenarioFactory {
         if (externalContextComposite != null
                 && externalContextComposite.compositeRiskScore() != null
                 && externalContextComposite.compositeRiskScore().compareTo(new BigDecimal("1.00")) >= 0) {
-            clauses.add("external regime confluence keeps risk skew elevated");
+            clauses.add("외부 국면의 신호 결합으로 리스크 편향이 높게 유지됩니다");
         }
         if (externalContextComposite != null
                 && externalContextComposite.persistence() != null
                 && externalContextComposite.persistence().persistenceScore().compareTo(new BigDecimal("0.60")) >= 0) {
-            clauses.add("external regime persistence keeps the same bias entrenched");
+            clauses.add("외부 국면의 지속성이 같은 편향을 고착시키고 있습니다");
         }
         if (externalContextComposite != null
                 && externalContextComposite.windowSummaries() != null
                 && !externalContextComposite.windowSummaries().isEmpty()
                 && externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage() != null
                 && externalContextComposite.windowSummaries().get(0).currentCompositeRiskVsAverage().compareTo(new BigDecimal("0.15")) >= 0) {
-            clauses.add("external composite risk remains above its representative average");
+            clauses.add("외부 복합 리스크가 대표 평균보다 높은 상태입니다");
         }
         if (externalContextComposite != null
                 && externalContextComposite.state() != null
                 && externalContextComposite.state().reversalRiskScore().compareTo(new BigDecimal("0.55")) >= 0) {
-            clauses.add("external regime reversal risk remains elevated");
+            clauses.add("외부 국면 반전 리스크가 높은 수준을 유지합니다");
         }
 
-        return clauses.isEmpty() ? "External context does not add a strong risk skew." : String.join(", ", clauses) + ".";
+        return clauses.isEmpty() ? "외부 컨텍스트는 뚜렷한 리스크 편향을 추가하지 않습니다." : String.join(", ", clauses) + ".";
     }
 
     private List<String> externalInvalidationSignals(
@@ -646,40 +648,40 @@ class AnalysisRiskScenarioFactory {
                 ? null
                 : derivativeContextSupport.primaryDerivativeWindowSummary(reportType, derivativeContext);
         if (derivativeWindowSummary != null && derivativeWindowSummary.currentFundingVsAverage() != null) {
-            signals.add("Funding and open interest normalize closer to representative averages.");
+            signals.add("펀딩과 미결제약정은 대표 평균에 가까워지며 정상화됩니다.");
         }
 
         AnalysisMacroWindowSummary macroWindowSummary = macroContext == null
                 ? null
                 : macroContextSupport.primaryWindowSummary(reportType, macroContext);
         if (macroWindowSummary != null) {
-            signals.add("Dollar/yield pressure cools back toward window averages.");
+            signals.add("달러와 금리 압력은 윈도우 평균 방향으로 완화됩니다.");
         }
 
         AnalysisSentimentWindowSummary sentimentWindowSummary = sentimentContext == null
                 ? null
                 : sentimentContextSupport.primaryWindowSummary(reportType, sentimentContext);
         if (sentimentWindowSummary != null) {
-            signals.add("Fear & Greed mean-reverts toward its recent average.");
+            signals.add("공포탐욕 지수는 최근 평균 방향으로 되돌아갑니다.");
         }
 
         AnalysisOnchainWindowSummary onchainWindowSummary = onchainContext == null
                 ? null
                 : onchainContextSupport.primaryWindowSummary(reportType, onchainContext);
         if (onchainWindowSummary != null) {
-            signals.add("On-chain activity stabilizes around its recent average.");
+            signals.add("온체인 활동은 최근 평균 부근에서 안정됩니다.");
         }
 
         if (externalContextComposite != null) {
-            signals.add("Composite external regime score cools back toward neutral.");
+            signals.add("외부 복합 국면 점수가 다시 중립에 가까워집니다.");
             if (externalContextComposite.windowSummaries() != null && !externalContextComposite.windowSummaries().isEmpty()) {
-                signals.add("Composite external risk normalizes back toward its representative window average.");
+                signals.add("외부 복합 리스크가 대표 윈도우 평균 방향으로 정상화됩니다.");
             }
             if (externalContextComposite.persistence() != null) {
-                signals.add("External regime persistence weakens and stops reinforcing the current bias.");
+                signals.add("외부 국면의 지속성이 약해지며 현재 편향 강화가 멈춥니다.");
             }
             if (externalContextComposite.state() != null) {
-                signals.add("External reversal risk score cools back to a lower regime.");
+                signals.add("외부 반전 리스크 점수가 더 낮은 구간으로 내려옵니다.");
             }
         }
 

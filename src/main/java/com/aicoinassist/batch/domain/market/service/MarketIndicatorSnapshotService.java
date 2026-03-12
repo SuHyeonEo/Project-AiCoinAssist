@@ -34,8 +34,12 @@ public class MarketIndicatorSnapshotService {
     private final BollingerBandsCalculator bollingerBandsCalculator;
 
     public MarketIndicatorSnapshot create(String symbol, CandleInterval interval) {
+        return create(symbol, interval, DEFAULT_CANDLE_LIMIT);
+    }
+
+    public MarketIndicatorSnapshot create(String symbol, CandleInterval interval, int candleLimit) {
         MarketPriceSnapshot priceSnapshot = binanceMarketClient.getCurrentPrice(symbol);
-        List<Candle> candles = binanceMarketClient.getCandles(symbol, interval, DEFAULT_CANDLE_LIMIT);
+        List<Candle> candles = binanceMarketClient.getClosedCandles(symbol, interval, candleLimit);
 
         MovingAverageResult ma20 = movingAverageCalculator.calculate(candles, 20);
         MovingAverageResult ma60 = movingAverageCalculator.calculate(candles, 60);

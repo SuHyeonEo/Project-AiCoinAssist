@@ -41,7 +41,7 @@ class AnalysisReportAssemblerLongTermTest extends AnalysisReportServiceFixtures 
                                                          AnalysisComparisonReference.Y52_LOW,
                                                          AnalysisComparisonReference.D180
                                                  );
-        assertThat(payload.summary().keyMessage().continuityMessage()).contains("Previous long-term");
+        assertThat(payload.summary().keyMessage().continuityMessage()).contains("이전 장기 리포트");
         assertThat(payload.summary().signalHeadlines()).extracting(
                         AnalysisContextHeadlinePayload::category,
                         AnalysisContextHeadlinePayload::title

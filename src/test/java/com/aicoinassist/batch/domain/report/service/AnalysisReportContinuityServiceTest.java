@@ -59,7 +59,8 @@ class AnalysisReportContinuityServiceTest extends AnalysisReportPayloadTestFixtu
         assertThat(notes).singleElement().satisfies(note -> {
             assertThat(note.reference()).isEqualTo(AnalysisComparisonReference.PREV_MID_REPORT);
             assertThat(note.previousAnalysisBasisTime()).isEqualTo(Instant.parse("2026-03-01T20:59:59Z"));
-            assertThat(note.summary()).contains("structure holding above weekly support");
+            assertThat(note.summary()).contains("이전 중기 리포트");
+            assertThat(note.summary()).contains("주간 지지 위 구조 유지");
         });
     }
 
@@ -92,7 +93,7 @@ class AnalysisReportContinuityServiceTest extends AnalysisReportPayloadTestFixtu
 
         assertThat(notes).singleElement().satisfies(note -> {
             assertThat(note.reference()).isEqualTo(AnalysisComparisonReference.PREV_LONG_REPORT);
-            assertThat(note.summary()).isEqualTo("Previous report exists but summary could not be parsed.");
+            assertThat(note.summary()).isEqualTo("이전 리포트가 존재하지만 요약을 파싱할 수 없습니다.");
         });
     }
 

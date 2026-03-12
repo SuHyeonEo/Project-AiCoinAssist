@@ -14,13 +14,13 @@ import com.aicoinassist.batch.domain.macro.entity.MacroContextSnapshotEntity;
 import com.aicoinassist.batch.domain.macro.entity.MacroContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.macro.service.MacroContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.macro.service.MacroContextSnapshotPersistenceService;
-import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
 import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelZoneSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketExternalContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketExternalContextWindowSummarySnapshotPersistenceService;
+import com.aicoinassist.batch.domain.market.service.MarketIndicatorSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketLevelContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.onchain.entity.OnchainWindowSummarySnapshotEntity;
@@ -102,13 +102,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mockito.Mock;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 
 abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReportServiceFixtures {
 
+    protected static final Clock TEST_CLOCK = Clock.fixed(
+            Instant.parse("2026-03-09T01:00:30Z"),
+            java.time.ZoneOffset.UTC
+    );
+
     @Mock
-    protected MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
+    protected MarketIndicatorSnapshotPersistenceService marketIndicatorSnapshotPersistenceService;
 
     @Mock
     protected AnalysisComparisonService analysisComparisonService;
@@ -190,7 +196,7 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
 
     protected AnalysisReportGenerationService createService() {
         return new AnalysisReportGenerationService(
-                marketIndicatorSnapshotRepository,
+                marketIndicatorSnapshotPersistenceService,
                 marketCandidateLevelSnapshotPersistenceService,
                 marketCandidateLevelZoneSnapshotPersistenceService,
                 marketLevelContextSnapshotPersistenceService,
@@ -216,7 +222,8 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                 analysisReportContinuityService,
                 analysisReportAssembler,
                 analysisReportPersistenceService,
-                analysisReportMarketDataMapper
+                analysisReportMarketDataMapper,
+                TEST_CLOCK
         );
     }
 

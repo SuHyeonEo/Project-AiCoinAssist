@@ -138,6 +138,7 @@ class AnalysisReportNarrativeGenerationFlowServiceTest extends AnalysisReportPay
                         )
                 );
         AnalysisLlmNarrativeGenerationResult generationResult = new AnalysisLlmNarrativeGenerationResult(
+                baseResult.sharedContextResolution(),
                 baseResult.promptComposition(),
                 baseResult.gatewayResponse(),
                 baseResult.outputProcessingResult(),

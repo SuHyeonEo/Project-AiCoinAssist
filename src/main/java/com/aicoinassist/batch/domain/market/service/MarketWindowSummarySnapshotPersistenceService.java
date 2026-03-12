@@ -1,5 +1,6 @@
 package com.aicoinassist.batch.domain.market.service;
 
+import com.aicoinassist.batch.domain.market.dto.Candle;
 import com.aicoinassist.batch.domain.market.dto.MarketWindowSummarySnapshot;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
@@ -23,11 +24,12 @@ public class MarketWindowSummarySnapshotPersistenceService {
     @Transactional
     public List<MarketWindowSummarySnapshotEntity> createAndSaveForReportType(
             MarketIndicatorSnapshotEntity currentSnapshot,
-            AnalysisReportType reportType
+            AnalysisReportType reportType,
+            List<Candle> candles
     ) {
         List<MarketWindowSummarySnapshotEntity> entities = new ArrayList<>();
         for (MarketWindowType windowType : windowTypes(reportType)) {
-            entities.add(createAndSave(currentSnapshot, windowType));
+            entities.add(createAndSave(currentSnapshot, windowType, candles));
         }
         return entities;
     }
@@ -35,10 +37,14 @@ public class MarketWindowSummarySnapshotPersistenceService {
     @Transactional
     public MarketWindowSummarySnapshotEntity createAndSave(
             MarketIndicatorSnapshotEntity currentSnapshot,
-            MarketWindowType windowType
+            MarketWindowType windowType,
+            List<Candle> candles
     ) {
-        MarketWindowSummarySnapshot summary = marketWindowSummarySnapshotService.create(currentSnapshot, windowType);
+        MarketWindowSummarySnapshot summary = marketWindowSummarySnapshotService.create(currentSnapshot, windowType, candles);
+        return persist(summary);
+    }
 
+    private MarketWindowSummarySnapshotEntity persist(MarketWindowSummarySnapshot summary) {
         MarketWindowSummarySnapshotEntity existingEntity = marketWindowSummarySnapshotRepository
                 .findTopBySymbolAndIntervalValueAndWindowTypeAndWindowEndTimeOrderByIdDesc(
                         summary.symbol(),
