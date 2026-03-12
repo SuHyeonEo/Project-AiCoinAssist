@@ -241,6 +241,7 @@ public class AnalysisLlmPromptComposer {
                         input.sourceDataVersion(),
                         input.analysisEngineVersion()
                 ),
+                input.sharedContextReference(),
                 input.executiveSummary(),
                 input.signalHeadlines(),
                 input.primaryFacts(),
@@ -327,10 +328,11 @@ public class AnalysisLlmPromptComposer {
                 - LEVEL interpretation should explain current price location versus nearby support/resistance or active zone, what holding would imply, and what breaking would imply.
                 - Within interpretation, connect related evidence with restrained connective words so the sentence reads smoothly.
                 - Prefer structure-aware wording such as "지지 확인", "저항 재확인", "상단 돌파 시도", "하단 이탈 시 구조 약화", or "레인지 상단 부담".
+                - When shared_context_reference exists, treat it as the primary source for MACRO and SENTIMENT domain wording before looking at raw fact lists.
                 - MARKET should primarily use market_structure_facts.
                 - DERIVATIVE should primarily use derivative_structure_facts.
-                - MACRO should primarily use macro_structure_facts.
-                - SENTIMENT should primarily use sentiment_structure_facts.
+                - MACRO should primarily use shared_context_reference.macro when present, otherwise use macro_structure_facts.
+                - SENTIMENT should primarily use shared_context_reference.sentiment when present, otherwise use sentiment_structure_facts.
                 - ONCHAIN should primarily use onchain_structure_facts.
                 - LEVEL should primarily use level_structure_facts.
                 - Use domain_fact_blocks as the domain baseline, and use structure_facts to add the sharper evidence that makes the prose feel concrete.
@@ -380,6 +382,10 @@ public class AnalysisLlmPromptComposer {
 
                 Input fact usage guidance:
                 - Use signal_headlines to identify the report's most visible top-line signals.
+                - Use shared_context_reference as already-written common macro and sentiment interpretation when it exists.
+                - When shared_context_reference exists, treat it as background context that has already been explained once, and spend new tokens on this asset's chart, derivative, on-chain, and level implications.
+                - Horizon interpretation lens:
+                %s
                 - Use primary_facts as high-priority evidence that should appear in executive_conclusion or cross_signal_integration.
                 - Use market_structure_facts for moving-average arrangement, momentum, and current structural position.
                 - Use derivative_structure_facts for funding versus average, OI versus average, basis expansion or contraction, and price/OI alignment facts.
@@ -391,6 +397,10 @@ public class AnalysisLlmPromptComposer {
                 - Use server_market_structure as the source of truth for all fixed market_structure_box display fields.
                 - Use market_structure_box_facts only as supplementary background when writing market_structure_box.interpretation.
                 - Use domain_fact_blocks for domain-specific interpretation, and prefer facts with concrete numbers, deltas, ranges, moving-average positions, momentum values, and nearest level details when available.
+                - When shared_context_reference exists, do not restate it verbatim across sections. Use it as shared context and focus the new writing on how that context matters for this asset and horizon.
+                - When shared_context_reference exists, do not rewrite a second market-wide macro or sentiment essay. Translate that shared backdrop into this asset's specific implication instead.
+                - Prefer asset-specific consequences such as structure pressure, breakout difficulty, support fragility, leverage crowding, or on-chain confirmation instead of repeating the shared market summary itself.
+                - If a macro or sentiment point is already fully expressed in shared_context_reference, only mention it again when you connect it to a concrete asset fact from market_structure_facts, derivative_structure_facts, onchain_structure_facts, or level_structure_facts.
                 - Use market_structure_box for explicit upper and lower reference explanation, and avoid hiding key support or resistance references only inside scenario_map.
                 - Use scenario_guidance.confirmation_facts as confirmation candidates, and do not replace them with invented signals.
                 - Use limited_risks_scenarios for scenario conditions, invalidation, and restrained tactical meaning.
@@ -424,6 +434,7 @@ public class AnalysisLlmPromptComposer {
                 lengthPolicy.scenarioTitleMaxChars(),
                 lengthPolicy.scenarioFieldMaxChars(),
                 lengthPolicy.scenarioInterpretationMaxChars(),
+                horizonGuidance(input),
                 inputJson
         );
 
@@ -442,5 +453,25 @@ public class AnalysisLlmPromptComposer {
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize LLM prompt input.", exception);
         }
+    }
+
+    private String horizonGuidance(AnalysisLlmNarrativeInputPayload input) {
+        if (input == null || input.reportType() == null) {
+            return "- Use a balanced interpretation lens and stay conservative when horizon-specific guidance is not available.";
+        }
+        return switch (input.reportType()) {
+            case SHORT_TERM -> """
+                    - SHORT_TERM: prioritize immediate price structure, nearby support and resistance reaction, short-term momentum continuation or slowdown, and whether shared macro or sentiment pressure changes the next move.
+                    - SHORT_TERM: avoid writing as if one macro or sentiment datapoint defines the long-cycle trend.
+                    """.strip();
+            case MID_TERM -> """
+                    - MID_TERM: prioritize whether the current structure can persist across days to weeks, whether the backdrop supports consolidation or continuation, and whether pressure is accumulating against the current trend.
+                    - MID_TERM: connect shared macro or sentiment context to structural durability rather than only the next candle move.
+                    """.strip();
+            case LONG_TERM -> """
+                    - LONG_TERM: prioritize cycle position, durable regime backdrop, long-duration support and resistance tolerance, and whether the asset is operating in a supportive or restrictive long-horizon environment.
+                    - LONG_TERM: avoid overreacting to short-lived noise and explain shared macro or sentiment context as a broad environment rather than a near-term trigger.
+                    """.strip();
+        };
     }
 }

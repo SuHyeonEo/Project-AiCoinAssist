@@ -38,6 +38,7 @@ public class AnalysisReportAssembler {
     private final AnalysisRiskScenarioFactory riskScenarioFactory;
     private final AnalysisSummarySectionAssembler summarySectionAssembler;
     private final AnalysisMarketContextSectionAssembler marketContextSectionAssembler;
+    private final AnalysisReportBodyLocalizationSupport bodyLocalizationSupport;
 
     public AnalysisReportAssembler() {
         AnalysisReportFormattingSupport formattingSupport = new AnalysisReportFormattingSupport();
@@ -74,6 +75,7 @@ public class AnalysisReportAssembler {
                 onchainContextSupport,
                 formattingSupport
         );
+        this.bodyLocalizationSupport = new AnalysisReportBodyLocalizationSupport();
     }
 
     public AnalysisReportPayload assemble(
@@ -101,38 +103,41 @@ public class AnalysisReportAssembler {
                 reportType,
                 windowSummaries
         );
-        AnalysisDerivativeContext enrichedDerivativeContext = derivativeContextSupport.enrichDerivativeContext(
+        List<AnalysisContinuityNote> localizedContinuityNotes = bodyLocalizationSupport.localizeContinuityNotes(continuityNotes);
+        AnalysisDerivativeContext enrichedDerivativeContext = bodyLocalizationSupport.localizeDerivativeContext(derivativeContextSupport.enrichDerivativeContext(
                 reportType,
                 derivativeContext
-        );
-        AnalysisMacroContext enrichedMacroContext = macroContextSupport.enrichMacroContext(
+        ));
+        AnalysisMacroContext enrichedMacroContext = bodyLocalizationSupport.localizeMacroContext(macroContextSupport.enrichMacroContext(
                 reportType,
                 macroContext
-        );
-        AnalysisSentimentContext enrichedSentimentContext = sentimentContextSupport.enrichSentimentContext(
+        ));
+        AnalysisSentimentContext enrichedSentimentContext = bodyLocalizationSupport.localizeSentimentContext(sentimentContextSupport.enrichSentimentContext(
                 reportType,
                 sentimentContext
-        );
-        AnalysisOnchainContext enrichedOnchainContext = onchainContextSupport.enrichOnchainContext(
+        ));
+        AnalysisOnchainContext enrichedOnchainContext = bodyLocalizationSupport.localizeOnchainContext(onchainContextSupport.enrichOnchainContext(
                 reportType,
                 onchainContext
-        );
+        ));
+        AnalysisExternalContextCompositePayload localizedExternalContextComposite =
+                bodyLocalizationSupport.localizeExternalContextComposite(externalContextComposite);
         AnalysisLevelContextPayload effectiveLevelContext = levelContextSupport.prepareLevelContext(
                 levelContext,
                 supportZones,
                 resistanceZones
         );
         AnalysisTrendLabel trendBias = indicatorStateSupport.determineTrendBias(snapshot);
-        List<AnalysisRiskFactor> riskFactors = riskScenarioFactory.riskFactors(
+        List<AnalysisRiskFactor> riskFactors = bodyLocalizationSupport.localizeRiskFactors(riskScenarioFactory.riskFactors(
                 snapshot,
                 reportType,
                 enrichedDerivativeContext,
                 enrichedMacroContext,
                 enrichedSentimentContext,
                 enrichedOnchainContext,
-                externalContextComposite
-        );
-        List<AnalysisScenario> scenarios = riskScenarioFactory.scenarios(
+                localizedExternalContextComposite
+        ));
+        List<AnalysisScenario> scenarios = bodyLocalizationSupport.localizeScenarios(riskScenarioFactory.scenarios(
                 snapshot,
                 trendBias,
                 reportType,
@@ -140,8 +145,8 @@ public class AnalysisReportAssembler {
                 enrichedMacroContext,
                 enrichedSentimentContext,
                 enrichedOnchainContext,
-                externalContextComposite
-        );
+                localizedExternalContextComposite
+        ));
 
         AnalysisSummaryPayload summary = summarySectionAssembler.buildSummary(
                 snapshot,
@@ -154,8 +159,8 @@ public class AnalysisReportAssembler {
                 enrichedMacroContext,
                 enrichedSentimentContext,
                 enrichedOnchainContext,
-                continuityNotes,
-                externalContextComposite,
+                localizedContinuityNotes,
+                localizedExternalContextComposite,
                 effectiveLevelContext
         );
         AnalysisMarketContextPayload marketContext = marketContextSectionAssembler.buildMarketContext(
@@ -170,8 +175,8 @@ public class AnalysisReportAssembler {
                 enrichedMacroContext,
                 enrichedSentimentContext,
                 enrichedOnchainContext,
-                continuityNotes,
-                externalContextComposite,
+                localizedContinuityNotes,
+                localizedExternalContextComposite,
                 effectiveLevelContext,
                 riskFactors
         );
@@ -182,7 +187,7 @@ public class AnalysisReportAssembler {
                 comparisonFacts,
                 comparisonHighlights,
                 windowHighlights,
-                continuityNotes,
+                localizedContinuityNotes,
                 windowSummaries,
                 enrichedDerivativeContext,
                 enrichedMacroContext,

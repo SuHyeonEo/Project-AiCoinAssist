@@ -1,5 +1,6 @@
 package com.aicoinassist.batch.domain.market.service;
 
+import com.aicoinassist.batch.domain.market.dto.Candle;
 import com.aicoinassist.batch.domain.market.dto.MarketWindowSummarySnapshot;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
@@ -12,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,6 +39,7 @@ class MarketWindowSummarySnapshotPersistenceServiceTest {
         );
 
         MarketIndicatorSnapshotEntity currentSnapshot = currentSnapshot();
+        List<Candle> candles = List.of();
         MarketWindowSummarySnapshot summary = summary();
         MarketWindowSummarySnapshotEntity existingEntity = MarketWindowSummarySnapshotEntity.builder()
                                                                                             .symbol("BTCUSDT")
@@ -61,7 +64,7 @@ class MarketWindowSummarySnapshotPersistenceServiceTest {
                                                                                             .sourceDataVersion("old")
                                                                                             .build();
 
-        when(marketWindowSummarySnapshotService.create(currentSnapshot, MarketWindowType.LAST_7D)).thenReturn(summary);
+        when(marketWindowSummarySnapshotService.create(currentSnapshot, MarketWindowType.LAST_7D, candles)).thenReturn(summary);
         when(marketWindowSummarySnapshotRepository.findTopBySymbolAndIntervalValueAndWindowTypeAndWindowEndTimeOrderByIdDesc(
                 "BTCUSDT",
                 "1h",
@@ -69,7 +72,7 @@ class MarketWindowSummarySnapshotPersistenceServiceTest {
                 summary.windowEndTime()
         )).thenReturn(Optional.of(existingEntity));
 
-        MarketWindowSummarySnapshotEntity result = service.createAndSave(currentSnapshot, MarketWindowType.LAST_7D);
+        MarketWindowSummarySnapshotEntity result = service.createAndSave(currentSnapshot, MarketWindowType.LAST_7D, candles);
 
         verify(marketWindowSummarySnapshotRepository, never()).save(any(MarketWindowSummarySnapshotEntity.class));
         assertThat(result).isSameAs(existingEntity);
@@ -86,9 +89,10 @@ class MarketWindowSummarySnapshotPersistenceServiceTest {
         );
 
         MarketIndicatorSnapshotEntity currentSnapshot = currentSnapshot();
+        List<Candle> candles = List.of();
         MarketWindowSummarySnapshot summary = summary();
 
-        when(marketWindowSummarySnapshotService.create(currentSnapshot, MarketWindowType.LAST_7D)).thenReturn(summary);
+        when(marketWindowSummarySnapshotService.create(currentSnapshot, MarketWindowType.LAST_7D, candles)).thenReturn(summary);
         when(marketWindowSummarySnapshotRepository.findTopBySymbolAndIntervalValueAndWindowTypeAndWindowEndTimeOrderByIdDesc(
                 "BTCUSDT",
                 "1h",
@@ -98,7 +102,7 @@ class MarketWindowSummarySnapshotPersistenceServiceTest {
         when(marketWindowSummarySnapshotRepository.save(any(MarketWindowSummarySnapshotEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        MarketWindowSummarySnapshotEntity result = service.createAndSave(currentSnapshot, MarketWindowType.LAST_7D);
+        MarketWindowSummarySnapshotEntity result = service.createAndSave(currentSnapshot, MarketWindowType.LAST_7D, candles);
 
         assertThat(result.getWindowType()).isEqualTo("LAST_7D");
         assertThat(result.getAverageAtr()).isEqualByComparingTo("1450.00000000");

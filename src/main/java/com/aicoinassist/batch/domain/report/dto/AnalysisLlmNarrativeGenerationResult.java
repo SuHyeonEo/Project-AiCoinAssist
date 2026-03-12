@@ -5,6 +5,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmNarrativeFailure
 import java.util.List;
 
 public record AnalysisLlmNarrativeGenerationResult(
+        AnalysisLlmSharedContextResolution sharedContextResolution,
         AnalysisLlmPromptComposition promptComposition,
         AnalysisLlmNarrativeGatewayResponse gatewayResponse,
         AnalysisLlmOutputProcessingResult outputProcessingResult,

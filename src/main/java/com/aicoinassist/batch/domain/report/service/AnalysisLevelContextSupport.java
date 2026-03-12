@@ -74,21 +74,21 @@ class AnalysisLevelContextSupport {
                 fact.reference(),
                 fact.reference().name() + " level context",
                 fact.reference().name()
-                        + " keeps support price "
+                        + " 기준 지지 가격은 "
                         + formattingSupport.signedRatio(fact.supportRepresentativePriceChangeRate())
-                        + ", support strength delta "
+                        + ", 지지 강도 변화는 "
                         + formattingSupport.signed(fact.supportStrengthDelta())
-                        + ", support break risk delta "
+                        + ", 지지 이탈 위험 변화는 "
                         + formattingSupport.signedRatio(fact.supportBreakRiskDelta())
-                        + ", resistance price "
+                        + ", 저항 가격은 "
                         + formattingSupport.signedRatio(fact.resistanceRepresentativePriceChangeRate())
-                        + ", resistance strength delta "
+                        + ", 저항 강도 변화는 "
                         + formattingSupport.signed(fact.resistanceStrengthDelta())
-                        + ", resistance break risk delta "
+                        + ", 저항 돌파 위험 변화는 "
                         + formattingSupport.signedRatio(fact.resistanceBreakRiskDelta())
-                        + ", support interaction "
+                        + ", 지지 상호작용은 "
                         + formattingSupport.interactionShift(fact.currentSupportInteractionType(), fact.referenceSupportInteractionType())
-                        + ", resistance interaction "
+                        + ", 저항 상호작용은 "
                         + formattingSupport.interactionShift(fact.currentResistanceInteractionType(), fact.referenceResistanceInteractionType())
                         + "."
         );
@@ -105,10 +105,10 @@ class AnalysisLevelContextSupport {
                     AnalysisPriceZoneType.SUPPORT,
                     nearestSupportZone.zoneRank(),
                     nearestSupportZone.interactionType(),
-                    "Nearest support %s is currently %s with %d tests and %d breaks."
+                    "가까운 지지 구간 %s은 현재 %s 상태이며, 최근 테스트 %d회와 이탈 %d회가 확인됐습니다."
                             .formatted(
                                     supportLabel,
-                                    nearestSupportZone.interactionType().name().toLowerCase().replace('_', ' '),
+                                    formattingSupport.interactionLabel(nearestSupportZone.interactionType()),
                                     nearestSupportZone.recentTestCount(),
                                     nearestSupportZone.recentBreakCount()
                             ),
@@ -121,10 +121,10 @@ class AnalysisLevelContextSupport {
                     AnalysisPriceZoneType.RESISTANCE,
                     nearestResistanceZone.zoneRank(),
                     nearestResistanceZone.interactionType(),
-                    "Nearest resistance %s is currently %s with %d tests and %d rejections."
+                    "가까운 저항 구간 %s은 현재 %s 상태이며, 최근 테스트 %d회와 저항 확인 %d회가 집계됐습니다."
                             .formatted(
                                     resistanceLabel,
-                                    nearestResistanceZone.interactionType().name().toLowerCase().replace('_', ' '),
+                                    formattingSupport.interactionLabel(nearestResistanceZone.interactionType()),
                                     nearestResistanceZone.recentTestCount(),
                                     nearestResistanceZone.recentRejectionCount()
                             ),

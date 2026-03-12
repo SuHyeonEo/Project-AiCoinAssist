@@ -8,25 +8,22 @@ import java.util.Locale;
 
 class AnalysisReportFormattingSupport {
 
+    private static final int DISPLAY_SCALE = 2;
+
     String percentage(BigDecimal value) {
         if (value == null) {
-            return "unavailable";
+            return "확인 불가";
         }
 
-        return value.multiply(new BigDecimal("100"))
-                    .setScale(2, RoundingMode.HALF_UP)
-                    .stripTrailingZeros()
-                    .toPlainString() + "%";
+        return plain(value.multiply(new BigDecimal("100"))) + "%";
     }
 
     String signedRatio(BigDecimal value) {
         if (value == null) {
-            return "unavailable";
+            return "확인 불가";
         }
 
-        BigDecimal asPercent = value.multiply(new BigDecimal("100"))
-                                    .setScale(2, RoundingMode.HALF_UP)
-                                    .stripTrailingZeros();
+        BigDecimal asPercent = truncate(value.multiply(new BigDecimal("100")));
         if (asPercent.compareTo(BigDecimal.ZERO) > 0) {
             return "+" + asPercent.toPlainString() + "%";
         }
@@ -35,12 +32,10 @@ class AnalysisReportFormattingSupport {
 
     String fundingRatePercentage(BigDecimal fundingRate) {
         if (fundingRate == null) {
-            return "unavailable";
+            return "확인 불가";
         }
 
-        BigDecimal percentage = fundingRate.multiply(new BigDecimal("100"))
-                                           .setScale(4, RoundingMode.HALF_UP)
-                                           .stripTrailingZeros();
+        BigDecimal percentage = truncate(fundingRate.multiply(new BigDecimal("100")));
         if (percentage.compareTo(BigDecimal.ZERO) > 0) {
             return "+" + percentage.toPlainString() + "%";
         }
@@ -49,10 +44,10 @@ class AnalysisReportFormattingSupport {
 
     String signedPercent(BigDecimal percentValue) {
         if (percentValue == null) {
-            return "unavailable";
+            return "확인 불가";
         }
 
-        BigDecimal normalized = percentValue.setScale(4, RoundingMode.HALF_UP).stripTrailingZeros();
+        BigDecimal normalized = truncate(percentValue);
         if (normalized.compareTo(BigDecimal.ZERO) > 0) {
             return "+" + normalized.toPlainString() + "%";
         }
@@ -60,11 +55,18 @@ class AnalysisReportFormattingSupport {
     }
 
     String signed(BigDecimal value) {
-        String plainValue = value.stripTrailingZeros().toPlainString();
+        String plainValue = plain(value);
         if (value.compareTo(BigDecimal.ZERO) > 0) {
             return "+" + plainValue;
         }
         return plainValue;
+    }
+
+    String plain(BigDecimal value) {
+        if (value == null) {
+            return "확인 불가";
+        }
+        return truncate(value).toPlainString();
     }
 
     String enumLabel(Enum<?> value) {
@@ -73,7 +75,12 @@ class AnalysisReportFormattingSupport {
 
     String distanceFromExtremum(BigDecimal priceChangeRate, String relation) {
         BigDecimal absoluteValue = priceChangeRate.abs();
-        return absoluteValue.stripTrailingZeros().toPlainString() + "% " + relation;
+        String relationLabel = switch (relation) {
+            case "below" -> "아래";
+            case "above" -> "위";
+            default -> relation;
+        };
+        return plain(absoluteValue) + "% " + relationLabel;
     }
 
     String interactionShift(
@@ -81,32 +88,47 @@ class AnalysisReportFormattingSupport {
             AnalysisPriceZoneInteractionType referenceInteractionType
     ) {
         if (currentInteractionType == null && referenceInteractionType == null) {
-            return "unchanged";
+            return "변화 없음";
         }
         if (currentInteractionType == null) {
-            return "from " + referenceInteractionType.name().toLowerCase().replace('_', ' ');
+            return interactionLabel(referenceInteractionType) + "에서 이탈";
         }
         if (referenceInteractionType == null) {
-            return "to " + currentInteractionType.name().toLowerCase().replace('_', ' ');
+            return interactionLabel(currentInteractionType) + "로 진입";
         }
         if (currentInteractionType == referenceInteractionType) {
-            return "unchanged at " + currentInteractionType.name().toLowerCase().replace('_', ' ');
+            return interactionLabel(currentInteractionType) + " 유지";
         }
-        return referenceInteractionType.name().toLowerCase().replace('_', ' ')
+        return interactionLabel(referenceInteractionType)
                 + " -> "
-                + currentInteractionType.name().toLowerCase().replace('_', ' ');
+                + interactionLabel(currentInteractionType);
     }
 
     String zoneLabel(BigDecimal zoneLow, BigDecimal zoneHigh) {
-        String low = zoneLow.stripTrailingZeros().toPlainString();
-        String high = zoneHigh.stripTrailingZeros().toPlainString();
+        String low = plain(zoneLow);
+        String high = plain(zoneHigh);
         if (zoneLow.compareTo(zoneHigh) == 0) {
-            return "single level at " + low;
+            return low + " 단일 레벨";
         }
-        return low + " to " + high;
+        return low + " ~ " + high;
     }
 
     boolean singlePriceLevel(BigDecimal zoneLow, BigDecimal zoneHigh) {
         return zoneLow.compareTo(zoneHigh) == 0;
+    }
+
+    String interactionLabel(AnalysisPriceZoneInteractionType interactionType) {
+        if (interactionType == null) {
+            return "확인 불가";
+        }
+        return switch (interactionType) {
+            case ABOVE_ZONE -> "구간 상단";
+            case BELOW_ZONE -> "구간 하단";
+            case INSIDE_ZONE -> "구간 내부";
+        };
+    }
+
+    private BigDecimal truncate(BigDecimal value) {
+        return value.setScale(DISPLAY_SCALE, RoundingMode.DOWN).stripTrailingZeros();
     }
 }

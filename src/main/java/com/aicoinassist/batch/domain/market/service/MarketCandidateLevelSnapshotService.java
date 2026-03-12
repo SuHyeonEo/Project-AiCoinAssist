@@ -1,13 +1,11 @@
 package com.aicoinassist.batch.domain.market.service;
 
+import com.aicoinassist.batch.domain.market.dto.Candle;
 import com.aicoinassist.batch.domain.market.dto.MarketCandidateLevelSnapshot;
-import com.aicoinassist.batch.domain.market.entity.MarketCandleRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelLabel;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelSourceType;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelType;
-import com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus;
-import com.aicoinassist.batch.domain.market.repository.MarketCandleRawRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,26 +21,38 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MarketCandidateLevelSnapshotService {
 
-    private static final String BINANCE_SOURCE = "BINANCE";
     private static final int SCORE_SCALE = 8;
     private static final int PIVOT_LOOKBACK = 2;
     private static final int PIVOT_LOOKFORWARD = 2;
     private static final int MAX_LEVELS_PER_SIDE = 3;
 
-    private final MarketCandleRawRepository marketCandleRawRepository;
-
-    public List<MarketCandidateLevelSnapshot> createAll(MarketIndicatorSnapshotEntity snapshot) {
-        List<MarketCandleRawEntity> recentCandles = recentCandles(snapshot);
+    public List<MarketCandidateLevelSnapshot> createAll(
+            MarketIndicatorSnapshotEntity snapshot,
+            List<Candle> candles
+    ) {
+        List<Candle> recentCandles = recentCandles(snapshot, candles);
         BigDecimal priceTolerance = priceTolerance(snapshot);
         BigDecimal recentWindowHigh = recentCandles.stream()
-                                                   .map(MarketCandleRawEntity::getHighPrice)
+                                                   .map(Candle::high)
                                                    .max(Comparator.naturalOrder())
                                                    .orElse(snapshot.getCurrentPrice());
         BigDecimal recentWindowLow = recentCandles.stream()
-                                                  .map(MarketCandleRawEntity::getLowPrice)
+                                                  .map(Candle::low)
                                                   .min(Comparator.naturalOrder())
                                                   .orElse(snapshot.getCurrentPrice());
 
+        List<CandidateSeed> candidates = baseCandidates(snapshot);
+        candidates.addAll(pivotCandidatesFromLiveCandles(snapshot, recentCandles));
+
+        List<CandidateSeed> enriched = enrichCandidatesFromLiveCandles(candidates, snapshot, recentCandles, recentWindowHigh, recentWindowLow, priceTolerance);
+
+        List<MarketCandidateLevelSnapshot> results = new ArrayList<>();
+        results.addAll(selectSupportLevels(snapshot, enriched));
+        results.addAll(selectResistanceLevels(snapshot, enriched));
+        return results;
+    }
+
+    private List<CandidateSeed> baseCandidates(MarketIndicatorSnapshotEntity snapshot) {
         List<CandidateSeed> candidates = new ArrayList<>();
         candidates.add(indicatorCandidate(snapshot, MarketCandidateLevelType.SUPPORT, MarketCandidateLevelLabel.MA20, snapshot.getMa20(), "Short-term average support"));
         candidates.add(indicatorCandidate(snapshot, MarketCandidateLevelType.SUPPORT, MarketCandidateLevelLabel.MA60, snapshot.getMa60(), "Mid-trend average support"));
@@ -52,35 +62,26 @@ public class MarketCandidateLevelSnapshotService {
         candidates.add(indicatorCandidate(snapshot, MarketCandidateLevelType.RESISTANCE, MarketCandidateLevelLabel.MA60, snapshot.getMa60(), "Mid-trend average resistance"));
         candidates.add(indicatorCandidate(snapshot, MarketCandidateLevelType.RESISTANCE, MarketCandidateLevelLabel.MA120, snapshot.getMa120(), "Longer trend average resistance"));
         candidates.add(indicatorCandidate(snapshot, MarketCandidateLevelType.RESISTANCE, MarketCandidateLevelLabel.BB_UPPER, snapshot.getBollingerUpperBand(), "Upper Bollinger band resistance"));
-        candidates.addAll(pivotCandidates(snapshot, recentCandles));
-
-        List<CandidateSeed> enriched = enrichCandidates(candidates, snapshot, recentCandles, recentWindowHigh, recentWindowLow, priceTolerance);
-
-        List<MarketCandidateLevelSnapshot> results = new ArrayList<>();
-        results.addAll(selectSupportLevels(snapshot, enriched));
-        results.addAll(selectResistanceLevels(snapshot, enriched));
-        return results;
+        return candidates;
     }
 
-    private List<MarketCandleRawEntity> recentCandles(MarketIndicatorSnapshotEntity snapshot) {
+    private List<Candle> recentCandles(
+            MarketIndicatorSnapshotEntity snapshot,
+            List<Candle> candles
+    ) {
         Instant openTimeFrom = snapshot.getSnapshotTime().minus(30, ChronoUnit.DAYS);
-        List<MarketCandleRawEntity> candles = marketCandleRawRepository
-                .findAllBySourceAndSymbolAndIntervalValueAndValidationStatusAndOpenTimeGreaterThanEqualAndOpenTimeLessThanEqualOrderByOpenTimeAsc(
-                        BINANCE_SOURCE,
-                        snapshot.getSymbol(),
-                        snapshot.getIntervalValue(),
-                        RawDataValidationStatus.VALID,
-                        openTimeFrom,
-                        snapshot.getSnapshotTime()
-                );
+        List<Candle> recentCandles = candles.stream()
+                .filter(candle -> !candle.openTime().isBefore(openTimeFrom))
+                .filter(candle -> !candle.openTime().isAfter(snapshot.getSnapshotTime()))
+                .toList();
 
-        if (candles.size() < PIVOT_LOOKBACK + PIVOT_LOOKFORWARD + 1) {
+        if (recentCandles.size() < PIVOT_LOOKBACK + PIVOT_LOOKFORWARD + 1) {
             throw new IllegalStateException(
-                    "Not enough valid candle raw rows for candidate level snapshot: symbol=%s interval=%s snapshotTime=%s"
+                    "Not enough live candles for candidate level snapshot: symbol=%s interval=%s snapshotTime=%s"
                             .formatted(snapshot.getSymbol(), snapshot.getIntervalValue(), snapshot.getSnapshotTime())
             );
         }
-        return candles;
+        return recentCandles;
     }
 
     private List<MarketCandidateLevelSnapshot> selectSupportLevels(
@@ -147,66 +148,66 @@ public class MarketCandidateLevelSnapshotService {
         );
     }
 
-    private List<CandidateSeed> pivotCandidates(
+    private List<CandidateSeed> pivotCandidatesFromLiveCandles(
             MarketIndicatorSnapshotEntity snapshot,
-            List<MarketCandleRawEntity> candles
+            List<Candle> candles
     ) {
         List<CandidateSeed> candidates = new ArrayList<>();
         for (int index = PIVOT_LOOKBACK; index < candles.size() - PIVOT_LOOKFORWARD; index++) {
-            MarketCandleRawEntity current = candles.get(index);
-            if (isPivotHigh(candles, index)) {
+            Candle current = candles.get(index);
+            if (isPivotHighLiveCandle(candles, index)) {
                 candidates.add(new CandidateSeed(
                         snapshot.getSymbol(),
                         snapshot.getIntervalValue(),
                         snapshot.getSnapshotTime(),
-                        current.getOpenTime(),
+                        current.openTime(),
                         MarketCandidateLevelType.RESISTANCE,
                         MarketCandidateLevelLabel.PIVOT_HIGH,
                         MarketCandidateLevelSourceType.PIVOT_LEVEL,
                         snapshot.getCurrentPrice(),
-                        current.getHighPrice(),
+                        current.high(),
                         0,
                         1,
                         BigDecimal.ZERO,
                         "Recent pivot high resistance",
                         List.of(),
-                        buildSourceDataVersion(snapshot, MarketCandidateLevelType.RESISTANCE, MarketCandidateLevelLabel.PIVOT_HIGH, current.getOpenTime())
+                        buildSourceDataVersion(snapshot, MarketCandidateLevelType.RESISTANCE, MarketCandidateLevelLabel.PIVOT_HIGH, current.openTime())
                 ));
             }
-            if (isPivotLow(candles, index)) {
+            if (isPivotLowLiveCandle(candles, index)) {
                 candidates.add(new CandidateSeed(
                         snapshot.getSymbol(),
                         snapshot.getIntervalValue(),
                         snapshot.getSnapshotTime(),
-                        current.getOpenTime(),
+                        current.openTime(),
                         MarketCandidateLevelType.SUPPORT,
                         MarketCandidateLevelLabel.PIVOT_LOW,
                         MarketCandidateLevelSourceType.PIVOT_LEVEL,
                         snapshot.getCurrentPrice(),
-                        current.getLowPrice(),
+                        current.low(),
                         0,
                         1,
                         BigDecimal.ZERO,
                         "Recent pivot low support",
                         List.of(),
-                        buildSourceDataVersion(snapshot, MarketCandidateLevelType.SUPPORT, MarketCandidateLevelLabel.PIVOT_LOW, current.getOpenTime())
+                        buildSourceDataVersion(snapshot, MarketCandidateLevelType.SUPPORT, MarketCandidateLevelLabel.PIVOT_LOW, current.openTime())
                 ));
             }
         }
         return candidates;
     }
 
-    private List<CandidateSeed> enrichCandidates(
+    private List<CandidateSeed> enrichCandidatesFromLiveCandles(
             List<CandidateSeed> seeds,
             MarketIndicatorSnapshotEntity snapshot,
-            List<MarketCandleRawEntity> candles,
+            List<Candle> candles,
             BigDecimal recentWindowHigh,
             BigDecimal recentWindowLow,
             BigDecimal tolerance
     ) {
         return seeds.stream()
                     .map(seed -> {
-                        int reactionCount = reactionCount(candles, seed.levelType, seed.levelPrice, tolerance);
+                        int reactionCount = reactionCountFromLiveCandles(candles, seed.levelType, seed.levelPrice, tolerance);
                         int clusterSize = clusterSize(seeds, seed.levelType, seed.levelPrice, tolerance);
                         BigDecimal distanceFromCurrent = distanceRatio(snapshot.getCurrentPrice(), seed.levelPrice);
                         BigDecimal proximityScore = proximityScore(seed.levelType, seed.levelPrice, recentWindowHigh, recentWindowLow, tolerance);
@@ -235,49 +236,49 @@ public class MarketCandidateLevelSnapshotService {
         };
     }
 
-    private boolean isPivotHigh(List<MarketCandleRawEntity> candles, int index) {
-        BigDecimal high = candles.get(index).getHighPrice();
+    private boolean isPivotHighLiveCandle(List<Candle> candles, int index) {
+        BigDecimal high = candles.get(index).high();
         for (int offset = 1; offset <= PIVOT_LOOKBACK; offset++) {
-            if (high.compareTo(candles.get(index - offset).getHighPrice()) <= 0) {
+            if (high.compareTo(candles.get(index - offset).high()) <= 0) {
                 return false;
             }
         }
         for (int offset = 1; offset <= PIVOT_LOOKFORWARD; offset++) {
-            if (high.compareTo(candles.get(index + offset).getHighPrice()) < 0) {
+            if (high.compareTo(candles.get(index + offset).high()) < 0) {
                 return false;
             }
         }
         return true;
     }
 
-    private boolean isPivotLow(List<MarketCandleRawEntity> candles, int index) {
-        BigDecimal low = candles.get(index).getLowPrice();
+    private boolean isPivotLowLiveCandle(List<Candle> candles, int index) {
+        BigDecimal low = candles.get(index).low();
         for (int offset = 1; offset <= PIVOT_LOOKBACK; offset++) {
-            if (low.compareTo(candles.get(index - offset).getLowPrice()) >= 0) {
+            if (low.compareTo(candles.get(index - offset).low()) >= 0) {
                 return false;
             }
         }
         for (int offset = 1; offset <= PIVOT_LOOKFORWARD; offset++) {
-            if (low.compareTo(candles.get(index + offset).getLowPrice()) > 0) {
+            if (low.compareTo(candles.get(index + offset).low()) > 0) {
                 return false;
             }
         }
         return true;
     }
 
-    private int reactionCount(
-            List<MarketCandleRawEntity> candles,
+    private int reactionCountFromLiveCandles(
+            List<Candle> candles,
             MarketCandidateLevelType levelType,
             BigDecimal levelPrice,
             BigDecimal tolerance
     ) {
         return (int) candles.stream()
-                            .filter(candle -> touchesLevel(candle, levelType, levelPrice, tolerance))
-                            .count();
+                .filter(candle -> touchesLevelLiveCandle(candle, levelType, levelPrice, tolerance))
+                .count();
     }
 
-    private boolean touchesLevel(
-            MarketCandleRawEntity candle,
+    private boolean touchesLevelLiveCandle(
+            Candle candle,
             MarketCandidateLevelType levelType,
             BigDecimal levelPrice,
             BigDecimal tolerance
@@ -285,11 +286,11 @@ public class MarketCandidateLevelSnapshotService {
         BigDecimal upperBound = levelPrice.add(tolerance);
         BigDecimal lowerBound = levelPrice.subtract(tolerance);
         if (levelType == MarketCandidateLevelType.SUPPORT) {
-            return candle.getLowPrice().compareTo(upperBound) <= 0
-                    && candle.getLowPrice().compareTo(lowerBound) >= 0;
+            return candle.low().compareTo(upperBound) <= 0
+                    && candle.low().compareTo(lowerBound) >= 0;
         }
-        return candle.getHighPrice().compareTo(upperBound) <= 0
-                && candle.getHighPrice().compareTo(lowerBound) >= 0;
+        return candle.high().compareTo(upperBound) <= 0
+                && candle.high().compareTo(lowerBound) >= 0;
     }
 
     private int clusterSize(

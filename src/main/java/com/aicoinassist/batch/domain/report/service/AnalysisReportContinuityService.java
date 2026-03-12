@@ -18,6 +18,7 @@ public class AnalysisReportContinuityService {
 
     private final AnalysisReportRepository analysisReportRepository;
     private final ObjectMapper objectMapper;
+    private final AnalysisTextLocalizationSupport textLocalizationSupport = new AnalysisTextLocalizationSupport();
 
     public List<AnalysisContinuityNote> buildNotes(
             String symbol,
@@ -58,32 +59,32 @@ public class AnalysisReportContinuityService {
             JsonNode root = objectMapper.readTree(previousReport.getReportPayload());
             JsonNode summaryNode = root.get("summary");
             if (summaryNode == null || summaryNode.isNull()) {
-                return "Previous report exists but summary is unavailable.";
+                return "이전 리포트가 존재하지만 요약을 확인할 수 없습니다.";
             }
             if (summaryNode.isTextual()) {
-                return summaryNode.asText();
+                return textLocalizationSupport.localizeSentence(summaryNode.asText());
             }
 
-            JsonNode keyMessageNode = summaryNode.get("keyMessage");
-            if (keyMessageNode != null && !keyMessageNode.isNull()) {
-                if (keyMessageNode.isTextual() && !keyMessageNode.asText().isBlank()) {
-                    return keyMessageNode.asText();
+                JsonNode keyMessageNode = summaryNode.get("keyMessage");
+                if (keyMessageNode != null && !keyMessageNode.isNull()) {
+                    if (keyMessageNode.isTextual() && !keyMessageNode.asText().isBlank()) {
+                    return textLocalizationSupport.localizeSentence(keyMessageNode.asText());
                 }
 
                 JsonNode primaryMessageNode = keyMessageNode.get("primaryMessage");
                 if (primaryMessageNode != null && !primaryMessageNode.isNull() && !primaryMessageNode.asText().isBlank()) {
-                    return primaryMessageNode.asText();
+                    return textLocalizationSupport.localizeSentence(primaryMessageNode.asText());
                 }
             }
 
             JsonNode headlineNode = summaryNode.get("headline");
             if (headlineNode != null && !headlineNode.isNull() && !headlineNode.asText().isBlank()) {
-                return headlineNode.asText();
+                return textLocalizationSupport.localizeSentence(headlineNode.asText());
             }
 
-            return "Previous report exists but summary is unavailable.";
+            return "이전 리포트가 존재하지만 요약을 확인할 수 없습니다.";
         } catch (Exception exception) {
-            return "Previous report exists but summary could not be parsed.";
+            return "이전 리포트가 존재하지만 요약을 파싱할 수 없습니다.";
         }
     }
 }

@@ -15,6 +15,7 @@ public record AnalysisLlmNarrativeInputPayload(
         Instant rawReferenceTime,
         String sourceDataVersion,
         String analysisEngineVersion,
+        AnalysisLlmSharedContextReference sharedContextReference,
         AnalysisLlmExecutiveSummary executiveSummary,
         List<AnalysisContextHeadlinePayload> signalHeadlines,
         List<String> primaryFacts,

@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.report.config.AnalysisLlmNarrativeProperties;
+import com.aicoinassist.batch.domain.report.dto.AnalysisGptReportInputPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeGenerationResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeGatewayRequest;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeGatewayResponse;
@@ -8,6 +9,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeInputPayload
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmOutputProcessingResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmPromptComposition;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmRetryPolicy;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextResolution;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmNarrativeFailureType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +23,9 @@ import java.util.List;
 public class AnalysisLlmNarrativeGenerationService {
 
     private final AnalysisLlmNarrativeProperties analysisLlmNarrativeProperties;
-    private final AnalysisLlmNarrativeInputReadService analysisLlmNarrativeInputReadService;
+    private final AnalysisGptReportInputReadService analysisGptReportInputReadService;
+    private final AnalysisLlmSharedContextGenerationService analysisLlmSharedContextGenerationService;
+    private final AnalysisLlmNarrativeInputAssembler analysisLlmNarrativeInputAssembler;
     private final AnalysisLlmPromptComposer analysisLlmPromptComposer;
     private final AnalysisLlmNarrativeGateway analysisLlmNarrativeGateway;
     private final AnalysisLlmOutputPostProcessor analysisLlmOutputPostProcessor;
@@ -31,7 +35,11 @@ public class AnalysisLlmNarrativeGenerationService {
             String symbol,
             AnalysisReportType reportType
     ) {
-        AnalysisLlmNarrativeInputPayload input = analysisLlmNarrativeInputReadService.getLatestInput(symbol, reportType);
+        AnalysisGptReportInputPayload reportInput = analysisGptReportInputReadService.getLatestInput(symbol, reportType);
+        AnalysisLlmSharedContextResolution sharedContextResolution =
+                analysisLlmSharedContextGenerationService.getOrGenerate(reportInput);
+        AnalysisLlmNarrativeInputPayload input =
+                analysisLlmNarrativeInputAssembler.assemble(reportInput, sharedContextResolution.reference());
         AnalysisLlmPromptComposition composition = analysisLlmPromptComposer.compose(input);
         AnalysisLlmNarrativeGatewayRequest request = AnalysisLlmNarrativeGatewayRequest.from(composition);
         AnalysisLlmRetryPolicy retryPolicy = new AnalysisLlmRetryPolicy(analysisLlmNarrativeProperties.maxTransportAttempts());
@@ -48,6 +56,7 @@ public class AnalysisLlmNarrativeGenerationService {
                 AnalysisLlmNarrativeFailureType resultFailureType =
                         processingResult.fallbackUsed() ? AnalysisLlmNarrativeFailureType.CONTENT : AnalysisLlmNarrativeFailureType.NONE;
                 return new AnalysisLlmNarrativeGenerationResult(
+                        sharedContextResolution,
                         composition,
                         gatewayResponse,
                         processingResult,
@@ -60,12 +69,13 @@ public class AnalysisLlmNarrativeGenerationService {
                 failureType = exception.getFailureType();
                 transportIssues.add(exception.getMessage());
                 if (!exception.isRetryable() || attempt >= retryPolicy.maxTransportAttempts()) {
-                    return fallbackResult(input, composition, attempt, failureType, transportIssues);
+                    return fallbackResult(sharedContextResolution, input, composition, attempt, failureType, transportIssues);
                 }
             }
         }
 
         return fallbackResult(
+                sharedContextResolution,
                 input,
                 composition,
                 retryPolicy.maxTransportAttempts(),
@@ -75,6 +85,7 @@ public class AnalysisLlmNarrativeGenerationService {
     }
 
     private AnalysisLlmNarrativeGenerationResult fallbackResult(
+            AnalysisLlmSharedContextResolution sharedContextResolution,
             AnalysisLlmNarrativeInputPayload input,
             AnalysisLlmPromptComposition composition,
             int attempts,
@@ -82,6 +93,7 @@ public class AnalysisLlmNarrativeGenerationService {
             List<String> transportIssues
     ) {
         return new AnalysisLlmNarrativeGenerationResult(
+                sharedContextResolution,
                 composition,
                 null,
                 new AnalysisLlmOutputProcessingResult(

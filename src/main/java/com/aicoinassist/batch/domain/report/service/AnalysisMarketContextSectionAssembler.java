@@ -53,6 +53,7 @@ class AnalysisMarketContextSectionAssembler {
     private final AnalysisSentimentContextSupport sentimentContextSupport;
     private final AnalysisOnchainContextSupport onchainContextSupport;
     private final AnalysisReportFormattingSupport formattingSupport;
+    private final AnalysisTextLocalizationSupport textLocalizationSupport;
 
     AnalysisMarketContextSectionAssembler(
             AnalysisIndicatorStateSupport indicatorStateSupport,
@@ -70,6 +71,7 @@ class AnalysisMarketContextSectionAssembler {
         this.sentimentContextSupport = sentimentContextSupport;
         this.onchainContextSupport = onchainContextSupport;
         this.formattingSupport = formattingSupport;
+        this.textLocalizationSupport = new AnalysisTextLocalizationSupport();
     }
 
     AnalysisMarketContextPayload buildMarketContext(
@@ -96,54 +98,60 @@ class AnalysisMarketContextSectionAssembler {
         );
         AnalysisComparisonFactSummaryPayload comparisonSummary = new AnalysisComparisonFactSummaryPayload(
                 comparisonFacts.isEmpty()
-                        ? "No comparison facts available."
-                        : comparisonWindowSupport.comparisonFactSummary(comparisonFacts.get(0)),
+                        ? "비교 팩트가 없습니다."
+                        : textLocalizationSupport.localizeSentence(comparisonWindowSupport.comparisonFactSummary(comparisonFacts.get(0))),
                 comparisonFacts.stream()
                                .skip(1)
                                .map(comparisonWindowSupport::comparisonFactSummary)
+                               .map(textLocalizationSupport::localizeSentence)
                                .toList()
         );
         List<String> comparisonHighlightDetails = comparisonHighlights.stream()
                                                                      .map(AnalysisComparisonHighlight::detail)
+                                                                     .map(textLocalizationSupport::localizeSentence)
                                                                      .collect(Collectors.toCollection(ArrayList::new));
         levelContext.highlights().stream()
                     .map(AnalysisLevelContextHighlight::detail)
+                    .map(textLocalizationSupport::localizeSentence)
                     .forEach(comparisonHighlightDetails::add);
-        AnalysisContextHeadlinePayload comparisonHeadline = comparisonWindowSupport.comparisonContextHeadline(
+        AnalysisContextHeadlinePayload comparisonHeadline = localizeHeadline(comparisonWindowSupport.comparisonContextHeadline(
                 reportType,
                 comparisonFacts,
                 comparisonHighlights
-        );
+        ));
 
         AnalysisWindowSummary primaryWindow = comparisonWindowSupport.primaryWindow(windowSummaries);
         AnalysisWindowContextSummaryPayload windowSummary = null;
         if (primaryWindow != null) {
             windowSummary = new AnalysisWindowContextSummaryPayload(
-                    primaryWindow.windowType().name()
-                            + " range "
-                            + primaryWindow.low().stripTrailingZeros().toPlainString()
-                            + " to "
-                            + primaryWindow.high().stripTrailingZeros().toPlainString()
-                            + ".",
-                    primaryWindow.windowType().name()
-                            + " position "
+                    textLocalizationSupport.windowLabel(primaryWindow.windowType())
+                            + " 레인지는 "
+                            + formattingSupport.plain(primaryWindow.low())
+                            + "부터 "
+                            + formattingSupport.plain(primaryWindow.high())
+                            + "까지입니다.",
+                    textLocalizationSupport.windowLabel(primaryWindow.windowType())
+                            + " 기준 현재 위치는 레인지의 "
                             + formattingSupport.percentage(primaryWindow.currentPositionInRange())
-                            + " with distance from high "
+                            + "이며, 고점 대비 거리는 "
                             + formattingSupport.percentage(primaryWindow.distanceFromWindowHigh())
-                            + ".",
-                    "ATR vs average " + formattingSupport.signedRatio(primaryWindow.currentAtrVsAverage()) + "."
+                            + "입니다.",
+                    "ATR은 평균 대비 " + formattingSupport.signedRatio(primaryWindow.currentAtrVsAverage()) + "입니다."
             );
         }
         List<String> windowHighlightDetails = windowHighlights.stream()
                                                               .map(AnalysisWindowHighlight::detail)
+                                                              .map(textLocalizationSupport::localizeSentence)
                                                               .collect(Collectors.toCollection(ArrayList::new));
         levelContext.zoneInteractionFacts().stream()
                     .map(AnalysisZoneInteractionFact::summary)
+                    .map(textLocalizationSupport::localizeSentence)
                     .forEach(windowHighlightDetails::add);
         levelContext.highlights().stream()
                     .map(AnalysisLevelContextHighlight::detail)
+                    .map(textLocalizationSupport::localizeSentence)
                     .forEach(windowHighlightDetails::add);
-        AnalysisContextHeadlinePayload windowHeadline = comparisonWindowSupport.windowContextHeadline(reportType, windowSummaries);
+        AnalysisContextHeadlinePayload windowHeadline = localizeHeadline(comparisonWindowSupport.windowContextHeadline(reportType, windowSummaries));
 
         AnalysisDerivativeContextSummaryPayload derivativeContextSummary = null;
         AnalysisContextHeadlinePayload derivativeHeadline = null;
@@ -160,37 +168,35 @@ class AnalysisMarketContextSectionAssembler {
                     derivativeContext
             );
             derivativeContextSummary = new AnalysisDerivativeContextSummaryPayload(
-                    "Open interest "
-                            + derivativeContext.openInterest().stripTrailingZeros().toPlainString()
-                            + ", funding "
+                    "미결제약정은 "
+                            + formattingSupport.plain(derivativeContext.openInterest())
+                            + ", 펀딩은 "
                             + formattingSupport.fundingRatePercentage(derivativeContext.lastFundingRate())
-                            + ", basis "
+                            + ", 베이시스는 "
                             + formattingSupport.signedPercent(derivativeContext.markIndexBasisRate())
-                            + ", mark-index spread "
-                            + derivativeContext.markPrice()
-                                               .subtract(derivativeContext.indexPrice())
-                                               .stripTrailingZeros()
-                                               .toPlainString()
-                            + ".",
+                            + ", 마크-인덱스 스프레드는 "
+                            + formattingSupport.plain(derivativeContext.markPrice().subtract(derivativeContext.indexPrice()))
+                            + "입니다.",
                     derivativeWindowSummary == null
                             ? null
-                            : derivativeWindowSummary.windowType().name()
-                                    + " OI vs average "
+                            : textLocalizationSupport.windowLabel(derivativeWindowSummary.windowType())
+                                    + " 기준 OI는 평균 대비 "
                                     + formattingSupport.signedRatio(derivativeWindowSummary.currentOpenInterestVsAverage())
-                                    + ", funding vs average "
+                                    + ", 펀딩은 평균 대비 "
                                     + formattingSupport.signedRatio(derivativeWindowSummary.currentFundingVsAverage())
-                                    + ", basis vs average "
+                                    + ", 베이시스는 평균 대비 "
                                     + formattingSupport.signedRatio(derivativeWindowSummary.currentBasisVsAverage())
-                                    + ".",
+                                    + "입니다.",
                     derivativeContext.highlights() == null
                             ? List.of()
                             : derivativeContext.highlights().stream()
                                                .map(AnalysisDerivativeHighlight::summary)
+                                               .map(textLocalizationSupport::localizeSentence)
                                                .toList(),
                     riskFactors.stream().map(AnalysisRiskFactor::title).toList(),
                     derivativeContextSupport.hoursUntilNextFunding(derivativeContext)
             );
-            derivativeHeadline = derivativeContextSupport.derivativeContextHeadline(reportType, derivativeContext);
+            derivativeHeadline = localizeHeadline(derivativeContextSupport.derivativeContextHeadline(reportType, derivativeContext));
         }
         if (macroContext != null) {
             AnalysisMacroHighlight primaryHighlight = macroContext.highlights() == null || macroContext.highlights().isEmpty()
@@ -198,31 +204,32 @@ class AnalysisMarketContextSectionAssembler {
                     : macroContext.highlights().get(0);
             AnalysisMacroWindowSummary primaryWindowSummary = macroContextSupport.primaryWindowSummary(reportType, macroContext);
             macroContextSummary = new AnalysisMacroContextSummaryPayload(
-                    "DXY proxy "
-                            + macroContext.dxyProxyValue().stripTrailingZeros().toPlainString()
-                            + ", US10Y "
-                            + macroContext.us10yYieldValue().stripTrailingZeros().toPlainString()
-                            + ", USD/KRW "
-                            + macroContext.usdKrwValue().stripTrailingZeros().toPlainString()
-                            + ".",
-                    primaryHighlight == null ? null : primaryHighlight.summary(),
+                    "DXY 프록시는 "
+                            + formattingSupport.plain(macroContext.dxyProxyValue())
+                            + ", US10Y는 "
+                            + formattingSupport.plain(macroContext.us10yYieldValue())
+                            + ", USD/KRW는 "
+                            + formattingSupport.plain(macroContext.usdKrwValue())
+                            + "입니다.",
+                    primaryHighlight == null ? null : textLocalizationSupport.localizeSentence(primaryHighlight.summary()),
                     primaryWindowSummary == null
                             ? null
-                            : primaryWindowSummary.windowType().name()
-                                    + " keeps DXY "
+                            : textLocalizationSupport.windowLabel(primaryWindowSummary.windowType())
+                                    + " 기준 DXY는 평균 대비 "
                                     + formattingSupport.signedRatio(primaryWindowSummary.currentDxyProxyVsAverage())
-                                    + ", US10Y "
+                                    + ", US10Y는 평균 대비 "
                                     + formattingSupport.signedRatio(primaryWindowSummary.currentUs10yYieldVsAverage())
-                                    + ", USD/KRW "
+                                    + ", USD/KRW는 평균 대비 "
                                     + formattingSupport.signedRatio(primaryWindowSummary.currentUsdKrwVsAverage())
-                                    + " versus average.",
+                                    + "입니다.",
                     macroContext.highlights() == null
                             ? List.of()
                             : macroContext.highlights().stream()
                                           .map(AnalysisMacroHighlight::summary)
+                                          .map(textLocalizationSupport::localizeSentence)
                                           .toList()
             );
-            macroHeadline = macroContextSupport.macroContextHeadline(reportType, macroContext);
+            macroHeadline = localizeHeadline(macroContextSupport.macroContextHeadline(reportType, macroContext));
         }
         if (sentimentContext != null) {
             AnalysisSentimentHighlight primaryHighlight = sentimentContext.highlights() == null || sentimentContext.highlights().isEmpty()
@@ -230,30 +237,31 @@ class AnalysisMarketContextSectionAssembler {
                     : sentimentContext.highlights().get(0);
             AnalysisSentimentWindowSummary primaryWindowSummary = sentimentContextSupport.primaryWindowSummary(reportType, sentimentContext);
             sentimentContextSummary = new AnalysisSentimentContextSummaryPayload(
-                    "Fear & Greed "
-                            + sentimentContext.indexValue().stripTrailingZeros().toPlainString()
+                    "공포·탐욕 지수는 "
+                            + formattingSupport.plain(sentimentContext.indexValue())
                             + " ("
-                            + sentimentContext.classification()
-                            + ").",
-                    primaryHighlight == null ? null : primaryHighlight.summary(),
+                            + textLocalizationSupport.classificationLabel(sentimentContext.classification())
+                            + ")입니다.",
+                    primaryHighlight == null ? null : textLocalizationSupport.localizeSentence(primaryHighlight.summary()),
                     primaryWindowSummary == null
                             ? null
-                            : primaryWindowSummary.windowType().name()
-                                    + " keeps Fear & Greed "
+                            : textLocalizationSupport.windowLabel(primaryWindowSummary.windowType())
+                                    + " 기준 공포·탐욕 지수는 평균 대비 "
                                     + formattingSupport.signedRatio(primaryWindowSummary.currentIndexVsAverage())
-                                    + " versus average, greed samples "
+                                    + "이며, 탐욕 표본은 "
                                     + primaryWindowSummary.greedSampleCount()
                                     + "/"
                                     + primaryWindowSummary.sampleCount()
-                                    + ".",
+                                    + "입니다.",
                     sentimentContext.highlights() == null
                             ? List.of()
                             : sentimentContext.highlights().stream()
                                               .map(AnalysisSentimentHighlight::summary)
+                                              .map(textLocalizationSupport::localizeSentence)
                                               .toList(),
                     sentimentContextSupport.hoursUntilNextUpdate(sentimentContext)
             );
-            sentimentHeadline = sentimentContextSupport.sentimentContextHeadline(reportType, sentimentContext);
+            sentimentHeadline = localizeHeadline(sentimentContextSupport.sentimentContextHeadline(reportType, sentimentContext));
         }
         if (onchainContext != null) {
             AnalysisOnchainHighlight primaryHighlight = onchainContext.highlights() == null || onchainContext.highlights().isEmpty()
@@ -261,45 +269,46 @@ class AnalysisMarketContextSectionAssembler {
                     : onchainContext.highlights().get(0);
             AnalysisOnchainWindowSummary primaryWindowSummary = onchainContextSupport.primaryWindowSummary(reportType, onchainContext);
             onchainContextSummary = new AnalysisOnchainContextSummaryPayload(
-                    "Active addresses "
-                            + onchainContext.activeAddressCount().stripTrailingZeros().toPlainString()
-                            + ", transactions "
-                            + onchainContext.transactionCount().stripTrailingZeros().toPlainString()
-                            + ", market cap "
-                            + onchainContext.marketCapUsd().stripTrailingZeros().toPlainString()
-                            + ".",
-                    primaryHighlight == null ? null : primaryHighlight.summary(),
+                    "활성 주소는 "
+                            + formattingSupport.plain(onchainContext.activeAddressCount())
+                            + ", 트랜잭션은 "
+                            + formattingSupport.plain(onchainContext.transactionCount())
+                            + ", 시가총액은 "
+                            + formattingSupport.plain(onchainContext.marketCapUsd())
+                            + "입니다.",
+                    primaryHighlight == null ? null : textLocalizationSupport.localizeSentence(primaryHighlight.summary()),
                     primaryWindowSummary == null
                             ? null
-                            : primaryWindowSummary.windowType().name()
-                                    + " keeps active addresses "
+                            : textLocalizationSupport.windowLabel(primaryWindowSummary.windowType())
+                                    + " 기준 활성 주소는 평균 대비 "
                                     + formattingSupport.signedRatio(primaryWindowSummary.currentActiveAddressVsAverage())
-                                    + ", transactions "
+                                    + ", 트랜잭션은 평균 대비 "
                                     + formattingSupport.signedRatio(primaryWindowSummary.currentTransactionCountVsAverage())
-                                    + ", market cap "
+                                    + ", 시가총액은 평균 대비 "
                                     + formattingSupport.signedRatio(primaryWindowSummary.currentMarketCapVsAverage())
-                                    + " versus average.",
+                                    + "입니다.",
                     onchainContext.highlights() == null
                             ? List.of()
                             : onchainContext.highlights().stream()
                                             .map(AnalysisOnchainHighlight::summary)
+                                            .map(textLocalizationSupport::localizeSentence)
                                             .toList()
             );
-            onchainHeadline = onchainContextSupport.onchainContextHeadline(reportType, onchainContext);
+            onchainHeadline = localizeHeadline(onchainContextSupport.onchainContextHeadline(reportType, onchainContext));
         }
         List<AnalysisExternalRegimeSignal> externalRegimeSignals = externalContextComposite == null
                 ? List.of()
                 : externalContextComposite.regimeSignals();
         if (externalContextComposite != null) {
-            externalHeadline = externalContextHeadline(externalContextComposite);
+            externalHeadline = localizeHeadline(externalContextHeadline(externalContextComposite));
         }
 
         AnalysisContinuityContextPayload continuityContext = continuityNotes.isEmpty()
                 ? null
                 : new AnalysisContinuityContextPayload(
                         continuityNotes.get(0).reference(),
-                        continuityNotes.get(0).summary(),
-                        List.of(continuityNotes.get(0).summary()),
+                        textLocalizationSupport.localizeSentence(continuityNotes.get(0).summary()),
+                        List.of(textLocalizationSupport.localizeSentence(continuityNotes.get(0).summary())),
                         List.of()
                 );
 
@@ -358,6 +367,18 @@ class AnalysisMarketContextSectionAssembler {
                 externalContextComposite.primarySignalTitle(),
                 externalContextComposite.primarySignalDetail(),
                 com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance.MEDIUM
+        );
+    }
+
+    private AnalysisContextHeadlinePayload localizeHeadline(AnalysisContextHeadlinePayload headline) {
+        if (headline == null) {
+            return null;
+        }
+        return new AnalysisContextHeadlinePayload(
+                headline.category(),
+                headline.title(),
+                textLocalizationSupport.localizeSentence(headline.detail()),
+                headline.importance()
         );
     }
 }

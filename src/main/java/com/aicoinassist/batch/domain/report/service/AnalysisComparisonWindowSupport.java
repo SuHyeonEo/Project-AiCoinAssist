@@ -18,9 +18,11 @@ import java.util.stream.Collectors;
 class AnalysisComparisonWindowSupport {
 
     private final AnalysisReportFormattingSupport formattingSupport;
+    private final AnalysisTextLocalizationSupport textLocalizationSupport;
 
     AnalysisComparisonWindowSupport(AnalysisReportFormattingSupport formattingSupport) {
         this.formattingSupport = formattingSupport;
+        this.textLocalizationSupport = new AnalysisTextLocalizationSupport();
     }
 
     List<AnalysisComparisonHighlight> comparisonHighlights(
@@ -110,12 +112,12 @@ class AnalysisComparisonWindowSupport {
         return new AnalysisContextHeadlinePayload(
                 AnalysisContextHeadlineCategory.WINDOW,
                 primaryWindow.windowType().name() + " position",
-                primaryWindow.windowType().name()
-                        + " keeps price at "
+                textLocalizationSupport.windowLabel(primaryWindow.windowType())
+                        + " 기준 가격은 레인지의 "
                         + formattingSupport.percentage(primaryWindow.currentPositionInRange())
-                        + " of the range with volume "
+                        + " 위치이며 거래량은 평균 대비 "
                         + formattingSupport.signedRatio(primaryWindow.currentVolumeVsAverage())
-                        + " versus average.",
+                        + "입니다.",
                 reportType == AnalysisReportType.LONG_TERM
                         ? AnalysisContextHeadlineImportance.HIGH
                         : AnalysisContextHeadlineImportance.MEDIUM
@@ -131,11 +133,11 @@ class AnalysisComparisonWindowSupport {
 
     String comparisonFactSummary(AnalysisComparisonFact fact) {
         return fact.reference().name()
-                + " price "
+                + " 기준 가격은 "
                 + formattingSupport.signed(fact.priceChangeRate())
-                + "%, RSI delta "
+                + "%, RSI 변화는 "
                 + formattingSupport.signed(fact.rsiDelta())
-                + ", MACD hist delta "
+                + ", MACD 히스토그램 변화는 "
                 + formattingSupport.signed(fact.macdHistogramDelta());
     }
 
@@ -163,28 +165,28 @@ class AnalysisComparisonWindowSupport {
         return switch (fact.reference()) {
             case PREV_BATCH -> new AnalysisComparisonHighlight(
                     fact.reference(),
-                    "Since the previous batch, price changed " + formattingSupport.signed(fact.priceChangeRate()) + "% and RSI14 moved " + formattingSupport.signed(fact.rsiDelta()) + ".",
-                    "PREV_BATCH confirms the latest impulse with MACD histogram delta " + formattingSupport.signed(fact.macdHistogramDelta()) + "."
+                    "직전 배치 대비 가격은 " + formattingSupport.signed(fact.priceChangeRate()) + "% 움직였고 RSI14는 " + formattingSupport.signed(fact.rsiDelta()) + " 변했습니다.",
+                    "PREV_BATCH 기준 최신 탄력은 MACD 히스토그램 변화 " + formattingSupport.signed(fact.macdHistogramDelta()) + "로 확인됩니다."
             );
             case D1, D3, D7, D14, D30, D90, D180 -> new AnalysisComparisonHighlight(
                     fact.reference(),
-                    fact.reference().name() + " shows price " + formattingSupport.signed(fact.priceChangeRate()) + "% versus the reference point.",
-                    fact.reference().name() + " keeps RSI delta " + formattingSupport.signed(fact.rsiDelta()) + " and MACD hist delta " + formattingSupport.signed(fact.macdHistogramDelta()) + "."
+                    fact.reference().name() + " 기준 가격은 비교 시점 대비 " + formattingSupport.signed(fact.priceChangeRate()) + "%입니다.",
+                    fact.reference().name() + " 기준 RSI 변화는 " + formattingSupport.signed(fact.rsiDelta()) + "이고 MACD 히스토그램 변화는 " + formattingSupport.signed(fact.macdHistogramDelta()) + "입니다."
             );
             case PREV_SHORT_REPORT, PREV_MID_REPORT, PREV_LONG_REPORT -> new AnalysisComparisonHighlight(
                     fact.reference(),
-                    "Versus " + fact.reference().name() + ", price changed " + formattingSupport.signed(fact.priceChangeRate()) + "%.",
-                    fact.reference().name() + " comparison shows RSI delta " + formattingSupport.signed(fact.rsiDelta()) + " and ATR change " + formattingSupport.signed(fact.atrChangeRate()) + "%."
+                    fact.reference().name() + " 대비 가격 변화는 " + formattingSupport.signed(fact.priceChangeRate()) + "%입니다.",
+                    fact.reference().name() + " 비교에서 RSI 변화는 " + formattingSupport.signed(fact.rsiDelta()) + "이고 ATR 변화는 " + formattingSupport.signed(fact.atrChangeRate()) + "%입니다."
             );
             case Y52_HIGH -> new AnalysisComparisonHighlight(
                     fact.reference(),
-                    "Price is " + formattingSupport.distanceFromExtremum(fact.priceChangeRate(), "below") + " the 52-week high.",
-                    "Y52_HIGH keeps long-term upside distance at " + formattingSupport.signed(fact.priceChangeRate()) + "% from the cycle peak."
+                    "가격은 52주 고점 대비 " + formattingSupport.distanceFromExtremum(fact.priceChangeRate(), "below") + "입니다.",
+                    "Y52_HIGH 기준 장기 상단 여력은 사이클 고점 대비 " + formattingSupport.signed(fact.priceChangeRate()) + "%입니다."
             );
             case Y52_LOW -> new AnalysisComparisonHighlight(
                     fact.reference(),
-                    "Price is " + formattingSupport.distanceFromExtremum(fact.priceChangeRate(), "above") + " the 52-week low.",
-                    "Y52_LOW shows the market remains " + formattingSupport.signed(fact.priceChangeRate()) + "% above the cycle floor."
+                    "가격은 52주 저점 대비 " + formattingSupport.distanceFromExtremum(fact.priceChangeRate(), "above") + "입니다.",
+                    "Y52_LOW 기준 시장은 사이클 저점 대비 " + formattingSupport.signed(fact.priceChangeRate()) + "% 높은 위치입니다."
             );
         };
     }
@@ -192,13 +194,13 @@ class AnalysisComparisonWindowSupport {
     private AnalysisWindowHighlight toWindowHighlight(AnalysisWindowSummary summary) {
         return new AnalysisWindowHighlight(
                 summary.windowType(),
-                summary.windowType().name() + " keeps price at " + formattingSupport.percentage(summary.currentPositionInRange()) + " of the range.",
-                summary.windowType().name()
-                        + " volume vs average "
+                textLocalizationSupport.windowLabel(summary.windowType()) + " 기준 가격은 레인지의 " + formattingSupport.percentage(summary.currentPositionInRange()) + " 위치입니다.",
+                textLocalizationSupport.windowLabel(summary.windowType())
+                        + " 기준 거래량은 평균 대비 "
                         + formattingSupport.signedRatio(summary.currentVolumeVsAverage())
-                        + ", ATR vs average "
+                        + ", ATR은 평균 대비 "
                         + formattingSupport.signedRatio(summary.currentAtrVsAverage())
-                        + ", distance from range high "
+                        + ", 레인지 고점 대비 거리는 "
                         + formattingSupport.percentage(summary.distanceFromWindowHigh())
                         + "."
         );

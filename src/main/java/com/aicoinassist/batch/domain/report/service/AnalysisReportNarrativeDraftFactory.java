@@ -33,6 +33,8 @@ public class AnalysisReportNarrativeDraftFactory {
     ) {
         return new AnalysisReportNarrativeDraft(
                 analysisReport,
+                generationResult.sharedContextResolution() == null ? null : generationResult.sharedContextResolution().sharedContextId(),
+                generationResult.sharedContextResolution() == null ? null : generationResult.sharedContextResolution().contextVersion(),
                 llmProvider,
                 llmModel,
                 promptTemplateVersion,

@@ -34,7 +34,21 @@ class AnalysisReportNarrativeDraftFactoryTest extends AnalysisReportPayloadTestF
 
         AnalysisLlmNarrativeInputPayload input = new AnalysisLlmNarrativeInputAssembler().assemble(
                 new AnalysisGptReportInputAssembler(new AnalysisGptCrossSignalFactory())
-                        .assemble(reportEntity, shortTermPayload("Narrative summary"))
+                        .assemble(reportEntity, shortTermPayload("Narrative summary")),
+                new com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextReference(
+                        "shared-v1",
+                        "공통 시장 해설",
+                        new com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextDomainReference(
+                                "MIXED",
+                                "거시 혼조",
+                                "달러 확인"
+                        ),
+                        new com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextDomainReference(
+                                "MIXED",
+                                "심리 혼조",
+                                "심리 확인"
+                        )
+                )
         );
         AnalysisLlmNarrativeGenerationResult generationResult = new AnalysisLlmNarrativeGenerationServiceTestSupport(objectMapper)
                 .successfulGenerationResult(input);
@@ -53,6 +67,8 @@ class AnalysisReportNarrativeDraftFactoryTest extends AnalysisReportPayloadTestF
         );
 
         assertThat(draft.analysisReport()).isSameAs(reportEntity);
+        assertThat(draft.sharedContextId()).isEqualTo(1L);
+        assertThat(draft.sharedContextVersion()).isEqualTo("shared-v1");
         assertThat(draft.llmProvider()).isEqualTo("OPENAI");
         assertThat(draft.llmModel()).isEqualTo("gpt-5.4");
         assertThat(draft.promptTemplateVersion()).isEqualTo("prompt-v1");

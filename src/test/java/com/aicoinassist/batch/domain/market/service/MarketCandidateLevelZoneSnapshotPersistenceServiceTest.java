@@ -1,5 +1,6 @@
 package com.aicoinassist.batch.domain.market.service;
 
+import com.aicoinassist.batch.domain.market.dto.Candle;
 import com.aicoinassist.batch.domain.market.dto.MarketCandidateLevelZoneSnapshot;
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnapshotEntity;
@@ -43,6 +44,7 @@ class MarketCandidateLevelZoneSnapshotPersistenceServiceTest {
         );
 
         List<MarketCandidateLevelSnapshotEntity> levelEntities = List.of();
+        List<Candle> candles = List.of();
         MarketCandidateLevelZoneSnapshot snapshot = snapshot();
         MarketCandidateLevelZoneSnapshotEntity existingEntity = MarketCandidateLevelZoneSnapshotEntity.builder()
                                                                                                       .symbol("BTCUSDT")
@@ -70,7 +72,7 @@ class MarketCandidateLevelZoneSnapshotPersistenceServiceTest {
                                                                                                       .sourceDataVersion("old")
                                                                                                       .build();
 
-        when(marketCandidateLevelZoneSnapshotService.createAll(levelEntities)).thenReturn(List.of(snapshot));
+        when(marketCandidateLevelZoneSnapshotService.createAll(levelEntities, candles)).thenReturn(List.of(snapshot));
         when(marketCandidateLevelZoneSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeAndZoneTypeAndZoneRankOrderByIdDesc(
                 "BTCUSDT",
                 "1h",
@@ -79,7 +81,7 @@ class MarketCandidateLevelZoneSnapshotPersistenceServiceTest {
                 1
         )).thenReturn(Optional.of(existingEntity));
 
-        List<MarketCandidateLevelZoneSnapshotEntity> result = service.createAndSaveAll(levelEntities);
+        List<MarketCandidateLevelZoneSnapshotEntity> result = service.createAndSaveAll(levelEntities, candles);
 
         verify(marketCandidateLevelZoneSnapshotRepository, never()).save(any(MarketCandidateLevelZoneSnapshotEntity.class));
         assertThat(result).containsExactly(existingEntity);
@@ -97,9 +99,10 @@ class MarketCandidateLevelZoneSnapshotPersistenceServiceTest {
         );
 
         List<MarketCandidateLevelSnapshotEntity> levelEntities = List.of();
+        List<Candle> candles = List.of();
         MarketCandidateLevelZoneSnapshot snapshot = snapshot();
 
-        when(marketCandidateLevelZoneSnapshotService.createAll(levelEntities)).thenReturn(List.of(snapshot));
+        when(marketCandidateLevelZoneSnapshotService.createAll(levelEntities, candles)).thenReturn(List.of(snapshot));
         when(marketCandidateLevelZoneSnapshotRepository.findTopBySymbolAndIntervalValueAndSnapshotTimeAndZoneTypeAndZoneRankOrderByIdDesc(
                 "BTCUSDT",
                 "1h",
@@ -110,7 +113,7 @@ class MarketCandidateLevelZoneSnapshotPersistenceServiceTest {
         when(marketCandidateLevelZoneSnapshotRepository.save(any(MarketCandidateLevelZoneSnapshotEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        List<MarketCandidateLevelZoneSnapshotEntity> result = service.createAndSaveAll(levelEntities);
+        List<MarketCandidateLevelZoneSnapshotEntity> result = service.createAndSaveAll(levelEntities, candles);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getZoneRank()).isEqualTo(1);

@@ -9,15 +9,17 @@ import com.aicoinassist.batch.domain.market.entity.MarketContextWindowSummarySna
 import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketExternalContextWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
+import com.aicoinassist.batch.domain.market.dto.Candle;
+import com.aicoinassist.batch.domain.market.dto.MarketIndicatorSnapshotContext;
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
-import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
 import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketCandidateLevelZoneSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketContextWindowSummarySnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketExternalContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketExternalContextWindowSummarySnapshotPersistenceService;
+import com.aicoinassist.batch.domain.market.service.MarketIndicatorSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.market.service.MarketLevelContextSnapshotPersistenceService;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisDerivativeComparisonFact;
@@ -54,6 +56,7 @@ import com.aicoinassist.batch.domain.sentiment.service.SentimentWindowSummarySna
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -62,7 +65,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AnalysisReportGenerationService {
 
-    private final MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
+    private final MarketIndicatorSnapshotPersistenceService marketIndicatorSnapshotPersistenceService;
     private final MarketCandidateLevelSnapshotPersistenceService marketCandidateLevelSnapshotPersistenceService;
     private final MarketCandidateLevelZoneSnapshotPersistenceService marketCandidateLevelZoneSnapshotPersistenceService;
     private final MarketLevelContextSnapshotPersistenceService marketLevelContextSnapshotPersistenceService;
@@ -89,6 +92,7 @@ public class AnalysisReportGenerationService {
     private final AnalysisReportAssembler analysisReportAssembler;
     private final AnalysisReportPersistenceService analysisReportPersistenceService;
     private final AnalysisReportMarketDataMapper analysisReportMarketDataMapper;
+    private final Clock clock;
 
     public AnalysisReportEntity generateAndSave(
             String symbol,
@@ -96,20 +100,47 @@ public class AnalysisReportGenerationService {
             String analysisEngineVersion,
             Instant storedTime
     ) {
-        CandleInterval interval = intervalFor(reportType);
-        MarketIndicatorSnapshotEntity snapshot = marketIndicatorSnapshotRepository
-                .findTopBySymbolAndIntervalValueOrderBySnapshotTimeDescIdDesc(symbol, interval.value())
-                .orElseThrow(() -> new IllegalStateException(
-                        "No market indicator snapshot found for symbol=%s interval=%s".formatted(symbol, interval.value())
-                ));
+        Instant effectiveStoredTime = storedTime == null ? Instant.now(clock) : storedTime;
+        MarketIndicatorSnapshotContext snapshotContext = marketIndicatorSnapshotPersistenceService.createAndSaveContext(
+                symbol,
+                intervalFor(reportType)
+        );
+        return generateAndSave(snapshotContext, reportType, analysisEngineVersion, effectiveStoredTime);
+    }
+
+    public AnalysisReportEntity generateAndSave(
+            MarketIndicatorSnapshotContext snapshotContext,
+            AnalysisReportType reportType,
+            String analysisEngineVersion,
+            Instant storedTime
+    ) {
+        Instant effectiveStoredTime = storedTime == null ? Instant.now(clock) : storedTime;
+        return generateAndSave(
+                snapshotContext.snapshotEntity(),
+                reportType,
+                analysisEngineVersion,
+                effectiveStoredTime,
+                snapshotContext.candles()
+        );
+    }
+
+    private AnalysisReportEntity generateAndSave(
+            MarketIndicatorSnapshotEntity snapshot,
+            AnalysisReportType reportType,
+            String analysisEngineVersion,
+            Instant effectiveStoredTime,
+            List<Candle> candles
+    ) {
+        Instant analysisBasisTime = clampToUpperBound(snapshot.getSnapshotTime(), effectiveStoredTime);
+        Instant rawReferenceTime = clampToUpperBound(snapshot.getPriceSourceEventTime(), effectiveStoredTime);
 
         List<AnalysisComparisonFact> comparisonFacts = analysisComparisonService.buildFacts(snapshot, reportType);
         List<AnalysisContinuityNote> continuityNotes = analysisReportContinuityService.buildNotes(
-                symbol,
+                snapshot.getSymbol(),
                 reportType,
-                snapshot.getSnapshotTime()
+                analysisBasisTime
         );
-        MarketContextSnapshotEntity marketContextSnapshot = marketContextSnapshotPersistenceService.createAndSave(symbol);
+        MarketContextSnapshotEntity marketContextSnapshot = marketContextSnapshotPersistenceService.createAndSave(snapshot.getSymbol());
         List<AnalysisDerivativeComparisonFact> derivativeComparisonFacts = analysisDerivativeComparisonService.buildFacts(
                 marketContextSnapshot,
                 reportType
@@ -136,7 +167,7 @@ public class AnalysisReportGenerationService {
                 analysisSentimentComparisonService.buildFacts(sentimentSnapshot, reportType),
                 sentimentWindowSummaries
         );
-        OnchainFactSnapshotEntity onchainSnapshot = onchainFactSnapshotPersistenceService.createAndSave(symbol);
+        OnchainFactSnapshotEntity onchainSnapshot = onchainFactSnapshotPersistenceService.createAndSave(snapshot.getSymbol());
         List<AnalysisOnchainWindowSummary> onchainWindowSummaries = onchainWindowSummarySnapshotPersistenceService
                 .createAndSaveForReportType(onchainSnapshot, reportType)
                 .stream()
@@ -158,14 +189,14 @@ public class AnalysisReportGenerationService {
                 derivativeWindowSummaries
         );
         List<AnalysisWindowSummary> windowSummaries = marketWindowSummarySnapshotPersistenceService
-                .createAndSaveForReportType(snapshot, reportType)
+                .createAndSaveForReportType(snapshot, reportType, candles)
                 .stream()
                 .map(analysisReportMarketDataMapper::toWindowSummary)
                 .toList();
-        List<MarketCandidateLevelSnapshotEntity> candidateLevelSnapshots = marketCandidateLevelSnapshotPersistenceService
-                .createAndSaveAll(snapshot);
-        List<MarketCandidateLevelZoneSnapshotEntity> candidateLevelZoneSnapshots = marketCandidateLevelZoneSnapshotPersistenceService
-                .createAndSaveAll(candidateLevelSnapshots);
+        List<MarketCandidateLevelSnapshotEntity> candidateLevelSnapshots =
+                marketCandidateLevelSnapshotPersistenceService.createAndSaveAll(snapshot, candles);
+        List<MarketCandidateLevelZoneSnapshotEntity> candidateLevelZoneSnapshots =
+                marketCandidateLevelZoneSnapshotPersistenceService.createAndSaveAll(candidateLevelSnapshots, candles);
         List<AnalysisPriceLevel> supportLevels = analysisReportMarketDataMapper.toCandidateLevels(
                 candidateLevelSnapshots,
                 "SUPPORT",
@@ -190,7 +221,7 @@ public class AnalysisReportGenerationService {
         );
         MarketExternalContextSnapshotEntity externalContextSnapshot = marketExternalContextSnapshotPersistenceService
                 .createAndSave(analysisExternalContextSnapshotService.create(
-                        symbol,
+                        snapshot.getSymbol(),
                         reportType,
                         derivativeContext,
                         macroContext,
@@ -257,15 +288,25 @@ public class AnalysisReportGenerationService {
         AnalysisReportDraft draft = new AnalysisReportDraft(
                 snapshot.getSymbol(),
                 reportType,
-                snapshot.getSnapshotTime(),
-                snapshot.getPriceSourceEventTime(),
+                analysisBasisTime,
+                rawReferenceTime,
                 snapshot.getSourceDataVersion(),
                 analysisEngineVersion,
                 payload,
-                storedTime
+                effectiveStoredTime
         );
 
         return analysisReportPersistenceService.save(draft);
+    }
+
+    private Instant clampToUpperBound(Instant value, Instant upperBound) {
+        if (upperBound == null) {
+            return value;
+        }
+        if (value == null || value.isAfter(upperBound)) {
+            return upperBound;
+        }
+        return value;
     }
 
     private CandleInterval intervalFor(AnalysisReportType reportType) {

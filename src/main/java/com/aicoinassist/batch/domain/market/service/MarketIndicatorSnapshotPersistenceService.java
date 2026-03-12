@@ -2,6 +2,7 @@ package com.aicoinassist.batch.domain.market.service;
 
 import com.aicoinassist.batch.domain.market.dto.Candle;
 import com.aicoinassist.batch.domain.market.dto.MarketIndicatorSnapshot;
+import com.aicoinassist.batch.domain.market.dto.MarketIndicatorSnapshotContext;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
@@ -21,7 +22,19 @@ public class MarketIndicatorSnapshotPersistenceService {
     @Transactional
     public MarketIndicatorSnapshotEntity createAndSave(String symbol, CandleInterval interval) {
         MarketIndicatorSnapshot snapshot = marketIndicatorSnapshotService.create(symbol, interval);
+        return persist(interval, snapshot);
+    }
 
+    @Transactional
+    public MarketIndicatorSnapshotContext createAndSaveContext(String symbol, CandleInterval interval) {
+        MarketIndicatorSnapshot snapshot = marketIndicatorSnapshotService.create(symbol, interval, candleLimit(interval));
+        return new MarketIndicatorSnapshotContext(
+                persist(interval, snapshot),
+                snapshot.candles()
+        );
+    }
+
+    private MarketIndicatorSnapshotEntity persist(CandleInterval interval, MarketIndicatorSnapshot snapshot) {
         Candle latestCandle = snapshot.candles().get(snapshot.candles().size() - 1);
         String intervalValue = interval.value();
 
@@ -83,6 +96,14 @@ public class MarketIndicatorSnapshotPersistenceService {
         );
 
         return existingEntity;
+    }
+
+    private int candleLimit(CandleInterval interval) {
+        return switch (interval) {
+            case ONE_HOUR -> 720;
+            case FOUR_HOUR -> 180;
+            case ONE_DAY -> 364;
+        };
     }
 
     private String buildSourceDataVersion(

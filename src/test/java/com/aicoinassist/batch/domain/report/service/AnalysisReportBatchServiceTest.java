@@ -1,5 +1,6 @@
 package com.aicoinassist.batch.domain.report.service;
 
+import com.aicoinassist.batch.domain.market.dto.MarketIndicatorSnapshotContext;
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
 import com.aicoinassist.batch.domain.market.enumtype.AssetType;
 import com.aicoinassist.batch.domain.market.service.MarketIndicatorSnapshotPersistenceService;
@@ -43,6 +44,9 @@ class AnalysisReportBatchServiceTest {
 
     @Test
     void generateForAssetCreatesSnapshotsBeforeReportsForAllHorizons() {
+        MarketIndicatorSnapshotContext oneHourContext = snapshotContext();
+        MarketIndicatorSnapshotContext fourHourContext = snapshotContext();
+        MarketIndicatorSnapshotContext oneDayContext = snapshotContext();
         AnalysisReportBatchProperties properties = new AnalysisReportBatchProperties(
                 "report-assembler-v1",
                 java.util.List.of(AssetType.BTC),
@@ -71,6 +75,9 @@ class AnalysisReportBatchServiceTest {
         );
 
         Instant storedTime = Instant.parse("2026-03-09T01:00:30Z");
+        when(marketIndicatorSnapshotPersistenceService.createAndSaveContext("BTCUSDT", CandleInterval.ONE_HOUR)).thenReturn(oneHourContext);
+        when(marketIndicatorSnapshotPersistenceService.createAndSaveContext("BTCUSDT", CandleInterval.FOUR_HOUR)).thenReturn(fourHourContext);
+        when(marketIndicatorSnapshotPersistenceService.createAndSaveContext("BTCUSDT", CandleInterval.ONE_DAY)).thenReturn(oneDayContext);
 
         AnalysisReportBatchResult result = service.generateForAsset(
                 AssetType.BTC,
@@ -84,12 +91,12 @@ class AnalysisReportBatchServiceTest {
                 marketIndicatorSnapshotPersistenceService,
                 analysisReportGenerationService
         );
-        inOrder.verify(marketIndicatorSnapshotPersistenceService).createAndSave("BTCUSDT", CandleInterval.ONE_HOUR);
-        inOrder.verify(marketIndicatorSnapshotPersistenceService).createAndSave("BTCUSDT", CandleInterval.FOUR_HOUR);
-        inOrder.verify(marketIndicatorSnapshotPersistenceService).createAndSave("BTCUSDT", CandleInterval.ONE_DAY);
-        inOrder.verify(analysisReportGenerationService).generateAndSave("BTCUSDT", AnalysisReportType.SHORT_TERM, "report-assembler-v1", storedTime);
-        inOrder.verify(analysisReportGenerationService).generateAndSave("BTCUSDT", AnalysisReportType.MID_TERM, "report-assembler-v1", storedTime);
-        inOrder.verify(analysisReportGenerationService).generateAndSave("BTCUSDT", AnalysisReportType.LONG_TERM, "report-assembler-v1", storedTime);
+        inOrder.verify(marketIndicatorSnapshotPersistenceService).createAndSaveContext("BTCUSDT", CandleInterval.ONE_HOUR);
+        inOrder.verify(marketIndicatorSnapshotPersistenceService).createAndSaveContext("BTCUSDT", CandleInterval.FOUR_HOUR);
+        inOrder.verify(marketIndicatorSnapshotPersistenceService).createAndSaveContext("BTCUSDT", CandleInterval.ONE_DAY);
+        inOrder.verify(analysisReportGenerationService).generateAndSave(oneHourContext, AnalysisReportType.SHORT_TERM, "report-assembler-v1", storedTime);
+        inOrder.verify(analysisReportGenerationService).generateAndSave(fourHourContext, AnalysisReportType.MID_TERM, "report-assembler-v1", storedTime);
+        inOrder.verify(analysisReportGenerationService).generateAndSave(oneDayContext, AnalysisReportType.LONG_TERM, "report-assembler-v1", storedTime);
 
         assertThat(result.runId()).isEqualTo("run-001");
         assertThat(result.symbol()).isEqualTo("BTCUSDT");
@@ -103,6 +110,8 @@ class AnalysisReportBatchServiceTest {
 
     @Test
     void generateForAssetUsesConfiguredSubsetOfReportTypesAndIntervals() {
+        MarketIndicatorSnapshotContext fourHourContext = snapshotContext();
+        MarketIndicatorSnapshotContext oneDayContext = snapshotContext();
         AnalysisReportBatchProperties properties = new AnalysisReportBatchProperties(
                 "report-assembler-v2",
                 java.util.List.of(AssetType.ETH),
@@ -125,6 +134,8 @@ class AnalysisReportBatchServiceTest {
                 new AnalysisLlmNarrativeProperties(false, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1", 1),
                 FIXED_CLOCK
         );
+        when(marketIndicatorSnapshotPersistenceService.createAndSaveContext("ETHUSDT", CandleInterval.FOUR_HOUR)).thenReturn(fourHourContext);
+        when(marketIndicatorSnapshotPersistenceService.createAndSaveContext("ETHUSDT", CandleInterval.ONE_DAY)).thenReturn(oneDayContext);
 
         AnalysisReportBatchResult result = service.generateForAsset(
                 AssetType.ETH,
@@ -138,16 +149,16 @@ class AnalysisReportBatchServiceTest {
                 marketIndicatorSnapshotPersistenceService,
                 analysisReportGenerationService
         );
-        inOrder.verify(marketIndicatorSnapshotPersistenceService).createAndSave("ETHUSDT", CandleInterval.FOUR_HOUR);
-        inOrder.verify(marketIndicatorSnapshotPersistenceService).createAndSave("ETHUSDT", CandleInterval.ONE_DAY);
+        inOrder.verify(marketIndicatorSnapshotPersistenceService).createAndSaveContext("ETHUSDT", CandleInterval.FOUR_HOUR);
+        inOrder.verify(marketIndicatorSnapshotPersistenceService).createAndSaveContext("ETHUSDT", CandleInterval.ONE_DAY);
         inOrder.verify(analysisReportGenerationService).generateAndSave(
-                "ETHUSDT",
+                fourHourContext,
                 AnalysisReportType.MID_TERM,
                 "report-assembler-v2",
                 Instant.parse("2026-03-09T01:00:30Z")
         );
         inOrder.verify(analysisReportGenerationService).generateAndSave(
-                "ETHUSDT",
+                oneDayContext,
                 AnalysisReportType.LONG_TERM,
                 "report-assembler-v2",
                 Instant.parse("2026-03-09T01:00:30Z")
@@ -161,6 +172,7 @@ class AnalysisReportBatchServiceTest {
 
     @Test
     void generateForAssetCapturesPartialFailuresByStep() {
+        MarketIndicatorSnapshotContext oneHourContext = snapshotContext();
         AnalysisReportBatchProperties properties = new AnalysisReportBatchProperties(
                 "report-assembler-v3",
                 java.util.List.of(AssetType.XRP),
@@ -187,24 +199,17 @@ class AnalysisReportBatchServiceTest {
                 FIXED_CLOCK
         );
 
-        when(marketIndicatorSnapshotPersistenceService.createAndSave("XRPUSDT", CandleInterval.ONE_HOUR))
-                .thenReturn(null);
-        when(marketIndicatorSnapshotPersistenceService.createAndSave("XRPUSDT", CandleInterval.FOUR_HOUR))
+        when(marketIndicatorSnapshotPersistenceService.createAndSaveContext("XRPUSDT", CandleInterval.ONE_HOUR))
+                .thenReturn(oneHourContext);
+        when(marketIndicatorSnapshotPersistenceService.createAndSaveContext("XRPUSDT", CandleInterval.FOUR_HOUR))
                 .thenThrow(new IllegalStateException("4h snapshot failed"));
         when(analysisReportGenerationService.generateAndSave(
-                        "XRPUSDT",
+                        oneHourContext,
                         AnalysisReportType.SHORT_TERM,
                         "report-assembler-v3",
                         Instant.parse("2026-03-09T01:00:30Z")
                 ))
                 .thenReturn(null);
-        when(analysisReportGenerationService.generateAndSave(
-                        "XRPUSDT",
-                        AnalysisReportType.MID_TERM,
-                        "report-assembler-v3",
-                        Instant.parse("2026-03-09T01:00:30Z")
-                ))
-                .thenThrow(new IllegalStateException("mid report failed"));
 
         AnalysisReportBatchResult result = service.generateForAsset(
                 AssetType.XRP,
@@ -226,7 +231,7 @@ class AnalysisReportBatchServiceTest {
         assertThat(result.reportSuccessCount()).isEqualTo(1);
         assertThat(result.reportFailureCount()).isEqualTo(1);
         assertThat(result.snapshotResults().get(1).errorMessage()).contains("4h snapshot failed");
-        assertThat(result.reportResults().get(1).errorMessage()).contains("mid report failed");
+        assertThat(result.reportResults().get(1).errorMessage()).contains("No live candle snapshot context available");
     }
 
     @Test
@@ -253,6 +258,8 @@ class AnalysisReportBatchServiceTest {
                 new AnalysisLlmNarrativeProperties(true, "openai", "llm-prompt-v1", "llm-input-v1", "llm-output-v1", 1),
                 FIXED_CLOCK
         );
+        when(marketIndicatorSnapshotPersistenceService.createAndSaveContext("BTCUSDT", CandleInterval.ONE_HOUR))
+                .thenReturn(snapshotContext());
 
         when(analysisReportNarrativeGenerationFlowService.generateAndStoreLatest("BTCUSDT", AnalysisReportType.SHORT_TERM))
                 .thenReturn(AnalysisReportNarrativeEntity.builder()
@@ -297,5 +304,9 @@ class AnalysisReportBatchServiceTest {
         assertThat(result.reportResults().get(0).narrativeFallbackUsed()).isTrue();
         assertThat(result.reportResults().get(0).narrativeFailureType()).isEqualTo(AnalysisLlmNarrativeFailureType.CONTENT);
         assertThat(result.status()).isEqualTo(com.aicoinassist.batch.domain.report.enumtype.BatchExecutionStatus.PARTIAL_FAILURE);
+    }
+
+    private MarketIndicatorSnapshotContext snapshotContext() {
+        return new MarketIndicatorSnapshotContext(null, java.util.List.of());
     }
 }

@@ -7,15 +7,21 @@ public record ExternalRawIngestionProperties(
         boolean enabled,
         boolean macroEnabled,
         Long macroFixedDelayMs,
+        Long macroInitialDelayMs,
         boolean sentimentEnabled,
         Long sentimentFixedDelayMs,
+        Long sentimentInitialDelayMs,
         boolean onchainEnabled,
-        Long onchainFixedDelayMs
+        Long onchainFixedDelayMs,
+        Long onchainInitialDelayMs
 ) {
 
     public ExternalRawIngestionProperties {
         macroFixedDelayMs = macroFixedDelayMs == null || macroFixedDelayMs <= 0 ? 3600000L : macroFixedDelayMs;
-        sentimentFixedDelayMs = sentimentFixedDelayMs == null || sentimentFixedDelayMs <= 0 ? 3600000L : sentimentFixedDelayMs;
-        onchainFixedDelayMs = onchainFixedDelayMs == null || onchainFixedDelayMs <= 0 ? 3600000L : onchainFixedDelayMs;
+        macroInitialDelayMs = macroInitialDelayMs == null || macroInitialDelayMs < 0 ? 0L : macroInitialDelayMs;
+        sentimentFixedDelayMs = sentimentFixedDelayMs == null || sentimentFixedDelayMs <= 0 ? 21600000L : sentimentFixedDelayMs;
+        sentimentInitialDelayMs = sentimentInitialDelayMs == null || sentimentInitialDelayMs < 0 ? 0L : sentimentInitialDelayMs;
+        onchainFixedDelayMs = onchainFixedDelayMs == null || onchainFixedDelayMs <= 0 ? 43200000L : onchainFixedDelayMs;
+        onchainInitialDelayMs = onchainInitialDelayMs == null || onchainInitialDelayMs < 0 ? 0L : onchainInitialDelayMs;
     }
 }

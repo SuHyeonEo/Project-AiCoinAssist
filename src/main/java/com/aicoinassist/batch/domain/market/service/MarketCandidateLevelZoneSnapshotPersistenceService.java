@@ -1,5 +1,6 @@
 package com.aicoinassist.batch.domain.market.service;
 
+import com.aicoinassist.batch.domain.market.dto.Candle;
 import com.aicoinassist.batch.domain.market.dto.MarketCandidateLevelZoneSnapshot;
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnapshotEntity;
@@ -22,9 +23,12 @@ public class MarketCandidateLevelZoneSnapshotPersistenceService {
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public List<MarketCandidateLevelZoneSnapshotEntity> createAndSaveAll(List<MarketCandidateLevelSnapshotEntity> levelEntities) {
+    public List<MarketCandidateLevelZoneSnapshotEntity> createAndSaveAll(
+            List<MarketCandidateLevelSnapshotEntity> levelEntities,
+            List<Candle> candles
+    ) {
         List<MarketCandidateLevelZoneSnapshotEntity> entities = new ArrayList<>();
-        for (MarketCandidateLevelZoneSnapshot snapshot : marketCandidateLevelZoneSnapshotService.createAll(levelEntities)) {
+        for (MarketCandidateLevelZoneSnapshot snapshot : marketCandidateLevelZoneSnapshotService.createAll(levelEntities, candles)) {
             entities.add(createAndSave(snapshot));
         }
         return entities;

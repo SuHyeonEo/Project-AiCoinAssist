@@ -40,13 +40,17 @@ class AnalysisReportAssemblerDerivativeLevelTest extends AnalysisReportServiceFi
                 resistanceZones()
         );
 
-        assertThat(payload.marketContext().derivativeContextSummary().currentStateSummary()).contains("Open interest");
+        assertThat(payload.marketContext().derivativeContextSummary().currentStateSummary())
+                .contains("미결제약정", "12345.67", "+0.04%", "+0.12%", "20.1")
+                .doesNotContainPattern("\\d+\\.\\d{3,}");
         assertThat(payload.marketContext().derivativeHeadline()).extracting(
                         AnalysisContextHeadlinePayload::category,
                         AnalysisContextHeadlinePayload::title
                 )
                 .containsExactly(AnalysisContextHeadlineCategory.DERIVATIVE, "PREV_BATCH derivative shift");
-        assertThat(payload.marketContext().derivativeContextSummary().windowSummary()).contains("LAST_7D");
+        assertThat(payload.marketContext().derivativeContextSummary().windowSummary())
+                .contains("최근 7일 기준")
+                .doesNotContainPattern("\\d+\\.\\d{3,}");
         assertThat(payload.marketContext().derivativeContextSummary().highlightDetails()).isNotEmpty();
         assertThat(payload.marketContext().derivativeContextSummary().riskSignals()).isNotEmpty();
         assertThat(payload.derivativeContext()).isNotNull();

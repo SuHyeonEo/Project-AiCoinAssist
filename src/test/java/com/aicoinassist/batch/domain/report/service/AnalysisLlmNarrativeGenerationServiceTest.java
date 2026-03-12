@@ -1,6 +1,7 @@
 package com.aicoinassist.batch.domain.report.service;
 
 import com.aicoinassist.batch.domain.report.config.AnalysisLlmNarrativeProperties;
+import com.aicoinassist.batch.domain.report.dto.AnalysisGptReportInputPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmCrossSignalIntegrationOutput;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmDomainAnalysisOutput;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmExecutiveConclusionOutput;
@@ -11,6 +12,9 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeGenerationRe
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeInputPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmNarrativeOutputPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmScenarioOutput;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextDomainReference;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextReference;
+import com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextResolution;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLlmValueLabelBasisOutput;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmNarrativeFailureType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
@@ -34,7 +38,10 @@ import static org.mockito.Mockito.when;
 class AnalysisLlmNarrativeGenerationServiceTest extends AnalysisReportPayloadTestFixtures {
 
     @Mock
-    private AnalysisLlmNarrativeInputReadService analysisLlmNarrativeInputReadService;
+    private AnalysisGptReportInputReadService analysisGptReportInputReadService;
+
+    @Mock
+    private AnalysisLlmSharedContextGenerationService analysisLlmSharedContextGenerationService;
 
     @Mock
     private AnalysisLlmNarrativeGateway analysisLlmNarrativeGateway;
@@ -44,9 +51,11 @@ class AnalysisLlmNarrativeGenerationServiceTest extends AnalysisReportPayloadTes
     @Test
     void generateLatestRetriesTransportFailureAndSucceeds() throws Exception {
         AnalysisLlmNarrativeGenerationService service = service(2);
-        AnalysisLlmNarrativeInputPayload input = llmInput();
-        when(analysisLlmNarrativeInputReadService.getLatestInput("BTCUSDT", AnalysisReportType.SHORT_TERM))
+        AnalysisGptReportInputPayload input = reportInput();
+        when(analysisGptReportInputReadService.getLatestInput("BTCUSDT", AnalysisReportType.SHORT_TERM))
                 .thenReturn(input);
+        when(analysisLlmSharedContextGenerationService.getOrGenerate(input))
+                .thenReturn(sharedContextResolution());
         when(analysisLlmNarrativeGateway.generate(any()))
                 .thenThrow(new AnalysisLlmNarrativeGatewayException(
                         AnalysisLlmNarrativeFailureType.TIMEOUT,
@@ -68,6 +77,8 @@ class AnalysisLlmNarrativeGenerationServiceTest extends AnalysisReportPayloadTes
         assertThat(result.attempts()).isEqualTo(2);
         assertThat(result.transportIssues()).contains("Provider timeout");
         assertThat(result.gatewayResponse()).isNotNull();
+        assertThat(result.sharedContextResolution()).isNotNull();
+        assertThat(result.sharedContextResolution().sharedContextId()).isEqualTo(77L);
         assertThat(result.outputProcessingResult().fallbackUsed()).isFalse();
         verify(analysisLlmNarrativeGateway, times(2)).generate(any());
     }
@@ -75,9 +86,11 @@ class AnalysisLlmNarrativeGenerationServiceTest extends AnalysisReportPayloadTes
     @Test
     void generateLatestFallsBackOnContentFailureWithoutRetry() {
         AnalysisLlmNarrativeGenerationService service = service(1);
-        AnalysisLlmNarrativeInputPayload input = llmInput();
-        when(analysisLlmNarrativeInputReadService.getLatestInput("BTCUSDT", AnalysisReportType.SHORT_TERM))
+        AnalysisGptReportInputPayload input = reportInput();
+        when(analysisGptReportInputReadService.getLatestInput("BTCUSDT", AnalysisReportType.SHORT_TERM))
                 .thenReturn(input);
+        when(analysisLlmSharedContextGenerationService.getOrGenerate(input))
+                .thenReturn(sharedContextResolution());
         when(analysisLlmNarrativeGateway.generate(any()))
                 .thenReturn(new AnalysisLlmNarrativeGatewayResponse(
                         "{invalid json",
@@ -92,6 +105,7 @@ class AnalysisLlmNarrativeGenerationServiceTest extends AnalysisReportPayloadTes
         assertThat(result.degraded()).isTrue();
         assertThat(result.failureType()).isEqualTo(AnalysisLlmNarrativeFailureType.CONTENT);
         assertThat(result.attempts()).isEqualTo(1);
+        assertThat(result.sharedContextResolution()).isNotNull();
         assertThat(result.outputProcessingResult().fallbackUsed()).isTrue();
         verify(analysisLlmNarrativeGateway, times(1)).generate(any());
     }
@@ -99,9 +113,11 @@ class AnalysisLlmNarrativeGenerationServiceTest extends AnalysisReportPayloadTes
     @Test
     void generateLatestFallsBackAfterRetryableTransportFailuresExhausted() {
         AnalysisLlmNarrativeGenerationService service = service(2);
-        AnalysisLlmNarrativeInputPayload input = llmInput();
-        when(analysisLlmNarrativeInputReadService.getLatestInput("BTCUSDT", AnalysisReportType.SHORT_TERM))
+        AnalysisGptReportInputPayload input = reportInput();
+        when(analysisGptReportInputReadService.getLatestInput("BTCUSDT", AnalysisReportType.SHORT_TERM))
                 .thenReturn(input);
+        when(analysisLlmSharedContextGenerationService.getOrGenerate(input))
+                .thenReturn(sharedContextResolution());
         when(analysisLlmNarrativeGateway.generate(any()))
                 .thenThrow(new AnalysisLlmNarrativeGatewayException(
                         AnalysisLlmNarrativeFailureType.RATE_LIMIT,
@@ -116,6 +132,7 @@ class AnalysisLlmNarrativeGenerationServiceTest extends AnalysisReportPayloadTes
         assertThat(result.attempts()).isEqualTo(2);
         assertThat(result.transportIssues()).containsExactly("Rate limited", "Rate limited");
         assertThat(result.gatewayResponse()).isNull();
+        assertThat(result.sharedContextResolution()).isNotNull();
         assertThat(result.outputProcessingResult().fallbackUsed()).isTrue();
         verify(analysisLlmNarrativeGateway, times(2)).generate(any());
     }
@@ -130,7 +147,9 @@ class AnalysisLlmNarrativeGenerationServiceTest extends AnalysisReportPayloadTes
                         "llm-output-v1",
                         maxTransportAttempts
                 ),
-                analysisLlmNarrativeInputReadService,
+                analysisGptReportInputReadService,
+                analysisLlmSharedContextGenerationService,
+                new AnalysisLlmNarrativeInputAssembler(),
                 new AnalysisLlmPromptComposer(objectMapper),
                 analysisLlmNarrativeGateway,
                 new AnalysisLlmOutputPostProcessor(objectMapper, new AnalysisLlmOutputFallbackFactory()),
@@ -138,21 +157,44 @@ class AnalysisLlmNarrativeGenerationServiceTest extends AnalysisReportPayloadTes
         );
     }
 
-    private AnalysisLlmNarrativeInputPayload llmInput() {
-        return new AnalysisLlmNarrativeInputAssembler().assemble(
-                new AnalysisGptReportInputAssembler(new AnalysisGptCrossSignalFactory())
-                        .assemble(
-                                reportEntity(
-                                        AnalysisReportType.SHORT_TERM,
-                                        Instant.parse("2026-03-09T00:59:59Z"),
-                                        Instant.parse("2026-03-09T00:59:30Z"),
-                                        "snapshotTime=2026-03-09T00:59:59Z;latestCandleOpenTime=2026-03-08T23:59:59Z;priceSourceEventTime=2026-03-09T00:59:30Z",
-                                        "gpt-5.4",
-                                        "{\"summary\":\"unused\"}",
-                                        Instant.parse("2026-03-09T01:00:30Z")
-                                ),
-                                shortTermPayload("Narrative summary")
-                        )
+    private AnalysisGptReportInputPayload reportInput() {
+        return new AnalysisGptReportInputAssembler(new AnalysisGptCrossSignalFactory())
+                .assemble(
+                        reportEntity(
+                                AnalysisReportType.SHORT_TERM,
+                                Instant.parse("2026-03-09T00:59:59Z"),
+                                Instant.parse("2026-03-09T00:59:30Z"),
+                                "snapshotTime=2026-03-09T00:59:59Z;latestCandleOpenTime=2026-03-08T23:59:59Z;priceSourceEventTime=2026-03-09T00:59:30Z",
+                                "gpt-5.4",
+                                "{\"summary\":\"unused\"}",
+                                Instant.parse("2026-03-09T01:00:30Z")
+                        ),
+                        shortTermPayload("Narrative summary")
+                );
+    }
+
+    private AnalysisLlmSharedContextReference sharedContextReference() {
+        return new AnalysisLlmSharedContextReference(
+                "shared-v1",
+                "거시와 심리 공통 맥락은 혼조로 정리됩니다.",
+                new AnalysisLlmSharedContextDomainReference(
+                        "MIXED",
+                        "거시 조합은 뚜렷한 한 방향보다 혼조에 가깝습니다.",
+                        "달러와 금리 흐름을 함께 확인할 필요가 있습니다."
+                ),
+                new AnalysisLlmSharedContextDomainReference(
+                        "MIXED",
+                        "심리 지표는 아직 확신을 주지 못하고 있습니다.",
+                        "심리 개선 여부를 추가로 확인할 필요가 있습니다."
+                )
+        );
+    }
+
+    private AnalysisLlmSharedContextResolution sharedContextResolution() {
+        return new AnalysisLlmSharedContextResolution(
+                77L,
+                "shared-v1",
+                sharedContextReference()
         );
     }
 

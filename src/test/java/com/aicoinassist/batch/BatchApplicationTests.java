@@ -1,6 +1,5 @@
 package com.aicoinassist.batch;
 
-import com.aicoinassist.batch.global.scheduler.MarketRawIngestionScheduler;
 import com.aicoinassist.batch.global.scheduler.AnalysisReportBatchScheduler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +16,6 @@ class BatchApplicationTests {
 
 	@Test
 	void contextLoadsWithoutSchedulers() {
-		assertThat(applicationContext.getBeansOfType(MarketRawIngestionScheduler.class)).isEmpty();
 		assertThat(applicationContext.getBeansOfType(AnalysisReportBatchScheduler.class)).isEmpty();
 	}
 

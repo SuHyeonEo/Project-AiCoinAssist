@@ -3,10 +3,12 @@ package com.aicoinassist.batch.domain.report.service;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportNarrativeDraft;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportEntity;
 import com.aicoinassist.batch.domain.report.entity.AnalysisReportNarrativeEntity;
+import com.aicoinassist.batch.domain.report.entity.AnalysisReportSharedContextEntity;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmNarrativeFailureType;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisLlmNarrativeGenerationStatus;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import com.aicoinassist.batch.domain.report.repository.AnalysisReportNarrativeRepository;
+import com.aicoinassist.batch.domain.report.repository.AnalysisReportSharedContextRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
@@ -30,12 +32,19 @@ class AnalysisReportNarrativePersistenceServiceTest extends AnalysisReportPayloa
     @Mock
     private AnalysisReportNarrativeRepository analysisReportNarrativeRepository;
 
+    @Mock
+    private AnalysisReportSharedContextRepository analysisReportSharedContextRepository;
+
     private final ObjectMapper objectMapper = JsonMapper.builder().findAndAddModules().build();
 
     @Test
     void saveRefreshesExistingNarrativeWhenIdentityMatches() throws Exception {
         AnalysisReportNarrativePersistenceService service =
-                new AnalysisReportNarrativePersistenceService(analysisReportNarrativeRepository, objectMapper);
+                new AnalysisReportNarrativePersistenceService(
+                        analysisReportNarrativeRepository,
+                        analysisReportSharedContextRepository,
+                        objectMapper
+                );
 
         AnalysisReportEntity reportEntity = reportEntity(
                 AnalysisReportType.SHORT_TERM,
@@ -49,6 +58,7 @@ class AnalysisReportNarrativePersistenceServiceTest extends AnalysisReportPayloa
         setId(reportEntity, 1L);
 
         AnalysisReportNarrativeDraft draft = draft(reportEntity, "Updated summary");
+        when(analysisReportSharedContextRepository.findById(1L)).thenReturn(Optional.of(sharedContextEntity()));
         AnalysisReportNarrativeEntity existingEntity = AnalysisReportNarrativeEntity.builder()
                 .analysisReport(reportEntity)
                 .symbol("BTCUSDT")
@@ -99,7 +109,11 @@ class AnalysisReportNarrativePersistenceServiceTest extends AnalysisReportPayloa
     @Test
     void savePersistsNewNarrativeWhenIdentityDoesNotExist() throws Exception {
         AnalysisReportNarrativePersistenceService service =
-                new AnalysisReportNarrativePersistenceService(analysisReportNarrativeRepository, objectMapper);
+                new AnalysisReportNarrativePersistenceService(
+                        analysisReportNarrativeRepository,
+                        analysisReportSharedContextRepository,
+                        objectMapper
+                );
 
         AnalysisReportEntity reportEntity = reportEntity(
                 AnalysisReportType.SHORT_TERM,
@@ -113,6 +127,7 @@ class AnalysisReportNarrativePersistenceServiceTest extends AnalysisReportPayloa
         setId(reportEntity, 1L);
 
         AnalysisReportNarrativeDraft draft = draft(reportEntity, "New summary");
+        when(analysisReportSharedContextRepository.findById(1L)).thenReturn(Optional.of(sharedContextEntity()));
 
         when(analysisReportNarrativeRepository
                 .findTopByAnalysisReportIdAndLlmProviderAndLlmModelAndPromptTemplateVersionAndInputSchemaVersionAndOutputSchemaVersionAndInputPayloadHashOrderByIdDesc(
@@ -127,6 +142,8 @@ class AnalysisReportNarrativePersistenceServiceTest extends AnalysisReportPayloa
         assertThat(result.getLlmProvider()).isEqualTo("OPENAI");
         assertThat(result.getLlmModel()).isEqualTo("gpt-5.4");
         assertThat(result.getPromptTemplateVersion()).isEqualTo("prompt-v1");
+        assertThat(result.getSharedContext()).isNotNull();
+        assertThat(result.getSharedContext().getId()).isEqualTo(1L);
         assertThat(result.getGenerationStatus()).isEqualTo(AnalysisLlmNarrativeGenerationStatus.SUCCESS);
         assertThat(result.getOutputJson()).contains("Short summary");
         assertThat(result.getReferenceNewsJson()).isEqualTo("[]");
@@ -136,7 +153,21 @@ class AnalysisReportNarrativePersistenceServiceTest extends AnalysisReportPayloa
         AnalysisLlmNarrativeGenerationServiceTestSupport support = new AnalysisLlmNarrativeGenerationServiceTestSupport(objectMapper);
         var input = new AnalysisLlmNarrativeInputAssembler().assemble(
                 new AnalysisGptReportInputAssembler(new AnalysisGptCrossSignalFactory())
-                        .assemble(reportEntity, shortTermPayload(summary))
+                        .assemble(reportEntity, shortTermPayload(summary)),
+                new com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextReference(
+                        "shared-v1",
+                        "공통 시장 해설",
+                        new com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextDomainReference(
+                                "MIXED",
+                                "거시 혼조",
+                                "달러 확인"
+                        ),
+                        new com.aicoinassist.batch.domain.report.dto.AnalysisLlmSharedContextDomainReference(
+                                "MIXED",
+                                "심리 혼조",
+                                "심리 확인"
+                        )
+                )
         );
         return new AnalysisReportNarrativeDraftFactory(objectMapper).create(
                 reportEntity,
@@ -150,6 +181,47 @@ class AnalysisReportNarrativePersistenceServiceTest extends AnalysisReportPayloa
                 Instant.parse("2026-03-09T01:00:05Z"),
                 Instant.parse("2026-03-09T01:00:10Z")
         );
+    }
+
+    private AnalysisReportSharedContextEntity sharedContextEntity() {
+        AnalysisReportSharedContextEntity entity = AnalysisReportSharedContextEntity.builder()
+                .reportType(AnalysisReportType.SHORT_TERM)
+                .analysisBasisTime(Instant.parse("2026-03-09T00:59:59Z"))
+                .rawReferenceTime(Instant.parse("2026-03-09T00:59:30Z"))
+                .contextVersion("shared-v1")
+                .analysisEngineVersion("gpt-5.4")
+                .llmProvider("OPENAI")
+                .llmModel("gpt-5.4")
+                .promptTemplateVersion("prompt-v1-shared-context")
+                .inputSchemaVersion("llm-input-v1-shared-context")
+                .outputSchemaVersion("llm-output-v1-shared-context")
+                .inputPayloadHash("hash")
+                .inputPayloadJson("{}")
+                .promptSystemText("system")
+                .promptUserText("user")
+                .outputLengthPolicyJson("{}")
+                .rawOutputText(null)
+                .outputJson("{}")
+                .fallbackUsed(false)
+                .generationStatus(AnalysisLlmNarrativeGenerationStatus.SUCCESS)
+                .failureType(AnalysisLlmNarrativeFailureType.NONE)
+                .validationIssuesJson("[]")
+                .providerRequestId("req-shared")
+                .inputTokens(10)
+                .outputTokens(10)
+                .totalTokens(20)
+                .requestedAt(Instant.parse("2026-03-09T01:00:00Z"))
+                .completedAt(Instant.parse("2026-03-09T01:00:01Z"))
+                .storedAt(Instant.parse("2026-03-09T01:00:02Z"))
+                .build();
+        try {
+            Field field = AnalysisReportSharedContextEntity.class.getDeclaredField("id");
+            field.setAccessible(true);
+            field.set(entity, 1L);
+        } catch (Exception exception) {
+            throw new IllegalStateException(exception);
+        }
+        return entity;
     }
 
     private void setId(AnalysisReportEntity entity, Long id) throws Exception {

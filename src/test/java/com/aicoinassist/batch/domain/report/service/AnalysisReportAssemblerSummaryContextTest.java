@@ -54,14 +54,15 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                         summary -> summary.confidence()
                 )
                 .containsExactly("SHORT_TERM view", AnalysisOutlookType.CONSTRUCTIVE, AnalysisConfidenceLevel.HIGH);
-        assertThat(payload.summary().keyMessage().primaryMessage()).contains("bullish");
-        assertThat(payload.summary().keyMessage().primaryMessage()).contains("Macro context keeps DXY");
-        assertThat(payload.summary().keyMessage().primaryMessage()).contains("sentiment stays");
-        assertThat(payload.summary().keyMessage().primaryMessage()).contains("on-chain activity runs");
-        assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("PREV_BATCH confirms the latest impulse"));
-        assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("Nearest support"));
-        assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("Nearest resistance"));
-        assertThat(payload.summary().keyMessage().continuityMessage()).contains("Previous short-term report");
+        assertThat(payload.summary().keyMessage().primaryMessage()).contains("상승 우위");
+        assertThat(payload.summary().keyMessage().primaryMessage()).contains("거시 맥락에서 DXY는 평균 대비");
+        assertThat(payload.summary().keyMessage().primaryMessage()).contains("심리 지표는 평균 대비");
+        assertThat(payload.summary().keyMessage().primaryMessage()).contains("온체인 활동은 평균 대비");
+        assertThat(payload.summary().keyMessage().primaryMessage()).contains("최근 30일 기준 외부 종합 리스크");
+        assertThat(payload.summary().keyMessage().primaryMessage()).doesNotContainPattern("\\d+\\.\\d{3,}");
+        assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("가까운 지지"));
+        assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("가까운 저항"));
+        assertThat(payload.summary().keyMessage().continuityMessage()).contains("이전 단기 리포트");
         assertThat(payload.summary().signalHeadlines()).extracting(
                         AnalysisContextHeadlinePayload::category,
                         AnalysisContextHeadlinePayload::title
@@ -101,28 +102,31 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                         AnalysisContextHeadlinePayload::title
                 )
                 .containsExactly(AnalysisContextHeadlineCategory.COMPARISON, "PREV_BATCH comparison");
-        assertThat(payload.marketContext().comparisonContext().factSummary().primaryFact()).contains("PREV_BATCH price");
-        assertThat(payload.marketContext().comparisonContext().factSummary().primaryFact()).contains("RSI delta");
+        assertThat(payload.marketContext().comparisonContext().factSummary().primaryFact()).contains("PREV_BATCH 기준 가격은");
+        assertThat(payload.marketContext().comparisonContext().factSummary().primaryFact()).contains("RSI 변화");
         assertThat(payload.marketContext().comparisonContext().factSummary().primaryFact()).doesNotContain("Δ", "ツ");
         assertThat(payload.marketContext().comparisonContext().factSummary().referenceBreakdown())
-                .anySatisfy(detail -> assertThat(detail).contains("D1 price"));
+                .anySatisfy(detail -> assertThat(detail).contains("D1 기준 가격은"));
         assertThat(payload.marketContext().comparisonContext().highlightDetails()).isNotEmpty();
         assertThat(payload.marketContext().windowContext().headline()).extracting(
                         AnalysisContextHeadlinePayload::category,
                         AnalysisContextHeadlinePayload::title
                 )
                 .containsExactly(AnalysisContextHeadlineCategory.WINDOW, "LAST_7D position");
-        assertThat(payload.marketContext().windowContext().summary().rangeSummary()).contains("LAST_7D range");
-        assertThat(payload.marketContext().windowContext().summary().rangePositionSummary()).contains("position");
-        assertThat(payload.marketContext().windowContext().summary().volatilitySummary()).contains("ATR vs average");
+        assertThat(payload.marketContext().windowContext().summary().rangeSummary()).contains("최근 7일 레인지");
+        assertThat(payload.marketContext().windowContext().summary().rangeSummary()).doesNotContainPattern("\\d+\\.\\d{3,}");
+        assertThat(payload.marketContext().windowContext().summary().rangePositionSummary()).contains("현재 위치는 레인지의");
+        assertThat(payload.marketContext().windowContext().summary().volatilitySummary()).contains("ATR은 평균 대비");
         assertThat(payload.marketContext().windowContext().highlightDetails()).isNotEmpty();
-        assertThat(payload.marketContext().sentimentContextSummary().currentStateSummary()).contains("Fear & Greed 72");
-        assertThat(payload.marketContext().sentimentContextSummary().comparisonSummary()).contains("Greed");
-        assertThat(payload.marketContext().sentimentContextSummary().windowSummary()).contains("LAST_7D");
+        assertThat(payload.marketContext().sentimentContextSummary().currentStateSummary()).contains("공포·탐욕 지수는 72");
+        assertThat(payload.marketContext().sentimentContextSummary().comparisonSummary()).contains("탐욕");
+        assertThat(payload.marketContext().sentimentContextSummary().windowSummary()).contains("최근 7일 기준");
         assertThat(payload.marketContext().sentimentContextSummary().highlightDetails()).isNotEmpty();
-        assertThat(payload.marketContext().macroContextSummary().currentStateSummary()).contains("DXY proxy");
+        assertThat(payload.marketContext().macroContextSummary().currentStateSummary()).contains("DXY 프록시는");
+        assertThat(payload.marketContext().macroContextSummary().currentStateSummary()).contains("119.84", "1453.22");
+        assertThat(payload.marketContext().macroContextSummary().currentStateSummary()).doesNotContainPattern("\\d+\\.\\d{3,}");
         assertThat(payload.marketContext().macroContextSummary().comparisonSummary()).contains("D30");
-        assertThat(payload.marketContext().macroContextSummary().windowSummary()).contains("LAST_30D");
+        assertThat(payload.marketContext().macroContextSummary().windowSummary()).contains("최근 30일 기준");
         assertThat(payload.marketContext().macroContextSummary().highlightDetails()).isNotEmpty();
         assertThat(payload.marketContext().macroHeadline()).extracting(
                         AnalysisContextHeadlinePayload::category,
@@ -134,9 +138,10 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                         AnalysisContextHeadlinePayload::title
                 )
                 .containsExactly(AnalysisContextHeadlineCategory.SENTIMENT, "Greed regime");
-        assertThat(payload.marketContext().onchainContextSummary().currentStateSummary()).contains("Active addresses");
+        assertThat(payload.marketContext().onchainContextSummary().currentStateSummary()).contains("활성 주소는");
+        assertThat(payload.marketContext().onchainContextSummary().currentStateSummary()).doesNotContainPattern("\\d+\\.\\d{3,}");
         assertThat(payload.marketContext().onchainContextSummary().comparisonSummary()).contains("D7");
-        assertThat(payload.marketContext().onchainContextSummary().windowSummary()).contains("LAST_30D");
+        assertThat(payload.marketContext().onchainContextSummary().windowSummary()).contains("최근 30일 기준");
         assertThat(payload.marketContext().onchainContextSummary().highlightDetails()).isNotEmpty();
         assertThat(payload.marketContext().onchainHeadline()).extracting(
                         AnalysisContextHeadlinePayload::category,
@@ -150,6 +155,7 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                 .containsExactly(AnalysisContextHeadlineCategory.EXTERNAL, "External regime direction changed");
         assertThat(payload.marketContext().externalContextComposite()).isNotNull();
         assertThat(payload.marketContext().externalContextComposite().primarySignalTitle()).isEqualTo("Dollar strength regime");
+        assertThat(payload.marketContext().externalContextComposite().primarySignalDetail()).doesNotContain("representative averages");
         assertThat(payload.marketContext().externalContextComposite().compositeRiskScore()).isEqualByComparingTo("1.33333333");
         assertThat(payload.marketContext().externalContextComposite().comparisonFacts()).hasSize(1);
         assertThat(payload.marketContext().externalContextComposite().highlights()).hasSize(1);
@@ -157,6 +163,8 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
         assertThat(payload.marketContext().externalContextComposite().transitions()).hasSize(1);
         assertThat(payload.marketContext().externalContextComposite().persistence()).isNotNull();
         assertThat(payload.marketContext().externalContextComposite().state()).isNotNull();
+        assertThat(payload.marketContext().externalContextComposite().highlights())
+                .allSatisfy(highlight -> assertThat(highlight.summary()).doesNotContain("shifted to", "changed from", "composite risk score"));
         assertThat(payload.marketContext().externalRegimeSignals()).extracting(
                         signal -> signal.category().name(),
                         signal -> signal.title()
@@ -166,6 +174,8 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                         org.assertj.core.groups.Tuple.tuple("MACRO", "Dollar strength regime"),
                         org.assertj.core.groups.Tuple.tuple("SENTIMENT", "Greed regime")
                 );
+        assertThat(payload.marketContext().externalRegimeSignals())
+                .allSatisfy(signal -> assertThat(signal.detail()).doesNotContain("Fear & Greed is at", "versus average"));
         assertThat(payload.windowHighlights()).extracting(AnalysisWindowHighlight::windowType)
                                              .containsExactly(MarketWindowType.LAST_1D, MarketWindowType.LAST_7D);
         assertThat(payload.comparisonHighlights()).extracting(AnalysisComparisonHighlight::reference)
@@ -179,10 +189,10 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                 )
                 .containsExactly(
                         AnalysisComparisonReference.PREV_SHORT_REPORT,
-                        "Previous short-term report highlighted a momentum continuation setup."
+                        "이전 단기 리포트에서는 모멘텀 지속 구도를 강조했습니다."
                 );
         assertThat(payload.marketContext().continuityContext().carriedSignals())
-                .containsExactly("Previous short-term report highlighted a momentum continuation setup.");
+                .containsExactly("이전 단기 리포트에서는 모멘텀 지속 구도를 강조했습니다.");
         assertThat(payload.marketContext().levelContext().supportBreakRisk()).isEqualByComparingTo("0.18000000");
         assertThat(payload.marketContext().levelContext().resistanceBreakRisk()).isEqualByComparingTo("0.05000000");
         assertThat(payload.marketContext().levelContext().zoneInteractionFacts()).hasSize(2);
@@ -200,9 +210,31 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
         assertThat(payload.onchainContext().highlights()).isNotEmpty();
         assertThat(payload.riskFactors()).extracting(risk -> risk.type().name())
                                          .contains("SENTIMENT_GREED_EXTREME", "MACRO_VOLATILITY", "EXTERNAL_RISK_CONFLUENCE");
+        assertThat(payload.riskFactors())
+                .allSatisfy(riskFactor -> {
+                    assertThat(riskFactor.summary()).doesNotContain("Fear & Greed is at", "Current funding rate", "Price is trading at");
+                    assertThat(riskFactor.summary()).doesNotContainPattern("\\d+\\.\\d{3,}");
+                    assertThat(riskFactor.triggerFacts()).allSatisfy(trigger ->
+                            assertThat(trigger).doesNotContain("Current funding rate is", "Current sentiment is", "Current price is")
+                                               .doesNotContainPattern("\\d+\\.\\d{3,}"));
+                });
+        assertThat(payload.scenarios())
+                .allSatisfy(scenario -> {
+                    assertThat(scenario.pathSummary()).doesNotContain("Price holds above", "Price stays below", "A loss of", "Failure to hold");
+                    assertThat(scenario.pathSummary()).doesNotContainPattern("\\d+\\.\\d{3,}");
+                    assertThat(scenario.triggerConditions()).allSatisfy(trigger ->
+                            assertThat(trigger).doesNotContain("Price holds above", "Price stays below", "Momentum remains", "Price breaks beyond")
+                                               .doesNotContainPattern("\\d+\\.\\d{3,}"));
+                    assertThat(scenario.invalidationSignals()).allSatisfy(signal ->
+                            assertThat(signal).doesNotContain("invalidates", "Failure to hold")
+                                              .doesNotContainPattern("\\d+\\.\\d{3,}"));
+                });
         assertThat(payload.summary().signalHeadlines()).anySatisfy(
-                headline -> assertThat(headline.detail()).contains("headwind")
+                headline -> assertThat(headline.detail()).containsAnyOf("하방 부담", "외부")
         );
-        assertThat(payload.summary().keyMessage().primaryMessage()).doesNotContain("대비", "企", "Δ", "ツ");
+        assertThat(payload.summary().signalHeadlines()).allSatisfy(headline ->
+                assertThat(headline.detail()).doesNotContain("keeps", "versus average", "regime", "pivot level")
+        );
+        assertThat(payload.summary().keyMessage().primaryMessage()).doesNotContain("企", "Δ", "ツ");
     }
 }
