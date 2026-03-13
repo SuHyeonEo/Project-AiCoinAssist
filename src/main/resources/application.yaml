@@ -88,6 +88,15 @@ batch:
   scheduler:
     external-raw-ingestion:
       enabled: true
+      market-price-enabled: true
+      market-price-fixed-delay-ms: 60000
+      market-price-initial-delay-ms: 0
+      market-price-max-staleness-ms: 900000
+      market-candle-enabled: true
+      market-candle-fixed-delay-ms: 300000
+      market-candle-initial-delay-ms: 0
+      market-candle-startup-backfill-enabled: true
+      market-candle-gap-fill-overlap-count: 3
       macro-enabled: true
       macro-fixed-delay-ms: 3600000
       macro-initial-delay-ms: 0
@@ -122,5 +131,5 @@ external:
       us10y-yield: DGS10
       usd-krw: DEXKOUS
   binance:
-    base-url: https://api.binance.com
+    base-url: https://data-api.binance.vision
     futures-base-url: https://fapi.binance.com

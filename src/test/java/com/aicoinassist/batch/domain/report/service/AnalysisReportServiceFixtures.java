@@ -55,6 +55,13 @@ import java.util.List;
 
 abstract class AnalysisReportServiceFixtures {
 
+    protected List<String> marketParticipationFacts() {
+        return List.of(
+                "최근 6h 기준 가격은 +1.24%, 거래대금은 직전 동일 구간 대비 +18.40%, 체결 수는 직전 동일 구간 대비 +7.20%, taker buy 비중은 56.67% (직전 대비 +3.20%p)입니다.",
+                "최근 24h 기준 가격은 +2.85%, 거래대금은 직전 동일 구간 대비 +14.10%, 체결 수는 직전 동일 구간 대비 +6.45%, taker buy 비중은 54.90% (직전 대비 +2.10%p)입니다."
+        );
+    }
+
     protected List<AnalysisWindowSummary> shortWindowSummaries() {
         return List.of(
                 new AnalysisWindowSummary(
@@ -69,8 +76,13 @@ abstract class AnalysisReportServiceFixtures {
                         new BigDecimal("0.00793651"),
                         new BigDecimal("0.02906977"),
                         new BigDecimal("95"),
+                        new BigDecimal("9800000"),
+                        new BigDecimal("11800"),
                         new BigDecimal("1480"),
                         new BigDecimal("0.18"),
+                        new BigDecimal("0.14"),
+                        new BigDecimal("0.08"),
+                        new BigDecimal("0.54"),
                         new BigDecimal("0.01351351")
                 ),
                 new AnalysisWindowSummary(
@@ -85,8 +97,13 @@ abstract class AnalysisReportServiceFixtures {
                         new BigDecimal("0.02777778"),
                         new BigDecimal("0.06707317"),
                         new BigDecimal("100"),
+                        new BigDecimal("10800000"),
+                        new BigDecimal("12345"),
                         new BigDecimal("1450"),
                         new BigDecimal("0.22"),
+                        new BigDecimal("0.15740741"),
+                        new BigDecimal("0.09315512"),
+                        new BigDecimal("0.56666667"),
                         new BigDecimal("0.03448276")
                 )
         );
@@ -106,8 +123,13 @@ abstract class AnalysisReportServiceFixtures {
                         new BigDecimal("0.04891300"),
                         new BigDecimal("0.68269230"),
                         new BigDecimal("120"),
+                        new BigDecimal("14500000"),
+                        new BigDecimal("15000"),
                         new BigDecimal("1300"),
                         new BigDecimal("0.15"),
+                        new BigDecimal("0.12"),
+                        new BigDecimal("0.07"),
+                        new BigDecimal("0.53"),
                         new BigDecimal("0.1538")
                 ),
                 new AnalysisWindowSummary(
@@ -122,8 +144,13 @@ abstract class AnalysisReportServiceFixtures {
                         new BigDecimal("0.04891300"),
                         new BigDecimal("0.68269230"),
                         new BigDecimal("140"),
+                        new BigDecimal("16800000"),
+                        new BigDecimal("16800"),
                         new BigDecimal("1350"),
                         new BigDecimal("0.12"),
+                        new BigDecimal("0.10"),
+                        new BigDecimal("0.05"),
+                        new BigDecimal("0.51"),
                         new BigDecimal("0.1111")
                 )
         );

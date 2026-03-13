@@ -143,9 +143,9 @@ abstract class AnalysisReportPayloadTestFixtures {
                                 new AnalysisWindowContextSummaryPayload(
                                         "LAST_7D range 82000 to 90000.",
                                         "LAST_7D price is at 68.75% of the range.",
-                                        "ATR vs average +3.45%."
+                                        "Volume vs average +22%, quote volume vs average +15.74%, trade count vs average +9.32%, taker buy ratio 56.67%, ATR vs average +3.45%."
                                 ),
-                                List.of("LAST_7D volume vs average +22%, ATR vs average +3.45%, distance from range high 2.78%.")
+                                List.of("LAST_7D volume vs average +22%, quote volume vs average +15.74%, trade count vs average +9.32%, taker buy ratio 56.67%, ATR vs average +3.45%, distance from range high 2.78%.")
                         ),
                         new AnalysisLevelContextPayload(
                                 null,
@@ -316,10 +316,19 @@ abstract class AnalysisReportPayloadTestFixtures {
                                 new BigDecimal("0.02777778"),
                                 new BigDecimal("0.06707317"),
                                 new BigDecimal("100.00000000"),
+                                new BigDecimal("10800000.00000000"),
+                                new BigDecimal("12345.00000000"),
                                 new BigDecimal("1450.00000000"),
                                 new BigDecimal("0.22000000"),
+                                new BigDecimal("0.15740741"),
+                                new BigDecimal("0.09315512"),
+                                new BigDecimal("0.56666667"),
                                 new BigDecimal("0.03448276")
                         )
+                ),
+                List.of(
+                        "최근 6h 기준 가격은 +1.24%, 거래대금은 직전 동일 구간 대비 +18.40%, 체결 수는 직전 동일 구간 대비 +7.20%, taker buy 비중은 56.67% (직전 대비 +3.20%p)입니다.",
+                        "최근 24h 기준 가격은 +2.85%, 거래대금은 직전 동일 구간 대비 +14.10%, 체결 수는 직전 동일 구간 대비 +6.45%, taker buy 비중은 54.90% (직전 대비 +2.10%p)입니다."
                 ),
                 new AnalysisDerivativeContext(
                         Instant.parse("2026-03-09T00:59:30Z"),

@@ -62,6 +62,7 @@ class AnalysisSummarySectionAssembler {
             List<AnalysisComparisonFact> comparisonFacts,
             List<AnalysisComparisonHighlight> comparisonHighlights,
             List<AnalysisWindowSummary> windowSummaries,
+            List<String> marketParticipationFacts,
             AnalysisDerivativeContext derivativeContext,
             AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
@@ -119,7 +120,7 @@ class AnalysisSummarySectionAssembler {
                         + formattingSupport.plain(snapshot.getMacdHistogram())
                         + "입니다. "
                         + externalContextSentence(reportType, macroContext, sentimentContext, onchainContext, externalContextComposite),
-                summarySignalDetails(signalHeadlines, levelContext),
+                summarySignalDetails(signalHeadlines, levelContext, marketParticipationFacts),
                 continuityNotes.isEmpty() ? null : textLocalizationSupport.localizeSentence(continuityNotes.get(0).summary())
         );
 
@@ -140,11 +141,18 @@ class AnalysisSummarySectionAssembler {
 
     private List<String> summarySignalDetails(
             List<AnalysisContextHeadlinePayload> signalHeadlines,
-            AnalysisLevelContextPayload levelContext
+            AnalysisLevelContextPayload levelContext,
+            List<String> marketParticipationFacts
     ) {
         List<String> details = new ArrayList<>(signalHeadlines.stream()
                                                               .map(AnalysisContextHeadlinePayload::detail)
                                                               .toList());
+        if (marketParticipationFacts != null) {
+            marketParticipationFacts.stream()
+                                    .limit(2)
+                                    .map(this::localizeSentence)
+                                    .forEach(details::add);
+        }
         if (levelContext != null && levelContext.nearestSupportZone() != null) {
             details.add("가까운 지지 "
                     + formattingSupport.zoneLabel(

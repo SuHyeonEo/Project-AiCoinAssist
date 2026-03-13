@@ -20,10 +20,17 @@ public record MarketWindowSummarySnapshot(
         BigDecimal distanceFromWindowHigh,
         BigDecimal reboundFromWindowLow,
         BigDecimal averageVolume,
+        BigDecimal averageQuoteAssetVolume,
+        BigDecimal averageTradeCount,
         BigDecimal averageAtr,
         BigDecimal currentVolume,
+        BigDecimal currentQuoteAssetVolume,
+        BigDecimal currentTradeCount,
         BigDecimal currentAtr,
         BigDecimal currentVolumeVsAverage,
+        BigDecimal currentQuoteAssetVolumeVsAverage,
+        BigDecimal currentTradeCountVsAverage,
+        BigDecimal currentTakerBuyQuoteRatio,
         BigDecimal currentAtrVsAverage,
         String sourceDataVersion
 ) {

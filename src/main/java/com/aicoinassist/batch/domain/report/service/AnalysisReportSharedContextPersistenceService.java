@@ -40,7 +40,7 @@ public class AnalysisReportSharedContextPersistenceService {
 
         if (existingEntity == null) {
             AnalysisReportSharedContextEntity entity = AnalysisReportSharedContextEntity.builder()
-                    .reportType(null)
+                    .reportType(draft.reportType())
                     .analysisBasisTime(draft.analysisBasisTime())
                     .rawReferenceTime(draft.rawReferenceTime())
                     .contextVersion(draft.contextVersion())

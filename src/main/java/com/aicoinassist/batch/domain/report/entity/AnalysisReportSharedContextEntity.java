@@ -57,7 +57,7 @@ public class AnalysisReportSharedContextEntity {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 20)
+    @Column(nullable = false, length = 20)
     private AnalysisReportType reportType;
 
     @Column(nullable = false)

@@ -34,6 +34,7 @@ public class AnalysisReportSharedContextDraftFactory {
             Instant storedAt
     ) {
         return new AnalysisReportSharedContextDraft(
+                reportInput.reportType(),
                 reportInput.analysisBasisTime(),
                 reportInput.rawReferenceTime(),
                 input.sharedContextVersion(),

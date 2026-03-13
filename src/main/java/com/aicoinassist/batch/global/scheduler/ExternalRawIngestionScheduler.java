@@ -3,6 +3,7 @@ package com.aicoinassist.batch.global.scheduler;
 import com.aicoinassist.batch.domain.macro.service.MacroRawIngestionService;
 import com.aicoinassist.batch.domain.market.config.ExternalRawIngestionProperties;
 import com.aicoinassist.batch.domain.market.enumtype.AssetType;
+import com.aicoinassist.batch.domain.market.service.MarketPriceRawIngestionService;
 import com.aicoinassist.batch.domain.onchain.service.OnchainRawIngestionService;
 import com.aicoinassist.batch.domain.sentiment.service.SentimentRawIngestionService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,27 @@ public class ExternalRawIngestionScheduler {
     private final MacroRawIngestionService macroRawIngestionService;
     private final SentimentRawIngestionService sentimentRawIngestionService;
     private final OnchainRawIngestionService onchainRawIngestionService;
+    private final MarketPriceRawIngestionService marketPriceRawIngestionService;
     private final ExternalRawIngestionProperties externalRawIngestionProperties;
+
+    @Scheduled(
+            fixedDelayString = "${batch.scheduler.external-raw-ingestion.market-price-fixed-delay-ms:60000}",
+            initialDelayString = "${batch.scheduler.external-raw-ingestion.market-price-initial-delay-ms:0}"
+    )
+    public void ingestMarketPrice() {
+        if (!externalRawIngestionProperties.marketPriceEnabled()) {
+            return;
+        }
+
+        for (AssetType assetType : AssetType.values()) {
+            try {
+                marketPriceRawIngestionService.ingestLatestPrice(assetType.symbol());
+                log.info("market price raw ingestion saved - symbol: {}", assetType.symbol());
+            } catch (Exception exception) {
+                log.error("market price raw ingestion failed - symbol: {}", assetType.symbol(), exception);
+            }
+        }
+    }
 
     @Scheduled(
             fixedDelayString = "${batch.scheduler.external-raw-ingestion.macro-fixed-delay-ms:3600000}",

@@ -70,10 +70,17 @@ public class MarketWindowSummarySnapshotPersistenceService {
                                                                                         .distanceFromWindowHigh(summary.distanceFromWindowHigh())
                                                                                         .reboundFromWindowLow(summary.reboundFromWindowLow())
                                                                                         .averageVolume(summary.averageVolume())
+                                                                                        .averageQuoteAssetVolume(summary.averageQuoteAssetVolume())
+                                                                                        .averageTradeCount(summary.averageTradeCount())
                                                                                         .averageAtr(summary.averageAtr())
                                                                                         .currentVolume(summary.currentVolume())
+                                                                                        .currentQuoteAssetVolume(summary.currentQuoteAssetVolume())
+                                                                                        .currentTradeCount(summary.currentTradeCount())
                                                                                         .currentAtr(summary.currentAtr())
                                                                                         .currentVolumeVsAverage(summary.currentVolumeVsAverage())
+                                                                                        .currentQuoteAssetVolumeVsAverage(summary.currentQuoteAssetVolumeVsAverage())
+                                                                                        .currentTradeCountVsAverage(summary.currentTradeCountVsAverage())
+                                                                                        .currentTakerBuyQuoteRatio(summary.currentTakerBuyQuoteRatio())
                                                                                         .currentAtrVsAverage(summary.currentAtrVsAverage())
                                                                                         .sourceDataVersion(summary.sourceDataVersion())
                                                                                         .build();
@@ -91,10 +98,17 @@ public class MarketWindowSummarySnapshotPersistenceService {
                 summary.distanceFromWindowHigh(),
                 summary.reboundFromWindowLow(),
                 summary.averageVolume(),
+                summary.averageQuoteAssetVolume(),
+                summary.averageTradeCount(),
                 summary.averageAtr(),
                 summary.currentVolume(),
+                summary.currentQuoteAssetVolume(),
+                summary.currentTradeCount(),
                 summary.currentAtr(),
                 summary.currentVolumeVsAverage(),
+                summary.currentQuoteAssetVolumeVsAverage(),
+                summary.currentTradeCountVsAverage(),
+                summary.currentTakerBuyQuoteRatio(),
                 summary.currentAtrVsAverage(),
                 summary.sourceDataVersion()
         );

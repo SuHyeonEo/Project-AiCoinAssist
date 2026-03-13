@@ -99,11 +99,7 @@ public class MarketIndicatorSnapshotPersistenceService {
     }
 
     private int candleLimit(CandleInterval interval) {
-        return switch (interval) {
-            case ONE_HOUR -> 720;
-            case FOUR_HOUR -> 180;
-            case ONE_DAY -> 364;
-        };
+        return interval.defaultBackfillLimit();
     }
 
     private String buildSourceDataVersion(
@@ -111,7 +107,8 @@ public class MarketIndicatorSnapshotPersistenceService {
             Instant latestCandleOpenTime,
             Instant priceSourceEventTime
     ) {
-        return "snapshotTime=" + snapshotTime
+        return "source=market_candle_raw"
+                + ";snapshotTime=" + snapshotTime
                 + ";latestCandleOpenTime=" + latestCandleOpenTime
                 + ";priceSourceEventTime=" + priceSourceEventTime;
     }

@@ -11,6 +11,7 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineCate
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisContextHeadlineImportance;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -115,9 +116,8 @@ class AnalysisComparisonWindowSupport {
                 textLocalizationSupport.windowLabel(primaryWindow.windowType())
                         + " 기준 가격은 레인지의 "
                         + formattingSupport.percentage(primaryWindow.currentPositionInRange())
-                        + " 위치이며 거래량은 평균 대비 "
-                        + formattingSupport.signedRatio(primaryWindow.currentVolumeVsAverage())
-                        + "입니다.",
+                        + " 위치이며 "
+                        + windowParticipationSummary(primaryWindow),
                 reportType == AnalysisReportType.LONG_TERM
                         ? AnalysisContextHeadlineImportance.HIGH
                         : AnalysisContextHeadlineImportance.MEDIUM
@@ -196,13 +196,27 @@ class AnalysisComparisonWindowSupport {
                 summary.windowType(),
                 textLocalizationSupport.windowLabel(summary.windowType()) + " 기준 가격은 레인지의 " + formattingSupport.percentage(summary.currentPositionInRange()) + " 위치입니다.",
                 textLocalizationSupport.windowLabel(summary.windowType())
-                        + " 기준 거래량은 평균 대비 "
-                        + formattingSupport.signedRatio(summary.currentVolumeVsAverage())
-                        + ", ATR은 평균 대비 "
-                        + formattingSupport.signedRatio(summary.currentAtrVsAverage())
+                        + " 기준 "
+                        + windowParticipationSummary(summary)
                         + ", 레인지 고점 대비 거리는 "
                         + formattingSupport.percentage(summary.distanceFromWindowHigh())
                         + "."
         );
+    }
+
+    private String windowParticipationSummary(AnalysisWindowSummary summary) {
+        List<String> facts = new ArrayList<>();
+        facts.add("거래량은 평균 대비 " + formattingSupport.signedRatio(summary.currentVolumeVsAverage()) + "입니다");
+        if (summary.currentQuoteAssetVolumeVsAverage() != null) {
+            facts.add("거래대금은 평균 대비 " + formattingSupport.signedRatio(summary.currentQuoteAssetVolumeVsAverage()) + "입니다");
+        }
+        if (summary.currentTradeCountVsAverage() != null) {
+            facts.add("체결 수는 평균 대비 " + formattingSupport.signedRatio(summary.currentTradeCountVsAverage()) + "입니다");
+        }
+        if (summary.currentTakerBuyQuoteRatio() != null) {
+            facts.add("taker buy 비중은 " + formattingSupport.percentage(summary.currentTakerBuyQuoteRatio()) + "입니다");
+        }
+        facts.add("ATR은 평균 대비 " + formattingSupport.signedRatio(summary.currentAtrVsAverage()) + "입니다");
+        return String.join(", ", facts);
     }
 }

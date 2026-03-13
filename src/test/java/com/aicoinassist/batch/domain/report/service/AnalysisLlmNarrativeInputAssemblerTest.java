@@ -38,9 +38,12 @@ class AnalysisLlmNarrativeInputAssemblerTest extends AnalysisReportPayloadTestFi
         assertThat(llmInput.executiveSummary().primaryMessage()).isEqualTo("Narrative summary");
         assertThat(llmInput.primaryFacts()).isNotEmpty();
         assertThat(llmInput.primaryFacts()).hasSizeLessThanOrEqualTo(10);
+        assertThat(llmInput.marketParticipationFacts()).isNotEmpty();
+        assertThat(llmInput.marketParticipationFacts()).anySatisfy(fact ->
+                assertThat(fact).containsAnyOf("최근 6h 기준 가격은", "최근 24h 기준 가격은"));
         assertThat(llmInput.marketStructureFacts()).isNotEmpty();
         assertThat(llmInput.marketStructureFacts()).anySatisfy(fact ->
-                assertThat(fact).containsAnyOf("이동평균", "RSI14", "MACD", "현재 가격"));
+                assertThat(fact).containsAnyOf("이동평균", "RSI14", "MACD", "현재 가격", "거래량", "거래대금", "체결 수"));
         assertThat(llmInput.derivativeStructureFacts()).isNotEmpty();
         assertThat(llmInput.derivativeStructureFacts()).anySatisfy(fact ->
                 assertThat(fact).containsAnyOf("펀딩", "OI", "basis", "동행"));
@@ -65,6 +68,7 @@ class AnalysisLlmNarrativeInputAssemblerTest extends AnalysisReportPayloadTestFi
         assertThat(llmInput.marketStructureBoxFacts()).anySatisfy(fact ->
                 assertThat(fact).containsAnyOf(
                         "range_position_basis:",
+                        "volume_confirmation_basis:",
                         "upside_reference_basis:",
                         "downside_reference_basis:",
                         "support_break_risk_basis:",

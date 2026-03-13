@@ -189,6 +189,9 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
     protected AnalysisReportAssembler analysisReportAssembler;
 
     @Mock
+    protected AnalysisMarketParticipationFactService analysisMarketParticipationFactService;
+
+    @Mock
     protected AnalysisReportPersistenceService analysisReportPersistenceService;
 
     @Mock
@@ -220,6 +223,7 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                 analysisExternalContextSnapshotService,
                 analysisExternalContextComparisonService,
                 analysisReportContinuityService,
+                analysisMarketParticipationFactService,
                 analysisReportAssembler,
                 analysisReportPersistenceService,
                 analysisReportMarketDataMapper,
@@ -482,10 +486,19 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                         new BigDecimal("0.02777778"),
                         new BigDecimal("0.06707317"),
                         new BigDecimal("100.00000000"),
+                        new BigDecimal("10800000.00000000"),
+                        new BigDecimal("12345.00000000"),
                         new BigDecimal("1450.00000000"),
                         new BigDecimal("0.22000000"),
+                        new BigDecimal("0.15740741"),
+                        new BigDecimal("0.09315512"),
+                        new BigDecimal("0.56666667"),
                         new BigDecimal("0.03448276")
                 )),
+                List.of(
+                        "최근 7d 기준 가격은 +2.4%, 거래대금은 직전 동일 구간 대비 +12.5%, 체결 수는 직전 동일 구간 대비 +8.1%, taker buy 비중은 56.67% (직전 대비 +2.1%p)입니다.",
+                        "최근 30d 기준 가격은 +9.8%, 거래대금은 직전 동일 구간 대비 +18.4%, 체결 수는 직전 동일 구간 대비 +11.3%, taker buy 비중은 54.2% (직전 대비 +1.4%p)입니다."
+                ),
                 new AnalysisDerivativeContext(
                         generationDerivativeContextInput().snapshotTime(),
                         generationDerivativeContextInput().openInterestSourceEventTime(),
@@ -822,10 +835,17 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                                                  .distanceFromWindowHigh(new BigDecimal("0.02777778"))
                                                  .reboundFromWindowLow(new BigDecimal("0.06707317"))
                                                  .averageVolume(new BigDecimal("100.00000000"))
+                                                 .averageQuoteAssetVolume(new BigDecimal("10800000.00000000"))
+                                                 .averageTradeCount(new BigDecimal("12345.00000000"))
                                                  .averageAtr(new BigDecimal("1450.00000000"))
                                                  .currentVolume(new BigDecimal("122.00000000"))
+                                                 .currentQuoteAssetVolume(new BigDecimal("12500000.00000000"))
+                                                 .currentTradeCount(new BigDecimal("13500.00000000"))
                                                  .currentAtr(new BigDecimal("1500.00000000"))
                                                  .currentVolumeVsAverage(new BigDecimal("0.22000000"))
+                                                 .currentQuoteAssetVolumeVsAverage(new BigDecimal("0.15740741"))
+                                                 .currentTradeCountVsAverage(new BigDecimal("0.09315512"))
+                                                 .currentTakerBuyQuoteRatio(new BigDecimal("0.56666667"))
                                                  .currentAtrVsAverage(new BigDecimal("0.03448276"))
                                                  .sourceDataVersion("basis-key;windowType=LAST_30D")
                                                  .build()

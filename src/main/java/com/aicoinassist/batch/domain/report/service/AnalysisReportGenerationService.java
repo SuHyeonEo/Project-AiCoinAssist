@@ -89,6 +89,7 @@ public class AnalysisReportGenerationService {
     private final AnalysisExternalContextSnapshotService analysisExternalContextSnapshotService;
     private final AnalysisExternalContextComparisonService analysisExternalContextComparisonService;
     private final AnalysisReportContinuityService analysisReportContinuityService;
+    private final AnalysisMarketParticipationFactService analysisMarketParticipationFactService;
     private final AnalysisReportAssembler analysisReportAssembler;
     private final AnalysisReportPersistenceService analysisReportPersistenceService;
     private final AnalysisReportMarketDataMapper analysisReportMarketDataMapper;
@@ -193,6 +194,7 @@ public class AnalysisReportGenerationService {
                 .stream()
                 .map(analysisReportMarketDataMapper::toWindowSummary)
                 .toList();
+        List<String> marketParticipationFacts = analysisMarketParticipationFactService.buildFacts(snapshot, reportType);
         List<MarketCandidateLevelSnapshotEntity> candidateLevelSnapshots =
                 marketCandidateLevelSnapshotPersistenceService.createAndSaveAll(snapshot, candles);
         List<MarketCandidateLevelZoneSnapshotEntity> candidateLevelZoneSnapshots =
@@ -280,6 +282,7 @@ public class AnalysisReportGenerationService {
                 continuityNotes,
                 externalContextComposite,
                 levelContext,
+                marketParticipationFacts,
                 supportLevels,
                 resistanceLevels,
                 supportZones,

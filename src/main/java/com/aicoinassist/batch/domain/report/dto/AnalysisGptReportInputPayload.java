@@ -29,6 +29,7 @@ public record AnalysisGptReportInputPayload(
         List<AnalysisWindowSummary> windowSummaries,
         List<AnalysisContextHeadlinePayload> signalHeadlines,
         List<String> primaryFacts,
+        List<String> marketParticipationFacts,
         List<AnalysisGptCrossSignal> crossSignals,
         List<AnalysisRiskFactor> riskFactors,
         List<AnalysisScenario> scenarios,

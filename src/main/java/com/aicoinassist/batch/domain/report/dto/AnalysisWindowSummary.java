@@ -17,8 +17,13 @@ public record AnalysisWindowSummary(
         BigDecimal distanceFromWindowHigh,
         BigDecimal reboundFromWindowLow,
         BigDecimal averageVolume,
+        BigDecimal averageQuoteAssetVolume,
+        BigDecimal averageTradeCount,
         BigDecimal averageAtr,
         BigDecimal currentVolumeVsAverage,
+        BigDecimal currentQuoteAssetVolumeVsAverage,
+        BigDecimal currentTradeCountVsAverage,
+        BigDecimal currentTakerBuyQuoteRatio,
         BigDecimal currentAtrVsAverage
 ) {
 }

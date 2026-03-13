@@ -66,6 +66,7 @@ public class AnalysisLlmNarrativeInputAssembler {
                 executiveSummary(input),
                 limit(input.signalHeadlines(), 8),
                 limit(input.primaryFacts(), 10),
+                limit(input.marketParticipationFacts(), 4),
                 marketStructureFacts(input),
                 derivativeStructureFacts(input),
                 sharedContextReference == null ? macroStructureFacts(input) : List.of(),
@@ -110,6 +111,8 @@ public class AnalysisLlmNarrativeInputAssembler {
                                 ? null : input.comparisonContext().factSummary().primaryFact(),
                         input.windowContext() == null || input.windowContext().summary() == null
                                 ? null : input.windowContext().summary().rangeSummary(),
+                        input.windowContext() == null || input.windowContext().summary() == null
+                                ? null : input.windowContext().summary().volatilitySummary(),
                         input.windowContext() == null || input.windowContext().summary() == null
                                 ? null : input.windowContext().summary().rangePositionSummary()
                 )
@@ -194,9 +197,11 @@ public class AnalysisLlmNarrativeInputAssembler {
                 movingAverageStackSummary(input.currentState()),
                 priceVsMovingAverageSummary(input.currentState()),
                 momentumSummary(input.currentState()),
+                input.marketParticipationFacts() == null ? null : first(input.marketParticipationFacts()),
+                volumeConfirmationFact(primaryMarketWindow(input)),
                 input.windowContext() == null || input.windowContext().summary() == null
                         ? null : input.windowContext().summary().rangePositionSummary()
-        ).stream().limit(4).toList();
+        ).stream().limit(5).toList();
     }
 
     private List<String> levelStructureFacts(AnalysisGptReportInputPayload input) {
@@ -317,11 +322,84 @@ public class AnalysisLlmNarrativeInputAssembler {
                         input.windowContext() == null || input.windowContext().summary() == null
                                 ? null : input.windowContext().summary().rangeSummary()
                 ),
+                volumeConfirmationBasisFact(input),
                 marketStructureUpsideBasisFact(input),
                 marketStructureDownsideBasisFact(input),
                 marketStructureSupportRiskBasisFact(input),
                 marketStructureResistanceRiskBasisFact(input)
-        ).stream().limit(5).toList();
+        ).stream().limit(6).toList();
+    }
+
+    private String volumeConfirmationBasisFact(AnalysisGptReportInputPayload input) {
+        AnalysisWindowSummary window = primaryMarketWindow(input);
+        if (window == null) {
+            return null;
+        }
+        return "volume_confirmation_basis: " + volumeConfirmationFact(window);
+    }
+
+    private String volumeConfirmationFact(AnalysisWindowSummary window) {
+        if (window == null) {
+            return null;
+        }
+
+        String windowLabel = window.windowType().name();
+        List<String> participationFacts = gather(
+                window.currentVolumeVsAverage() == null
+                        ? null
+                        : "거래량은 평균 대비 " + safePercent(window.currentVolumeVsAverage()),
+                window.currentQuoteAssetVolumeVsAverage() == null
+                        ? null
+                        : "거래대금은 평균 대비 " + safePercent(window.currentQuoteAssetVolumeVsAverage()),
+                window.currentTradeCountVsAverage() == null
+                        ? null
+                        : "체결 수는 평균 대비 " + safePercent(window.currentTradeCountVsAverage()),
+                window.currentTakerBuyQuoteRatio() == null
+                        ? null
+                        : "taker buy 비중은 " + safePercent(window.currentTakerBuyQuoteRatio())
+        );
+        if (participationFacts.isEmpty()) {
+            return null;
+        }
+
+        return windowLabel + " 기준 " + String.join(", ", participationFacts) + "로, "
+                + participationInterpretation(window) + ".";
+    }
+
+    private String participationInterpretation(AnalysisWindowSummary window) {
+        boolean volumeExpanded = isAtLeast(window.currentVolumeVsAverage(), new BigDecimal("0.20"));
+        boolean quoteExpanded = isAtLeast(window.currentQuoteAssetVolumeVsAverage(), new BigDecimal("0.20"));
+        boolean tradeExpanded = isAtLeast(window.currentTradeCountVsAverage(), new BigDecimal("0.15"));
+        boolean volumeWeak = isAtMost(window.currentVolumeVsAverage(), new BigDecimal("-0.20"));
+        boolean quoteWeak = isAtMost(window.currentQuoteAssetVolumeVsAverage(), new BigDecimal("-0.15"));
+        boolean tradeWeak = isAtMost(window.currentTradeCountVsAverage(), new BigDecimal("-0.15"));
+        boolean takerBuyStrong = isAtLeast(window.currentTakerBuyQuoteRatio(), new BigDecimal("0.55"));
+        boolean takerBuyWeak = isAtMost(window.currentTakerBuyQuoteRatio(), new BigDecimal("0.45"));
+
+        if ((volumeExpanded || quoteExpanded || tradeExpanded) && takerBuyStrong) {
+            return "공격적 매수와 참여 확장이 함께 나타나 추종 확인이 강화되고 있습니다";
+        }
+        if (volumeExpanded || quoteExpanded || tradeExpanded) {
+            return "참여 확장이 동반돼 현재 구조에 대한 확인 강도가 높아지고 있습니다";
+        }
+        if ((volumeWeak && quoteWeak) || (tradeWeak && takerBuyWeak)) {
+            return "참여와 매수 주도력이 모두 약해 현재 움직임의 확인 강도는 낮은 편입니다";
+        }
+        if (takerBuyStrong) {
+            return "공격적 매수 우위는 있으나 참여 확장 강도는 추가 확인이 필요합니다";
+        }
+        if (takerBuyWeak) {
+            return "공격적 매수 우위가 약해 추종 강도는 중립 이하로 해석됩니다";
+        }
+        return "구조 확인 강도는 중립 범위에 가깝습니다";
+    }
+
+    private boolean isAtLeast(BigDecimal value, BigDecimal threshold) {
+        return value != null && value.compareTo(threshold) >= 0;
+    }
+
+    private boolean isAtMost(BigDecimal value, BigDecimal threshold) {
+        return value != null && value.compareTo(threshold) <= 0;
     }
 
     private List<String> derivativeStructureFacts(AnalysisGptReportInputPayload input) {

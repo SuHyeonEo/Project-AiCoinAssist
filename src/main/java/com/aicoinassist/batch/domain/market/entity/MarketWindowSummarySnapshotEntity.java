@@ -86,17 +86,38 @@ public class MarketWindowSummarySnapshotEntity {
     @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal averageVolume;
 
+    @Column(precision = 24, scale = 8)
+    private BigDecimal averageQuoteAssetVolume;
+
+    @Column(precision = 19, scale = 8)
+    private BigDecimal averageTradeCount;
+
     @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal averageAtr;
 
     @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal currentVolume;
 
+    @Column(precision = 24, scale = 8)
+    private BigDecimal currentQuoteAssetVolume;
+
+    @Column(precision = 19, scale = 8)
+    private BigDecimal currentTradeCount;
+
     @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal currentAtr;
 
     @Column(precision = 19, scale = 8)
     private BigDecimal currentVolumeVsAverage;
+
+    @Column(precision = 19, scale = 8)
+    private BigDecimal currentQuoteAssetVolumeVsAverage;
+
+    @Column(precision = 19, scale = 8)
+    private BigDecimal currentTradeCountVsAverage;
+
+    @Column(precision = 19, scale = 8)
+    private BigDecimal currentTakerBuyQuoteRatio;
 
     @Column(precision = 19, scale = 8)
     private BigDecimal currentAtrVsAverage;
@@ -120,10 +141,17 @@ public class MarketWindowSummarySnapshotEntity {
             BigDecimal distanceFromWindowHigh,
             BigDecimal reboundFromWindowLow,
             BigDecimal averageVolume,
+            BigDecimal averageQuoteAssetVolume,
+            BigDecimal averageTradeCount,
             BigDecimal averageAtr,
             BigDecimal currentVolume,
+            BigDecimal currentQuoteAssetVolume,
+            BigDecimal currentTradeCount,
             BigDecimal currentAtr,
             BigDecimal currentVolumeVsAverage,
+            BigDecimal currentQuoteAssetVolumeVsAverage,
+            BigDecimal currentTradeCountVsAverage,
+            BigDecimal currentTakerBuyQuoteRatio,
             BigDecimal currentAtrVsAverage,
             String sourceDataVersion
     ) {
@@ -141,10 +169,17 @@ public class MarketWindowSummarySnapshotEntity {
         this.distanceFromWindowHigh = distanceFromWindowHigh;
         this.reboundFromWindowLow = reboundFromWindowLow;
         this.averageVolume = averageVolume;
+        this.averageQuoteAssetVolume = averageQuoteAssetVolume;
+        this.averageTradeCount = averageTradeCount;
         this.averageAtr = averageAtr;
         this.currentVolume = currentVolume;
+        this.currentQuoteAssetVolume = currentQuoteAssetVolume;
+        this.currentTradeCount = currentTradeCount;
         this.currentAtr = currentAtr;
         this.currentVolumeVsAverage = currentVolumeVsAverage;
+        this.currentQuoteAssetVolumeVsAverage = currentQuoteAssetVolumeVsAverage;
+        this.currentTradeCountVsAverage = currentTradeCountVsAverage;
+        this.currentTakerBuyQuoteRatio = currentTakerBuyQuoteRatio;
         this.currentAtrVsAverage = currentAtrVsAverage;
         this.sourceDataVersion = sourceDataVersion;
     }
@@ -160,10 +195,17 @@ public class MarketWindowSummarySnapshotEntity {
             BigDecimal distanceFromWindowHigh,
             BigDecimal reboundFromWindowLow,
             BigDecimal averageVolume,
+            BigDecimal averageQuoteAssetVolume,
+            BigDecimal averageTradeCount,
             BigDecimal averageAtr,
             BigDecimal currentVolume,
+            BigDecimal currentQuoteAssetVolume,
+            BigDecimal currentTradeCount,
             BigDecimal currentAtr,
             BigDecimal currentVolumeVsAverage,
+            BigDecimal currentQuoteAssetVolumeVsAverage,
+            BigDecimal currentTradeCountVsAverage,
+            BigDecimal currentTakerBuyQuoteRatio,
             BigDecimal currentAtrVsAverage,
             String sourceDataVersion
     ) {
@@ -177,10 +219,17 @@ public class MarketWindowSummarySnapshotEntity {
         this.distanceFromWindowHigh = distanceFromWindowHigh;
         this.reboundFromWindowLow = reboundFromWindowLow;
         this.averageVolume = averageVolume;
+        this.averageQuoteAssetVolume = averageQuoteAssetVolume;
+        this.averageTradeCount = averageTradeCount;
         this.averageAtr = averageAtr;
         this.currentVolume = currentVolume;
+        this.currentQuoteAssetVolume = currentQuoteAssetVolume;
+        this.currentTradeCount = currentTradeCount;
         this.currentAtr = currentAtr;
         this.currentVolumeVsAverage = currentVolumeVsAverage;
+        this.currentQuoteAssetVolumeVsAverage = currentQuoteAssetVolumeVsAverage;
+        this.currentTradeCountVsAverage = currentTradeCountVsAverage;
+        this.currentTakerBuyQuoteRatio = currentTakerBuyQuoteRatio;
         this.currentAtrVsAverage = currentAtrVsAverage;
         this.sourceDataVersion = sourceDataVersion;
     }

@@ -44,6 +44,7 @@ public class AnalysisGptReportInputAssembler {
                 reportPayload.windowSummaries(),
                 reportPayload.summary() == null ? List.of() : reportPayload.summary().signalHeadlines(),
                 primaryFacts(reportPayload),
+                reportPayload.marketParticipationFacts(),
                 analysisGptCrossSignalFactory.build(reportPayload),
                 reportPayload.riskFactors(),
                 reportPayload.scenarios(),
@@ -68,6 +69,10 @@ public class AnalysisGptReportInputAssembler {
             if (payload.marketContext().windowContext() != null && payload.marketContext().windowContext().summary() != null) {
                 addIfPresent(facts, payload.marketContext().windowContext().summary().rangeSummary());
                 addIfPresent(facts, payload.marketContext().windowContext().summary().rangePositionSummary());
+                addIfPresent(facts, payload.marketContext().windowContext().summary().volatilitySummary());
+            }
+            if (payload.marketParticipationFacts() != null) {
+                payload.marketParticipationFacts().stream().limit(2).forEach(fact -> addIfPresent(facts, fact));
             }
             addIfPresent(facts, payload.marketContext().derivativeContextSummary() == null ? null : payload.marketContext().derivativeContextSummary().currentStateSummary());
             addIfPresent(facts, payload.marketContext().macroContextSummary() == null ? null : payload.marketContext().macroContextSummary().currentStateSummary());

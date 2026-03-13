@@ -29,6 +29,7 @@ class AnalysisReportAssemblerLongTermTest extends AnalysisReportServiceFixtures 
                 longContinuityNotes(),
                 externalContextComposite(),
                 levelContext(),
+                marketParticipationFacts(),
                 supportLevels(),
                 resistanceLevels(),
                 supportZones(),
