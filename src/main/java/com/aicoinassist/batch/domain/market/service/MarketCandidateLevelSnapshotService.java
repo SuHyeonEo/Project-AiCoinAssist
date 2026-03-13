@@ -77,7 +77,7 @@ public class MarketCandidateLevelSnapshotService {
 
         if (recentCandles.size() < PIVOT_LOOKBACK + PIVOT_LOOKFORWARD + 1) {
             throw new IllegalStateException(
-                    "Not enough live candles for candidate level snapshot: symbol=%s interval=%s snapshotTime=%s"
+                    "Not enough raw candles for candidate level snapshot: symbol=%s interval=%s snapshotTime=%s"
                             .formatted(snapshot.getSymbol(), snapshot.getIntervalValue(), snapshot.getSnapshotTime())
             );
         }

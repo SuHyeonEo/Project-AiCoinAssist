@@ -82,6 +82,7 @@ class AnalysisMarketContextSectionAssembler {
             List<AnalysisComparisonHighlight> comparisonHighlights,
             List<AnalysisWindowHighlight> windowHighlights,
             List<AnalysisWindowSummary> windowSummaries,
+            List<String> marketParticipationFacts,
             AnalysisDerivativeContext derivativeContext,
             AnalysisMacroContext macroContext,
             AnalysisSentimentContext sentimentContext,
@@ -136,13 +137,40 @@ class AnalysisMarketContextSectionAssembler {
                             + "이며, 고점 대비 거리는 "
                             + formattingSupport.percentage(primaryWindow.distanceFromWindowHigh())
                             + "입니다.",
-                    "ATR은 평균 대비 " + formattingSupport.signedRatio(primaryWindow.currentAtrVsAverage()) + "입니다."
+                    String.join(" ", gather(
+                            "거래량은 평균 대비 "
+                                    + formattingSupport.signedRatio(primaryWindow.currentVolumeVsAverage())
+                                    + "입니다.",
+                            primaryWindow.currentQuoteAssetVolumeVsAverage() == null
+                                    ? null
+                                    : "거래대금은 평균 대비 "
+                                    + formattingSupport.signedRatio(primaryWindow.currentQuoteAssetVolumeVsAverage())
+                                    + "입니다.",
+                            primaryWindow.currentTradeCountVsAverage() == null
+                                    ? null
+                                    : "체결 수는 평균 대비 "
+                                    + formattingSupport.signedRatio(primaryWindow.currentTradeCountVsAverage())
+                                    + "입니다.",
+                            primaryWindow.currentTakerBuyQuoteRatio() == null
+                                    ? null
+                                    : "taker buy 비중은 "
+                                    + formattingSupport.percentage(primaryWindow.currentTakerBuyQuoteRatio())
+                                    + "입니다.",
+                            "ATR은 평균 대비 "
+                                    + formattingSupport.signedRatio(primaryWindow.currentAtrVsAverage())
+                                    + "입니다."
+                    ))
             );
         }
         List<String> windowHighlightDetails = windowHighlights.stream()
                                                               .map(AnalysisWindowHighlight::detail)
                                                               .map(textLocalizationSupport::localizeSentence)
                                                               .collect(Collectors.toCollection(ArrayList::new));
+        if (marketParticipationFacts != null) {
+            marketParticipationFacts.stream()
+                                    .map(textLocalizationSupport::localizeSentence)
+                                    .forEach(windowHighlightDetails::add);
+        }
         levelContext.zoneInteractionFacts().stream()
                     .map(AnalysisZoneInteractionFact::summary)
                     .map(textLocalizationSupport::localizeSentence)
@@ -380,5 +408,15 @@ class AnalysisMarketContextSectionAssembler {
                 textLocalizationSupport.localizeSentence(headline.detail()),
                 headline.importance()
         );
+    }
+
+    private List<String> gather(String... values) {
+        List<String> facts = new ArrayList<>();
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                facts.add(value);
+            }
+        }
+        return facts;
     }
 }

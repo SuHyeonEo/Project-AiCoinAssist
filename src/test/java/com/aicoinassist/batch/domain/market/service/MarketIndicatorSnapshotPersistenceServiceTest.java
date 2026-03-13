@@ -81,7 +81,7 @@ class MarketIndicatorSnapshotPersistenceServiceTest {
         assertThat(existingEntity.getLatestCandleOpenTime()).isEqualTo(snapshotTime.minusSeconds(3600));
         assertThat(existingEntity.getPriceSourceEventTime()).isEqualTo(Instant.parse("2026-03-09T00:59:30Z"));
         assertThat(existingEntity.getSourceDataVersion()).isEqualTo(
-                "snapshotTime=2026-03-09T00:59:59Z;latestCandleOpenTime=2026-03-08T23:59:59Z;priceSourceEventTime=2026-03-09T00:59:30Z"
+                "source=market_candle_raw;snapshotTime=2026-03-09T00:59:59Z;latestCandleOpenTime=2026-03-08T23:59:59Z;priceSourceEventTime=2026-03-09T00:59:30Z"
         );
         assertThat(existingEntity.getCurrentPrice()).isEqualByComparingTo("87500.12");
         assertThat(existingEntity.getMa20()).isEqualByComparingTo("20");
@@ -116,7 +116,7 @@ class MarketIndicatorSnapshotPersistenceServiceTest {
         assertThat(result.getLatestCandleOpenTime()).isEqualTo(snapshotTime.minusSeconds(3600));
         assertThat(result.getPriceSourceEventTime()).isEqualTo(Instant.parse("2026-03-09T00:59:30Z"));
         assertThat(result.getSourceDataVersion()).isEqualTo(
-                "snapshotTime=2026-03-09T00:59:59Z;latestCandleOpenTime=2026-03-08T23:59:59Z;priceSourceEventTime=2026-03-09T00:59:30Z"
+                "source=market_candle_raw;snapshotTime=2026-03-09T00:59:59Z;latestCandleOpenTime=2026-03-08T23:59:59Z;priceSourceEventTime=2026-03-09T00:59:30Z"
         );
         assertThat(result.getCurrentPrice()).isEqualByComparingTo("87500.12");
         assertThat(result.getMa20()).isEqualByComparingTo("20");

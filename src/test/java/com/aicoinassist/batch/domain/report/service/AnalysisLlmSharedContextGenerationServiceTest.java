@@ -159,7 +159,7 @@ class AnalysisLlmSharedContextGenerationServiceTest extends AnalysisReportPayloa
 
     private AnalysisReportSharedContextEntity sharedContextEntity(AnalysisLlmSharedContextReference output) throws Exception {
         AnalysisReportSharedContextEntity entity = AnalysisReportSharedContextEntity.builder()
-                .reportType(null)
+                .reportType(AnalysisReportType.SHORT_TERM)
                 .analysisBasisTime(Instant.parse("2026-03-09T00:59:59Z"))
                 .rawReferenceTime(Instant.parse("2026-03-09T00:59:30Z"))
                 .contextVersion(output.contextVersion())

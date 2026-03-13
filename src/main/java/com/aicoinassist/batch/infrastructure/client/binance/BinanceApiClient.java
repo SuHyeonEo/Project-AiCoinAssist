@@ -44,11 +44,15 @@ public class BinanceApiClient {
     }
 
     public List<BinanceKlineResponse> getKlines(String symbol, String interval, int limit) {
+        return getKlines(symbol, interval, limit, null);
+    }
+
+    public List<BinanceKlineResponse> getKlines(String symbol, String interval, int limit, Long endTimeMillis) {
+        String uriTemplate = endTimeMillis == null
+                ? binanceProperties.baseUrl() + "/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
+                : binanceProperties.baseUrl() + "/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}&endTime={endTime}";
         List<List<Object>> response = restClient.get()
-                                                .uri(
-                                                        binanceProperties.baseUrl() + "/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}",
-                                                        symbol, interval, limit
-                                                )
+                                                .uri(uriTemplate, uriVariables(symbol, interval, limit, endTimeMillis))
                                                 .retrieve()
                                                 .body(new ParameterizedTypeReference<>() {});
 
@@ -59,6 +63,12 @@ public class BinanceApiClient {
         return response.stream()
                        .map(this::toKlineResponse)
                        .toList();
+    }
+
+    private Object[] uriVariables(String symbol, String interval, int limit, Long endTimeMillis) {
+        return endTimeMillis == null
+                ? new Object[] {symbol, interval, limit}
+                : new Object[] {symbol, interval, limit, endTimeMillis};
     }
 
     public BinanceOpenInterestResponse getOpenInterest(String symbol) {

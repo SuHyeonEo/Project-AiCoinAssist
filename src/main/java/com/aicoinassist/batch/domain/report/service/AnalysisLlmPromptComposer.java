@@ -245,6 +245,7 @@ public class AnalysisLlmPromptComposer {
                 input.executiveSummary(),
                 input.signalHeadlines(),
                 input.primaryFacts(),
+                input.marketParticipationFacts(),
                 input.marketStructureFacts(),
                 input.derivativeStructureFacts(),
                 input.macroStructureFacts(),
@@ -301,6 +302,7 @@ public class AnalysisLlmPromptComposer {
                 - primary_driver should name the strongest current driver.
                 - risk_driver should name the most important current risk.
                 - Prefer market_structure_facts and primary_facts for the hero area.
+                - When volume, quote-volume, trade-count, taker-buy participation, or multi-window market_participation_facts are present, use them to judge whether the current move has confirmation.
                 - Use derivative_structure_facts, external_structure_facts, or level_structure_facts only when they clearly dominate the current short conclusion.
                 - The hero area should sound like the opening lines of a report page, not a list of metrics.
 
@@ -314,6 +316,7 @@ public class AnalysisLlmPromptComposer {
                 - Prefer primary_facts first, then add the most decision-relevant support from market_structure_facts, derivative_structure_facts, external_structure_facts, and level_structure_facts.
                 - bullish_factors and bearish_factors should read like editorial bullets from a crypto report page, not raw metric fragments.
                 - Each factor should combine one fact with its meaning, for example metric plus why that metric matters now.
+                - If market_structure_facts or market_participation_facts contain volume, quote-volume, trade-count, or taker-buy participation evidence, reflect that evidence in the factor meaning rather than ignoring it.
                 - bullish_factors must contain only supportive or constructive evidence for the current horizon.
                 - bearish_factors must contain only downside, restrictive, or cautionary evidence for the current horizon.
                 - Do not place fear, headwind, elevated external risk, defensive positioning, downside break risk, or similar cautionary evidence inside bullish_factors.
@@ -328,6 +331,7 @@ public class AnalysisLlmPromptComposer {
                 - LEVEL interpretation should explain current price location versus nearby support/resistance or active zone, what holding would imply, and what breaking would imply.
                 - Within interpretation, connect related evidence with restrained connective words so the sentence reads smoothly.
                 - Prefer structure-aware wording such as "지지 확인", "저항 재확인", "상단 돌파 시도", "하단 이탈 시 구조 약화", or "레인지 상단 부담".
+                - When market_structure_facts or market_participation_facts contain volume, quote-volume, trade-count, or taker-buy participation evidence, use it to explain whether the current structure looks supported or fragile.
                 - When shared_context_reference exists, treat it as the primary source for MACRO and SENTIMENT domain wording before looking at raw fact lists.
                 - MARKET should primarily use market_structure_facts.
                 - DERIVATIVE should primarily use derivative_structure_facts.
@@ -341,6 +345,9 @@ public class AnalysisLlmPromptComposer {
                 - For SENTIMENT interpretation, explicitly include at least one concrete metric or value such as Fear & Greed value, classification, or greed/fear sample balance when available.
                 - For ONCHAIN interpretation, explicitly include at least one concrete metric or value such as active addresses, transactions, market cap, or a deviation fact when available.
                 - If numeric evidence exists for MACRO, SENTIMENT, or ONCHAIN, do not write those interpretations as fully generic prose.
+                - When shared_context_reference exists, MACRO and SENTIMENT interpretation must not repeat the shared market summary in slightly different words.
+                - When shared_context_reference exists, MACRO and SENTIMENT interpretation must explain only the asset-specific consequence or current-horizon implication of that backdrop using this asset's structure, derivative, level, or on-chain facts when available.
+                - When shared_context_reference exists, MACRO and SENTIMENT watch_point should focus on the next asset-relevant confirmation or invalidation point rather than restating a market-wide macro or sentiment monitor.
 
                 4) market_structure_box
                 - Use this section as the report's explicit level and range structure box.
@@ -350,6 +357,7 @@ public class AnalysisLlmPromptComposer {
                 - interpretation should be the only field in this section that you newly write.
                 - interpretation should be one short Korean report paragraph that ties the server-fixed range and level facts together.
                 - Prefer server_market_structure first, then use level_structure_facts and market_structure_facts only to explain why the current structure matters.
+                - If market_structure_box_facts contain a participation confirmation basis, use it to explain whether the current range position or level test is gaining participation.
                 - Do not turn interpretation into a second list of raw numbers.
                 - This section should resemble a visual level and structure card that the API or frontend can assemble directly.
 
@@ -361,6 +369,7 @@ public class AnalysisLlmPromptComposer {
                 - Prefer cross_signal_integration to combine market_structure_facts, derivative_structure_facts, external_structure_facts, and level_structure_facts.
                 - This section should feel like the report's synthesis layer: which facts point the same way, which facts resist that direction, and what that means for the current horizon.
                 - Make the synthesis read as linked report prose by using connectors where appropriate, especially when contrast or limitation matters.
+                - If market_structure_facts or market_participation_facts contain volume, quote-volume, trade-count, or taker-buy participation evidence, treat that as a key alignment or conflict signal rather than a side note.
                 - Do not turn this section into another domain summary list.
 
                 6) scenario_map
@@ -377,8 +386,12 @@ public class AnalysisLlmPromptComposer {
                 - Use connectors to show flow between setup, trigger, confirmation, and invalidation rather than writing clipped note-style fragments.
                 - Prefer scenario_guidance.confirmation_facts first for confirmation.
                 - Use level_structure_facts and market_structure_facts for trigger and invalidation when the scenario depends on structure holding or breaking.
+                - When participation confirmation or weak-participation facts are available in market_structure_facts, market_participation_facts, or market_structure_box_facts, use them for confirmation or invalidation before inventing generic follow-through wording.
                 - Use derivative_structure_facts and external_structure_facts when leverage pressure or outside regime pressure materially affects the path.
                 - Each scenario should read like a report card: current setup, what would push it forward, what would confirm it, and what would cancel it.
+                - Scenario interpretation must explain why that path matters for this asset and this horizon, not merely restate that the scenario exists.
+                - Avoid generic template wording such as "이 시나리오는 ... 의미합니다" unless it is immediately followed by a concrete structural implication.
+                - Prefer scenario interpretation wording that states the directional implication, the structure or positioning change to watch, and the practical reading for the current horizon in one natural sentence.
 
                 Input fact usage guidance:
                 - Use signal_headlines to identify the report's most visible top-line signals.
@@ -387,7 +400,8 @@ public class AnalysisLlmPromptComposer {
                 - Horizon interpretation lens:
                 %s
                 - Use primary_facts as high-priority evidence that should appear in executive_conclusion or cross_signal_integration.
-                - Use market_structure_facts for moving-average arrangement, momentum, and current structural position.
+                - Use market_participation_facts for multi-window price change, quote-volume change, trade-count change, and taker-buy ratio facts that were calculated by the server for this report horizon.
+                - Use market_structure_facts for moving-average arrangement, momentum, current structural position, and participation confirmation or weak participation.
                 - Use derivative_structure_facts for funding versus average, OI versus average, basis expansion or contraction, and price/OI alignment facts.
                 - Use macro_structure_facts for DXY, US10Y, USD/KRW deviation and risk-on or risk-off pressure facts.
                 - Use sentiment_structure_facts for Fear & Greed deviation, classification shift, and greed/fear balance facts.
@@ -401,8 +415,10 @@ public class AnalysisLlmPromptComposer {
                 - When shared_context_reference exists, do not rewrite a second market-wide macro or sentiment essay. Translate that shared backdrop into this asset's specific implication instead.
                 - Prefer asset-specific consequences such as structure pressure, breakout difficulty, support fragility, leverage crowding, or on-chain confirmation instead of repeating the shared market summary itself.
                 - If a macro or sentiment point is already fully expressed in shared_context_reference, only mention it again when you connect it to a concrete asset fact from market_structure_facts, derivative_structure_facts, onchain_structure_facts, or level_structure_facts.
+                - When shared_context_reference exists, hero_summary, executive_conclusion, and cross_signal_integration may reference the backdrop briefly, but domain_analyses MACRO and SENTIMENT must stay focused on what that backdrop changes for this asset now.
                 - Use market_structure_box for explicit upper and lower reference explanation, and avoid hiding key support or resistance references only inside scenario_map.
                 - Use scenario_guidance.confirmation_facts as confirmation candidates, and do not replace them with invented signals.
+                - When volume, quote-volume, trade-count, taker-buy participation, or market_participation_facts exist, prefer them as breakout or breakdown validation evidence.
                 - Use limited_risks_scenarios for scenario conditions, invalidation, and restrained tactical meaning.
                 - If a desirable fact such as level distance, moving-average arrangement, momentum detail, derivative crowding, or scenario confirmation is missing, stay restrained and say less rather than inventing it.
                 - Do not spread every fact everywhere. Select the fact group that best fits the section's role.
@@ -462,14 +478,17 @@ public class AnalysisLlmPromptComposer {
         return switch (input.reportType()) {
             case SHORT_TERM -> """
                     - SHORT_TERM: prioritize immediate price structure, nearby support and resistance reaction, short-term momentum continuation or slowdown, and whether shared macro or sentiment pressure changes the next move.
+                    - SHORT_TERM: use volume, quote-volume, trade-count, and taker-buy confirmation aggressively when judging whether a breakout, rejection, or pullback has real follow-through.
                     - SHORT_TERM: avoid writing as if one macro or sentiment datapoint defines the long-cycle trend.
                     """.strip();
             case MID_TERM -> """
                     - MID_TERM: prioritize whether the current structure can persist across days to weeks, whether the backdrop supports consolidation or continuation, and whether pressure is accumulating against the current trend.
+                    - MID_TERM: treat sustained participation expansion or contraction across volume, quote-volume, trade-count, and taker-buy as evidence for trend durability or fragility when those facts are available.
                     - MID_TERM: connect shared macro or sentiment context to structural durability rather than only the next candle move.
                     """.strip();
             case LONG_TERM -> """
                     - LONG_TERM: prioritize cycle position, durable regime backdrop, long-duration support and resistance tolerance, and whether the asset is operating in a supportive or restrictive long-horizon environment.
+                    - LONG_TERM: use participation evidence across volume, quote-volume, trade-count, and taker-buy to distinguish durable participation from weak long-horizon rebounds when the input provides it.
                     - LONG_TERM: avoid overreacting to short-lived noise and explain shared macro or sentiment context as a broad environment rather than a near-term trigger.
                     """.strip();
         };

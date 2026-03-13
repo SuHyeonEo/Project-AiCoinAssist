@@ -10,6 +10,7 @@ public record AnalysisReportPayload(
         List<AnalysisWindowHighlight> windowHighlights,
         List<AnalysisContinuityNote> continuityNotes,
         List<AnalysisWindowSummary> windowSummaries,
+        List<String> marketParticipationFacts,
         AnalysisDerivativeContext derivativeContext,
         AnalysisMacroContext macroContext,
         AnalysisSentimentContext sentimentContext,

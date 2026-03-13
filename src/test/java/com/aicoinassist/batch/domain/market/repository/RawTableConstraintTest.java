@@ -2,6 +2,7 @@ package com.aicoinassist.batch.domain.market.repository;
 
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketCandleRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketExternalContextWindowSummarySnapshotEntity;
@@ -9,6 +10,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity
 import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketOpenInterestRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketPremiumIndexRawEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketPriceRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelLabel;
 import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelSourceType;
@@ -37,6 +39,12 @@ class RawTableConstraintTest {
 
     @Autowired
     private MarketPremiumIndexRawRepository marketPremiumIndexRawRepository;
+
+    @Autowired
+    private MarketCandleRawRepository marketCandleRawRepository;
+
+    @Autowired
+    private MarketPriceRawRepository marketPriceRawRepository;
 
     @Autowired
     private MarketContextSnapshotRepository marketContextSnapshotRepository;
@@ -89,6 +97,28 @@ class RawTableConstraintTest {
 
         assertThatThrownBy(() -> marketPremiumIndexRawRepository.saveAndFlush(
                 premiumIndexRaw(sourceEventTime, "87510.12")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketCandleRawRejectsDuplicateSourceSymbolIntervalAndOpenTime() {
+        Instant openTime = Instant.parse("2026-03-10T00:00:00Z");
+
+        marketCandleRawRepository.saveAndFlush(candleRaw(openTime, "87500.12"));
+
+        assertThatThrownBy(() -> marketCandleRawRepository.saveAndFlush(
+                candleRaw(openTime, "87510.12")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketPriceRawRejectsDuplicateSourceSymbolAndSourceEventTime() {
+        Instant sourceEventTime = Instant.parse("2026-03-10T00:59:45Z");
+
+        marketPriceRawRepository.saveAndFlush(priceRaw(sourceEventTime, "87500.12"));
+
+        assertThatThrownBy(() -> marketPriceRawRepository.saveAndFlush(
+                priceRaw(sourceEventTime, "87510.12")
         )).isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -226,6 +256,40 @@ class RawTableConstraintTest {
                                           .build();
     }
 
+    private MarketCandleRawEntity candleRaw(Instant openTime, String closePrice) {
+        return MarketCandleRawEntity.builder()
+                                    .source("BINANCE")
+                                    .symbol("BTCUSDT")
+                                    .intervalValue("1h")
+                                    .openTime(openTime)
+                                    .closeTime(openTime.plusSeconds(3600))
+                                    .openPrice(new BigDecimal("87400.00"))
+                                    .highPrice(new BigDecimal("87600.00"))
+                                    .lowPrice(new BigDecimal("87300.00"))
+                                    .closePrice(new BigDecimal(closePrice))
+                                    .volume(new BigDecimal("123.45000000"))
+                                    .quoteAssetVolume(new BigDecimal("10800000.00000000"))
+                                    .numberOfTrades(12345L)
+                                    .takerBuyBaseAssetVolume(new BigDecimal("70.00000000"))
+                                    .takerBuyQuoteAssetVolume(new BigDecimal("6120000.00000000"))
+                                    .collectedTime(openTime.plusSeconds(3610))
+                                    .validationStatus(RawDataValidationStatus.VALID)
+                                    .rawPayload("[\"raw\"]")
+                                    .build();
+    }
+
+    private MarketPriceRawEntity priceRaw(Instant sourceEventTime, String price) {
+        return MarketPriceRawEntity.builder()
+                .source("BINANCE")
+                .symbol("BTCUSDT")
+                .sourceEventTime(sourceEventTime)
+                .collectedTime(sourceEventTime.plusSeconds(2))
+                .validationStatus(RawDataValidationStatus.VALID)
+                .price(new BigDecimal(price))
+                .rawPayload("{\"price\":\"" + price + "\"}")
+                .build();
+    }
+
     private MarketContextSnapshotEntity contextSnapshot(Instant snapshotTime, String openInterest) {
         return MarketContextSnapshotEntity.builder()
                                           .symbol("BTCUSDT")
@@ -262,10 +326,17 @@ class RawTableConstraintTest {
                                                 .distanceFromWindowHigh(new BigDecimal("0.03846154"))
                                                 .reboundFromWindowLow(new BigDecimal("0.05421687"))
                                                 .averageVolume(new BigDecimal("100.00000000"))
+                                                .averageQuoteAssetVolume(new BigDecimal("10800000.00000000"))
+                                                .averageTradeCount(new BigDecimal("12345.00000000"))
                                                 .averageAtr(new BigDecimal("1450.00000000"))
                                                 .currentVolume(new BigDecimal("122.00000000"))
+                                                .currentQuoteAssetVolume(new BigDecimal("11500000.00000000"))
+                                                .currentTradeCount(new BigDecimal("13500.00000000"))
                                                 .currentAtr(new BigDecimal("1500.00000000"))
                                                 .currentVolumeVsAverage(new BigDecimal("0.22000000"))
+                                                .currentQuoteAssetVolumeVsAverage(new BigDecimal("0.06481481"))
+                                                .currentTradeCountVsAverage(new BigDecimal("0.09315512"))
+                                                .currentTakerBuyQuoteRatio(new BigDecimal("0.56666667"))
                                                 .currentAtrVsAverage(new BigDecimal("0.03448276"))
                                                 .sourceDataVersion("basis-key;windowType=LAST_7D")
                                                 .build();

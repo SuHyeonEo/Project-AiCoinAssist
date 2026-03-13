@@ -42,6 +42,7 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                 shortContinuityNotes(),
                 richExternalContextComposite(),
                 levelContext(),
+                marketParticipationFacts(),
                 supportLevels(),
                 resistanceLevels(),
                 supportZones(),
@@ -62,6 +63,7 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
         assertThat(payload.summary().keyMessage().primaryMessage()).doesNotContainPattern("\\d+\\.\\d{3,}");
         assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("가까운 지지"));
         assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("가까운 저항"));
+        assertThat(payload.summary().keyMessage().signalDetails()).anySatisfy(detail -> assertThat(detail).contains("최근 6h 기준 가격은"));
         assertThat(payload.summary().keyMessage().continuityMessage()).contains("이전 단기 리포트");
         assertThat(payload.summary().signalHeadlines()).extracting(
                         AnalysisContextHeadlinePayload::category,
@@ -118,6 +120,7 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
         assertThat(payload.marketContext().windowContext().summary().rangePositionSummary()).contains("현재 위치는 레인지의");
         assertThat(payload.marketContext().windowContext().summary().volatilitySummary()).contains("ATR은 평균 대비");
         assertThat(payload.marketContext().windowContext().highlightDetails()).isNotEmpty();
+        assertThat(payload.marketContext().windowContext().highlightDetails()).anySatisfy(detail -> assertThat(detail).contains("최근 24h 기준 가격은"));
         assertThat(payload.marketContext().sentimentContextSummary().currentStateSummary()).contains("공포·탐욕 지수는 72");
         assertThat(payload.marketContext().sentimentContextSummary().comparisonSummary()).contains("탐욕");
         assertThat(payload.marketContext().sentimentContextSummary().windowSummary()).contains("최근 7일 기준");

@@ -26,6 +26,7 @@ class AnalysisReportAssemblerRiskScenarioTest extends AnalysisReportServiceFixtu
                 shortContinuityNotes(),
                 richExternalContextComposite(),
                 levelContext(),
+                marketParticipationFacts(),
                 supportLevels(),
                 resistanceLevels(),
                 supportZones(),
@@ -51,12 +52,12 @@ class AnalysisReportAssemblerRiskScenarioTest extends AnalysisReportServiceFixtu
             assertThat(scenario.invalidationSignals()).isNotEmpty();
         });
         assertThat(payload.marketContext().externalRegimeSignals()).isNotEmpty();
-        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("macro backdrop"));
-        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("sentiment remains"));
-        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("external regime"));
-        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("reversal risk"));
-        assertThat(payload.scenarios().get(0).pathSummary()).contains("Sentiment remains");
-        assertThat(payload.scenarios().get(0).pathSummary()).contains("external regime focus");
+        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("거시 배경"));
+        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("심리"));
+        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("외부 국면"));
+        assertThat(payload.scenarios().get(0).triggerConditions()).anySatisfy(condition -> assertThat(condition).contains("반전 리스크"));
+        assertThat(payload.scenarios().get(0).pathSummary()).contains("심리");
+        assertThat(payload.scenarios().get(0).pathSummary()).contains("외부");
         assertThat(payload.riskFactors()).anySatisfy(riskFactor -> {
             if (riskFactor.type() == AnalysisRiskFactorType.EXTERNAL_RISK_CONFLUENCE) {
                 assertThat(riskFactor.triggerFacts()).anySatisfy(trigger -> assertThat(trigger).contains("reversal risk score"));

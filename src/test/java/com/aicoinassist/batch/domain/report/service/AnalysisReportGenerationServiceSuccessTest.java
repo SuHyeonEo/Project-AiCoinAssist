@@ -125,6 +125,7 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         java.util.List<AnalysisPriceLevel> resistanceLevels = resistanceLevels();
         java.util.List<AnalysisPriceZone> supportZones = supportZones();
         java.util.List<AnalysisPriceZone> resistanceZones = resistanceZones();
+        java.util.List<String> marketParticipationFacts = marketParticipationFacts();
 
         when(marketIndicatorSnapshotPersistenceService.createAndSaveContext("BTCUSDT", com.aicoinassist.batch.domain.market.enumtype.CandleInterval.FOUR_HOUR))
                 .thenReturn(snapshotContext);
@@ -152,6 +153,8 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 .thenReturn(derivativeWindowSummaryEntities());
         when(marketWindowSummarySnapshotPersistenceService.createAndSaveForReportType(snapshot, AnalysisReportType.MID_TERM, snapshotContext.candles()))
                 .thenReturn(windowSummaryEntities(snapshot));
+        when(analysisMarketParticipationFactService.buildFacts(snapshot, AnalysisReportType.MID_TERM))
+                .thenReturn(marketParticipationFacts);
         when(marketCandidateLevelSnapshotPersistenceService.createAndSaveAll(snapshot, snapshotContext.candles())).thenReturn(candidateLevelEntities());
         when(marketCandidateLevelZoneSnapshotPersistenceService.createAndSaveAll(anyList(), eq(snapshotContext.candles())))
                 .thenReturn(candidateLevelZoneEntities());
@@ -241,6 +244,7 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 eq(midTermContinuityNotes()),
                 eq(externalContextComposite),
                 any(),
+                eq(marketParticipationFacts),
                 anyList(),
                 anyList(),
                 anyList(),

@@ -77,8 +77,13 @@ public class AnalysisReportMarketDataMapper {
                 entity.getDistanceFromWindowHigh(),
                 entity.getReboundFromWindowLow(),
                 entity.getAverageVolume(),
+                entity.getAverageQuoteAssetVolume(),
+                entity.getAverageTradeCount(),
                 entity.getAverageAtr(),
                 entity.getCurrentVolumeVsAverage(),
+                entity.getCurrentQuoteAssetVolumeVsAverage(),
+                entity.getCurrentTradeCountVsAverage(),
+                entity.getCurrentTakerBuyQuoteRatio(),
                 entity.getCurrentAtrVsAverage()
         );
     }

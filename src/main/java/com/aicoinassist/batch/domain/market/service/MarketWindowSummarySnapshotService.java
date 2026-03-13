@@ -2,8 +2,11 @@ package com.aicoinassist.batch.domain.market.service;
 
 import com.aicoinassist.batch.domain.market.dto.Candle;
 import com.aicoinassist.batch.domain.market.dto.MarketWindowSummarySnapshot;
+import com.aicoinassist.batch.domain.market.entity.MarketCandleRawEntity;
 import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
 import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
+import com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus;
+import com.aicoinassist.batch.domain.market.repository.MarketCandleRawRepository;
 import com.aicoinassist.batch.domain.market.repository.MarketIndicatorSnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,6 +17,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ public class MarketWindowSummarySnapshotService {
     private static final int RATIO_SCALE = 8;
 
     private final MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
+    private final MarketCandleRawRepository marketCandleRawRepository;
 
     public MarketWindowSummarySnapshot create(
             MarketIndicatorSnapshotEntity currentSnapshot,
@@ -37,7 +42,7 @@ public class MarketWindowSummarySnapshotService {
 
         if (windowCandles.isEmpty()) {
             throw new IllegalStateException(
-                    "No live candles found for window summary: symbol=%s interval=%s window=%s end=%s"
+                    "No raw candles found for window summary: symbol=%s interval=%s window=%s end=%s"
                             .formatted(
                                     currentSnapshot.getSymbol(),
                                     currentSnapshot.getIntervalValue(),
@@ -77,6 +82,27 @@ public class MarketWindowSummarySnapshotService {
             );
         }
 
+        List<MarketCandleRawEntity> rawCandles = marketCandleRawRepository
+                .findAllBySymbolAndIntervalValueAndOpenTimeGreaterThanEqualAndOpenTimeLessThanEqualAndValidationStatusOrderByOpenTimeAsc(
+                        currentSnapshot.getSymbol(),
+                        currentSnapshot.getIntervalValue(),
+                        windowStartTime,
+                        windowEndTime,
+                        RawDataValidationStatus.VALID
+                );
+
+        if (rawCandles.isEmpty()) {
+            throw new IllegalStateException(
+                    "No valid raw candles found for participation summary: symbol=%s interval=%s window=%s end=%s"
+                            .formatted(
+                                    currentSnapshot.getSymbol(),
+                                    currentSnapshot.getIntervalValue(),
+                                    windowType.name(),
+                                    currentSnapshot.getSnapshotTime()
+                            )
+            );
+        }
+
         BigDecimal windowHigh = candles.stream()
                                        .map(Candle::high)
                                        .max(Comparator.naturalOrder())
@@ -85,11 +111,28 @@ public class MarketWindowSummarySnapshotService {
                                       .map(Candle::low)
                                       .min(Comparator.naturalOrder())
                                       .orElseThrow();
+        MarketCandleRawEntity currentRawCandle = rawCandles.get(rawCandles.size() - 1);
         BigDecimal windowRange = windowHigh.subtract(windowLow);
         BigDecimal averageVolume = average(candles.stream().map(Candle::volume).toList());
+        BigDecimal averageQuoteAssetVolume = average(rawCandles.stream().map(MarketCandleRawEntity::getQuoteAssetVolume).toList());
+        BigDecimal averageTradeCount = average(
+                rawCandles.stream()
+                          .map(MarketCandleRawEntity::getNumberOfTrades)
+                          .filter(Objects::nonNull)
+                          .map(BigDecimal::valueOf)
+                          .toList()
+        );
         BigDecimal averageAtr = average(indicatorSnapshots.stream().map(MarketIndicatorSnapshotEntity::getAtr14).toList());
         BigDecimal currentVolume = candles.get(candles.size() - 1).volume();
+        BigDecimal currentQuoteAssetVolume = currentRawCandle.getQuoteAssetVolume();
+        BigDecimal currentTradeCount = currentRawCandle.getNumberOfTrades() == null
+                ? null
+                : BigDecimal.valueOf(currentRawCandle.getNumberOfTrades());
         BigDecimal currentAtr = currentSnapshot.getAtr14();
+        BigDecimal currentTakerBuyQuoteRatio = ratio(
+                currentRawCandle.getTakerBuyQuoteAssetVolume(),
+                currentRawCandle.getQuoteAssetVolume()
+        );
 
         return new MarketWindowSummarySnapshot(
                 currentSnapshot.getSymbol(),
@@ -106,19 +149,33 @@ public class MarketWindowSummarySnapshotService {
                 ratio(windowHigh.subtract(currentSnapshot.getCurrentPrice()), windowHigh),
                 ratio(currentSnapshot.getCurrentPrice().subtract(windowLow), windowLow),
                 averageVolume,
+                averageQuoteAssetVolume,
+                averageTradeCount,
                 averageAtr,
                 currentVolume,
+                currentQuoteAssetVolume,
+                currentTradeCount,
                 currentAtr,
                 deltaRatio(currentVolume, averageVolume),
+                deltaRatio(currentQuoteAssetVolume, averageQuoteAssetVolume),
+                deltaRatio(currentTradeCount, averageTradeCount),
+                currentTakerBuyQuoteRatio,
                 deltaRatio(currentAtr, averageAtr),
-                buildSourceDataVersion(currentSnapshot, windowType, windowStartTime, windowEndTime, candles.size())
+                buildSourceDataVersion(currentSnapshot, windowType, windowStartTime, windowEndTime, rawCandles.size())
         );
     }
 
     private BigDecimal average(List<BigDecimal> values) {
-        BigDecimal sum = values.stream()
+        List<BigDecimal> nonNullValues = values.stream()
+                                               .filter(Objects::nonNull)
+                                               .toList();
+        if (nonNullValues.isEmpty()) {
+            return null;
+        }
+
+        BigDecimal sum = nonNullValues.stream()
                                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return sum.divide(BigDecimal.valueOf(values.size()), RATIO_SCALE, RoundingMode.HALF_UP);
+        return sum.divide(BigDecimal.valueOf(nonNullValues.size()), RATIO_SCALE, RoundingMode.HALF_UP);
     }
 
     private BigDecimal ratio(BigDecimal numerator, BigDecimal denominator) {

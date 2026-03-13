@@ -19,6 +19,7 @@ public record AnalysisLlmNarrativeInputPayload(
         AnalysisLlmExecutiveSummary executiveSummary,
         List<AnalysisContextHeadlinePayload> signalHeadlines,
         List<String> primaryFacts,
+        List<String> marketParticipationFacts,
         List<String> marketStructureFacts,
         List<String> derivativeStructureFacts,
         List<String> macroStructureFacts,

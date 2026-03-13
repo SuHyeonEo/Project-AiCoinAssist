@@ -42,7 +42,10 @@ class AnalysisGptReportInputAssemblerTest extends AnalysisReportPayloadTestFixtu
         assertThat(input.signalHeadlines()).isNotEmpty();
         assertThat(input.primaryFacts()).isNotEmpty();
         assertThat(input.primaryFacts()).anySatisfy(fact -> assertThat(fact).contains("Compact summary"));
-        assertThat(input.primaryFacts()).anySatisfy(fact -> assertThat(fact).contains("Fear & Greed 72"));
+        assertThat(input.primaryFacts()).anySatisfy(fact -> assertThat(fact).contains("Volume vs average +22%"));
+        assertThat(input.marketParticipationFacts()).isNotEmpty();
+        assertThat(input.marketParticipationFacts()).anySatisfy(fact -> assertThat(fact).contains("최근 6h 기준 가격은"));
+        assertThat(input.marketParticipationFacts()).anySatisfy(fact -> assertThat(fact).contains("taker buy 비중은 56.67%"));
         assertThat(input.crossSignals()).extracting(signal -> signal.category())
                 .containsExactly(
                         AnalysisGptCrossSignalCategory.MACRO_DERIVATIVE,
