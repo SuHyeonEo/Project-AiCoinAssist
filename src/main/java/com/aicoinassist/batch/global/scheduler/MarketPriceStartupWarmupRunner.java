@@ -3,6 +3,7 @@ package com.aicoinassist.batch.global.scheduler;
 import com.aicoinassist.batch.domain.market.config.ExternalRawIngestionProperties;
 import com.aicoinassist.batch.domain.market.enumtype.AssetType;
 import com.aicoinassist.batch.domain.market.service.MarketPriceRawIngestionService;
+import com.aicoinassist.batch.domain.report.config.AnalysisReportBatchProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -22,6 +23,7 @@ public class MarketPriceStartupWarmupRunner implements ApplicationRunner {
 
     private final MarketPriceRawIngestionService marketPriceRawIngestionService;
     private final ExternalRawIngestionProperties externalRawIngestionProperties;
+    private final AnalysisReportBatchProperties analysisReportBatchProperties;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -29,7 +31,7 @@ public class MarketPriceStartupWarmupRunner implements ApplicationRunner {
             return;
         }
 
-        for (AssetType assetType : AssetType.values()) {
+        for (AssetType assetType : analysisReportBatchProperties.assetTypes()) {
             try {
                 marketPriceRawIngestionService.ingestLatestPrice(assetType.symbol());
                 log.info("market price startup warmup completed - symbol: {}", assetType.symbol());

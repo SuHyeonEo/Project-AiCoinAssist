@@ -1072,6 +1072,8 @@ class AnalysisTextLocalizationSupport {
                 .replace("which points to defensive positioning staying elevated", "이는 방어적 포지셔닝이 높은 상태로 유지되고 있음을 시사합니다")
                 .replace("which points to risk appetite staying elevated", "이는 위험선호가 높은 상태로 유지되고 있음을 시사합니다")
                 .replace("volume", "거래량")
+                .replace("taker-buy", "시장가 매수")
+                .replace("taker buy", "시장가 매수")
                 .replace("with volume", "거래량은")
                 .replace("is at", "현재")
                 .replace("pivot level", "피벗 레벨")

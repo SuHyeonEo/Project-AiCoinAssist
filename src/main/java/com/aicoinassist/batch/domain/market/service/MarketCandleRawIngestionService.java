@@ -12,6 +12,7 @@ import com.aicoinassist.batch.infrastructure.client.binance.validator.BinanceKli
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -148,8 +150,9 @@ public class MarketCandleRawIngestionService {
             int requestedLimit,
             Instant now
     ) {
+        Instant latestClosedOpenTime = interval.latestClosedOpenTime(now);
         Instant latestClosedCloseTime = interval.latestClosedCloseTime(now);
-        if (latestClosedCloseTime == null) {
+        if (latestClosedOpenTime == null || latestClosedCloseTime == null) {
             return;
         }
 
@@ -158,8 +161,12 @@ public class MarketCandleRawIngestionService {
                 symbol,
                 interval.value(),
                 limit,
-                latestClosedCloseTime.toEpochMilli()
-        );
+                latestClosedCloseTime.minusMillis(1).toEpochMilli()
+        ).stream()
+         .filter(response -> response != null
+                 && response.openTime() != null
+                 && !Instant.ofEpochMilli(response.openTime()).isAfter(latestClosedOpenTime))
+         .collect(Collectors.toList());
         RawDataValidationResult sequenceValidation = binanceKlineResponseValidator.validateSequence(responses);
         if (!sequenceValidation.isValid()) {
             throw new IllegalStateException("Binance kline sequence is invalid: " + sequenceValidation.details());
@@ -203,28 +210,27 @@ public class MarketCandleRawIngestionService {
         String rawPayload = serializeRawPayload(response.rawValues());
 
         if (existingEntity == null) {
-            marketCandleRawRepository.save(
-                    MarketCandleRawEntity.builder()
-                            .source(BINANCE_SOURCE)
-                            .symbol(symbol)
-                            .intervalValue(interval.value())
-                            .openTime(openTime)
-                            .closeTime(closeTime)
-                            .openPrice(openPrice)
-                            .highPrice(highPrice)
-                            .lowPrice(lowPrice)
-                            .closePrice(closePrice)
-                            .volume(volume)
-                            .quoteAssetVolume(quoteAssetVolume)
-                            .numberOfTrades(response.numberOfTrades())
-                            .takerBuyBaseAssetVolume(takerBuyBaseAssetVolume)
-                            .takerBuyQuoteAssetVolume(takerBuyQuoteAssetVolume)
-                            .collectedTime(collectedTime)
-                            .validationStatus(validation.status())
-                            .validationDetails(validation.details())
-                            .rawPayload(rawPayload)
-                            .build()
-            );
+            MarketCandleRawEntity newEntity = MarketCandleRawEntity.builder()
+                    .source(BINANCE_SOURCE)
+                    .symbol(symbol)
+                    .intervalValue(interval.value())
+                    .openTime(openTime)
+                    .closeTime(closeTime)
+                    .openPrice(openPrice)
+                    .highPrice(highPrice)
+                    .lowPrice(lowPrice)
+                    .closePrice(closePrice)
+                    .volume(volume)
+                    .quoteAssetVolume(quoteAssetVolume)
+                    .numberOfTrades(response.numberOfTrades())
+                    .takerBuyBaseAssetVolume(takerBuyBaseAssetVolume)
+                    .takerBuyQuoteAssetVolume(takerBuyQuoteAssetVolume)
+                    .collectedTime(collectedTime)
+                    .validationStatus(validation.status())
+                    .validationDetails(validation.details())
+                    .rawPayload(rawPayload)
+                    .build();
+            saveOrLoadExisting(symbol, interval, openTime, newEntity);
             return;
         }
 
@@ -244,6 +250,26 @@ public class MarketCandleRawIngestionService {
                 validation.details(),
                 rawPayload
         );
+    }
+
+    private MarketCandleRawEntity saveOrLoadExisting(
+            String symbol,
+            CandleInterval interval,
+            Instant openTime,
+            MarketCandleRawEntity newEntity
+    ) {
+        try {
+            return marketCandleRawRepository.saveAndFlush(newEntity);
+        } catch (DataIntegrityViolationException exception) {
+            return marketCandleRawRepository
+                    .findTopBySourceAndSymbolAndIntervalValueAndOpenTimeOrderByCollectedTimeDescIdDesc(
+                            BINANCE_SOURCE,
+                            symbol,
+                            interval.value(),
+                            openTime
+                    )
+                    .orElseThrow(() -> exception);
+        }
     }
 
     private int tailGap(CandleInterval interval, Instant latestStoredOpenTime, Instant expectedLatestOpenTime) {
@@ -274,4 +300,3 @@ public class MarketCandleRawIngestionService {
         }
     }
 }
-

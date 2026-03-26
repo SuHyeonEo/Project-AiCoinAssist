@@ -18,7 +18,12 @@ public class AnalysisReportBatchAdminApiAuthInterceptor implements HandlerInterc
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws IOException {
         if (!properties.enabled()) {
-            return true;
+            response.setStatus(HttpStatus.NOT_FOUND.value());
+            response.setContentType("application/problem+json");
+            response.getWriter().write("""
+                    {"type":"about:blank","title":"Not Found","status":404,"detail":"Admin API is disabled."}
+                    """.trim());
+            return false;
         }
 
         String providedToken = request.getHeader(properties.headerName());

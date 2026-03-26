@@ -31,6 +31,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisContinuityNote;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMarketParticipationSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainWindowSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
@@ -194,7 +195,9 @@ public class AnalysisReportGenerationService {
                 .stream()
                 .map(analysisReportMarketDataMapper::toWindowSummary)
                 .toList();
-        List<String> marketParticipationFacts = analysisMarketParticipationFactService.buildFacts(snapshot, reportType);
+        List<AnalysisMarketParticipationSummary> marketParticipationSummaries =
+                analysisMarketParticipationFactService.buildSummaries(snapshot, reportType);
+        List<String> marketParticipationFacts = analysisMarketParticipationFactService.buildFacts(marketParticipationSummaries);
         List<MarketCandidateLevelSnapshotEntity> candidateLevelSnapshots =
                 marketCandidateLevelSnapshotPersistenceService.createAndSaveAll(snapshot, candles);
         List<MarketCandidateLevelZoneSnapshotEntity> candidateLevelZoneSnapshots =
@@ -283,6 +286,7 @@ public class AnalysisReportGenerationService {
                 externalContextComposite,
                 levelContext,
                 marketParticipationFacts,
+                marketParticipationSummaries,
                 supportLevels,
                 resistanceLevels,
                 supportZones,

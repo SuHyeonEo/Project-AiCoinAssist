@@ -27,6 +27,7 @@ class AnalysisReportAssemblerRiskScenarioTest extends AnalysisReportServiceFixtu
                 richExternalContextComposite(),
                 levelContext(),
                 marketParticipationFacts(),
+                marketParticipationSummaries(),
                 supportLevels(),
                 resistanceLevels(),
                 supportZones(),

@@ -5,6 +5,7 @@ import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
 import com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus;
 import com.aicoinassist.batch.domain.market.repository.MarketCandleRawRepository;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMarketParticipationSummary;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,28 @@ public class AnalysisMarketParticipationFactService {
     private final MarketCandleRawRepository marketCandleRawRepository;
 
     public List<String> buildFacts(MarketIndicatorSnapshotEntity snapshot, AnalysisReportType reportType) {
+        return buildFacts(buildSummaries(snapshot, reportType));
+    }
+
+    public List<String> buildFacts(List<AnalysisMarketParticipationSummary> summaries) {
+        if (summaries == null || summaries.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> facts = new ArrayList<>();
+        for (AnalysisMarketParticipationSummary summary : summaries) {
+            String fact = buildFact(summary);
+            if (fact != null && !fact.isBlank()) {
+                facts.add(fact);
+            }
+        }
+        return facts;
+    }
+
+    public List<AnalysisMarketParticipationSummary> buildSummaries(
+            MarketIndicatorSnapshotEntity snapshot,
+            AnalysisReportType reportType
+    ) {
         if (snapshot == null || reportType == null || snapshot.getLatestCandleOpenTime() == null) {
             return List.of();
         }
@@ -59,17 +82,17 @@ public class AnalysisMarketParticipationFactService {
         Map<Instant, MarketCandleRawEntity> candleByOpenTime = candles.stream()
                 .collect(Collectors.toMap(MarketCandleRawEntity::getOpenTime, Function.identity(), (left, right) -> right));
 
-        List<String> facts = new ArrayList<>();
+        List<AnalysisMarketParticipationSummary> summaries = new ArrayList<>();
         for (ParticipationWindowSpec spec : specs) {
-            String fact = buildWindowFact(spec, interval.duration(), latestOpenTime, candleByOpenTime);
-            if (fact != null && !fact.isBlank()) {
-                facts.add(fact);
+            AnalysisMarketParticipationSummary summary = buildWindowSummary(spec, interval.duration(), latestOpenTime, candleByOpenTime);
+            if (summary != null) {
+                summaries.add(summary);
             }
         }
-        return facts;
+        return summaries;
     }
 
-    private String buildWindowFact(
+    private AnalysisMarketParticipationSummary buildWindowSummary(
             ParticipationWindowSpec spec,
             Duration candleDuration,
             Instant latestOpenTime,
@@ -106,27 +129,44 @@ public class AnalysisMarketParticipationFactService {
                 currentWindow.get(0).getOpenPrice(),
                 currentWindow.get(currentWindow.size() - 1).getClosePrice()
         );
+        return new AnalysisMarketParticipationSummary(
+                spec.label(),
+                currentStartOpenTime,
+                currentWindow.get(currentWindow.size() - 1).getCloseTime(),
+                previousStartOpenTime,
+                previousWindow.get(previousWindow.size() - 1).getCloseTime(),
+                spec.candleCount(),
+                priceChangeRate,
+                deltaRatio(currentQuoteVolume, previousQuoteVolume),
+                deltaRatio(currentTradeCount, previousTradeCount),
+                currentTakerBuyRatio,
+                takerBuyRatioDelta
+        );
+    }
 
+    private String buildFact(AnalysisMarketParticipationSummary summary) {
         List<String> components = gather(
-                priceChangeRate == null
+                summary.priceChangeRate() == null
                         ? null
-                        : "가격은 " + signedPercent(priceChangeRate),
-                deltaRatio(currentQuoteVolume, previousQuoteVolume) == null
+                        : "가격은 " + signedPercent(summary.priceChangeRate()),
+                summary.quoteVolumeChangeRate() == null
                         ? null
-                        : "거래대금은 직전 동일 구간 대비 " + signedPercent(deltaRatio(currentQuoteVolume, previousQuoteVolume)),
-                deltaRatio(currentTradeCount, previousTradeCount) == null
+                        : "거래대금은 직전 동일 구간 대비 " + signedPercent(summary.quoteVolumeChangeRate()),
+                summary.tradeCountChangeRate() == null
                         ? null
-                        : "체결 수는 직전 동일 구간 대비 " + signedPercent(deltaRatio(currentTradeCount, previousTradeCount)),
-                currentTakerBuyRatio == null
+                        : "체결 수는 직전 동일 구간 대비 " + signedPercent(summary.tradeCountChangeRate()),
+                summary.takerBuyQuoteRatio() == null
                         ? null
-                        : "taker buy 비중은 " + percent(currentTakerBuyRatio)
-                        + (takerBuyRatioDelta == null ? "" : " (직전 대비 " + signedPercentagePoint(takerBuyRatioDelta) + ")")
+                        : "시장가 매수 비중은 " + percent(summary.takerBuyQuoteRatio())
+                        + (summary.takerBuyQuoteRatioDelta() == null
+                        ? ""
+                        : " (직전 대비 " + signedPercentagePoint(summary.takerBuyQuoteRatioDelta()) + ")")
         );
         if (components.isEmpty()) {
             return null;
         }
 
-        return spec.label() + " 기준 " + String.join(", ", components) + "입니다.";
+        return summary.windowLabel() + " 기준 " + String.join(", ", components) + "입니다.";
     }
 
     private List<MarketCandleRawEntity> collectWindow(

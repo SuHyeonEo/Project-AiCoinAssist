@@ -153,7 +153,7 @@ class AnalysisMarketContextSectionAssembler {
                                     + "입니다.",
                             primaryWindow.currentTakerBuyQuoteRatio() == null
                                     ? null
-                                    : "taker buy 비중은 "
+                                    : "시장가 매수 비중은 "
                                     + formattingSupport.percentage(primaryWindow.currentTakerBuyQuoteRatio())
                                     + "입니다.",
                             "ATR은 평균 대비 "

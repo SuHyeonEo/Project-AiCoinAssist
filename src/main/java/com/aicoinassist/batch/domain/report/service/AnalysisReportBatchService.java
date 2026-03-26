@@ -59,7 +59,7 @@ public class AnalysisReportBatchService {
             try {
                 MarketIndicatorSnapshotContext snapshotContext = snapshotContexts.get(intervalFor(reportType));
                 if (snapshotContext == null) {
-                    throw new IllegalStateException("No live candle snapshot context available for reportType=" + reportType);
+                    throw new IllegalStateException("No raw snapshot context available for reportType=" + reportType);
                 }
                 analysisReportGenerationService.generateAndSave(
                         snapshotContext,

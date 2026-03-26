@@ -5,6 +5,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchRunResult;
 import com.aicoinassist.batch.domain.report.dto.AnalysisReportBatchRunSummaryView;
 import com.aicoinassist.batch.domain.report.service.AnalysisReportBatchRerunService;
 import com.aicoinassist.batch.domain.report.service.AnalysisReportBatchRunReadService;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Hidden
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/internal/admin/report-batch-runs")

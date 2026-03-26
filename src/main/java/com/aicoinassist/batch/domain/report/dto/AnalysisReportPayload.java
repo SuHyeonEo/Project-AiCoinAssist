@@ -11,6 +11,7 @@ public record AnalysisReportPayload(
         List<AnalysisContinuityNote> continuityNotes,
         List<AnalysisWindowSummary> windowSummaries,
         List<String> marketParticipationFacts,
+        List<AnalysisMarketParticipationSummary> marketParticipationSummaries,
         AnalysisDerivativeContext derivativeContext,
         AnalysisMacroContext macroContext,
         AnalysisSentimentContext sentimentContext,

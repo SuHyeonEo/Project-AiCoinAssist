@@ -29,24 +29,24 @@ public class AnalysisReportBatchScheduler {
     private final AnalysisReportBatchProperties analysisReportBatchProperties;
 
     @Scheduled(
-            fixedDelayString = "${batch.analysis-report.short-term-fixed-delay-ms:21600000}",
-            initialDelayString = "${batch.analysis-report.short-term-initial-delay-ms:60000}"
+            cron = "${batch.analysis-report.short-term-cron:0 0 0/6 * * *}",
+            zone = "${batch.analysis-report.zone:Asia/Seoul}"
     )
     public void runShortTerm() {
         runForReportType(AnalysisReportType.SHORT_TERM);
     }
 
     @Scheduled(
-            fixedDelayString = "${batch.analysis-report.mid-term-fixed-delay-ms:86400000}",
-            initialDelayString = "${batch.analysis-report.mid-term-initial-delay-ms:120000}"
+            cron = "${batch.analysis-report.mid-term-cron:0 0 0 * * *}",
+            zone = "${batch.analysis-report.zone:Asia/Seoul}"
     )
     public void runMidTerm() {
         runForReportType(AnalysisReportType.MID_TERM);
     }
 
     @Scheduled(
-            fixedDelayString = "${batch.analysis-report.long-term-fixed-delay-ms:604800000}",
-            initialDelayString = "${batch.analysis-report.long-term-initial-delay-ms:180000}"
+            cron = "${batch.analysis-report.long-term-cron:0 0 0 * * MON}",
+            zone = "${batch.analysis-report.zone:Asia/Seoul}"
     )
     public void runLongTerm() {
         runForReportType(AnalysisReportType.LONG_TERM);

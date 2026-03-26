@@ -356,7 +356,7 @@ public class AnalysisLlmNarrativeInputAssembler {
                         : "체결 수는 평균 대비 " + safePercent(window.currentTradeCountVsAverage()),
                 window.currentTakerBuyQuoteRatio() == null
                         ? null
-                        : "taker buy 비중은 " + safePercent(window.currentTakerBuyQuoteRatio())
+                        : "시장가 매수 비중은 " + safePercent(window.currentTakerBuyQuoteRatio())
         );
         if (participationFacts.isEmpty()) {
             return null;

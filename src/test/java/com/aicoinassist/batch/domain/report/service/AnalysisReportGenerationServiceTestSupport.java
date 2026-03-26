@@ -55,6 +55,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMarketParticipationSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMomentumStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMovingAveragePositionPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainComparisonFact;
@@ -297,6 +298,7 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
         List<AnalysisPriceLevel> resistanceLevels = resistanceLevels();
         List<AnalysisPriceZone> supportZones = supportZones();
         List<AnalysisPriceZone> resistanceZones = resistanceZones();
+        List<AnalysisMarketParticipationSummary> marketParticipationSummaries = marketParticipationSummaries();
 
         return new AnalysisReportPayload(
                 new AnalysisSummaryPayload(
@@ -496,9 +498,10 @@ abstract class AnalysisReportGenerationServiceTestSupport extends AnalysisReport
                         new BigDecimal("0.03448276")
                 )),
                 List.of(
-                        "최근 7d 기준 가격은 +2.4%, 거래대금은 직전 동일 구간 대비 +12.5%, 체결 수는 직전 동일 구간 대비 +8.1%, taker buy 비중은 56.67% (직전 대비 +2.1%p)입니다.",
-                        "최근 30d 기준 가격은 +9.8%, 거래대금은 직전 동일 구간 대비 +18.4%, 체결 수는 직전 동일 구간 대비 +11.3%, taker buy 비중은 54.2% (직전 대비 +1.4%p)입니다."
+                        "최근 7d 기준 가격은 +2.4%, 거래대금은 직전 동일 구간 대비 +12.5%, 체결 수는 직전 동일 구간 대비 +8.1%, 시장가 매수 비중은 56.67% (직전 대비 +2.1%p)입니다.",
+                        "최근 30d 기준 가격은 +9.8%, 거래대금은 직전 동일 구간 대비 +18.4%, 체결 수는 직전 동일 구간 대비 +11.3%, 시장가 매수 비중은 54.2% (직전 대비 +1.4%p)입니다."
                 ),
+                marketParticipationSummaries,
                 new AnalysisDerivativeContext(
                         generationDerivativeContextInput().snapshotTime(),
                         generationDerivativeContextInput().openInterestSourceEventTime(),

@@ -3,7 +3,6 @@ package com.aicoinassist.batch.domain.report.config;
 import com.aicoinassist.batch.domain.market.enumtype.AssetType;
 import com.aicoinassist.batch.domain.market.enumtype.CandleInterval;
 import com.aicoinassist.batch.domain.report.enumtype.AnalysisReportType;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -19,14 +18,12 @@ public record AnalysisReportBatchProperties(
         @NotEmpty List<AssetType> assetTypes,
         @NotEmpty List<AnalysisReportType> reportTypes,
         boolean shortTermEnabled,
-        @Min(1000) long shortTermFixedDelayMs,
-        @Min(0) long shortTermInitialDelayMs,
+        @NotBlank String shortTermCron,
         boolean midTermEnabled,
-        @Min(1000) long midTermFixedDelayMs,
-        @Min(0) long midTermInitialDelayMs,
+        @NotBlank String midTermCron,
         boolean longTermEnabled,
-        @Min(1000) long longTermFixedDelayMs,
-        @Min(0) long longTermInitialDelayMs
+        @NotBlank String longTermCron,
+        @NotBlank String zone
 ) {
 
     public List<CandleInterval> snapshotIntervals(List<AnalysisReportType> targetReportTypes) {
@@ -43,9 +40,9 @@ public record AnalysisReportBatchProperties(
 
     public ScheduleProperties scheduleFor(AnalysisReportType reportType) {
         return switch (reportType) {
-            case SHORT_TERM -> new ScheduleProperties(shortTermEnabled, shortTermFixedDelayMs, shortTermInitialDelayMs);
-            case MID_TERM -> new ScheduleProperties(midTermEnabled, midTermFixedDelayMs, midTermInitialDelayMs);
-            case LONG_TERM -> new ScheduleProperties(longTermEnabled, longTermFixedDelayMs, longTermInitialDelayMs);
+            case SHORT_TERM -> new ScheduleProperties(shortTermEnabled, shortTermCron, zone);
+            case MID_TERM -> new ScheduleProperties(midTermEnabled, midTermCron, zone);
+            case LONG_TERM -> new ScheduleProperties(longTermEnabled, longTermCron, zone);
         };
     }
 
@@ -59,8 +56,8 @@ public record AnalysisReportBatchProperties(
 
     public record ScheduleProperties(
             boolean enabled,
-            @Min(1000) long fixedDelayMs,
-            @Min(0) long initialDelayMs
+            @NotBlank String cron,
+            @NotBlank String zone
     ) {
     }
 }

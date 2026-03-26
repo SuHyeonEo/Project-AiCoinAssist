@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -59,7 +60,7 @@ class MarketPriceRawIngestionServiceTest {
                 "BTCUSDT",
                 Instant.parse("2026-03-13T10:14:55Z")
         )).thenReturn(Optional.empty());
-        when(marketPriceRawRepository.save(any(MarketPriceRawEntity.class)))
+        when(marketPriceRawRepository.saveAndFlush(any(MarketPriceRawEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         MarketPriceRawEntity saved = service.ingestLatestPrice("BTCUSDT");
@@ -69,5 +70,53 @@ class MarketPriceRawIngestionServiceTest {
         assertThat(saved.getCollectedTime()).isEqualTo(Instant.parse("2026-03-13T10:15:00Z"));
         assertThat(saved.getPrice()).isEqualByComparingTo(new BigDecimal("87499.12"));
         assertThat(saved.getRawPayload()).contains("87499.12");
+    }
+
+    @Test
+    void ingestLatestPriceReturnsExistingEntityWhenDuplicateInsertOccurs() {
+        Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:16:00Z"), ZoneOffset.UTC);
+        MarketPriceRawIngestionService service = new MarketPriceRawIngestionService(
+                binanceApiClient,
+                new BinanceAggregateTradeResponseValidator(),
+                marketPriceRawRepository,
+                objectMapper,
+                clock
+        );
+
+        Instant sourceEventTime = Instant.parse("2026-03-13T10:15:59.989Z");
+        BinanceAggregateTradeResponse response = new BinanceAggregateTradeResponse(
+                2L,
+                "87510.00",
+                "0.31",
+                1L,
+                1L,
+                sourceEventTime.toEpochMilli(),
+                false,
+                true
+        );
+        MarketPriceRawEntity existingEntity = MarketPriceRawEntity.builder()
+                .source("BINANCE")
+                .symbol("BTCUSDT")
+                .sourceEventTime(sourceEventTime)
+                .collectedTime(Instant.parse("2026-03-13T10:15:59.995Z"))
+                .validationStatus(com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus.VALID)
+                .validationDetails(null)
+                .price(new BigDecimal("87510.00"))
+                .rawPayload("{\"p\":\"87510.00\"}")
+                .build();
+
+        when(binanceApiClient.getLatestAggregateTrade("BTCUSDT")).thenReturn(response);
+        when(marketPriceRawRepository.findTopBySourceAndSymbolAndSourceEventTimeOrderByCollectedTimeDescIdDesc(
+                "BINANCE",
+                "BTCUSDT",
+                sourceEventTime
+        )).thenReturn(Optional.empty(), Optional.of(existingEntity));
+        when(marketPriceRawRepository.saveAndFlush(any(MarketPriceRawEntity.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate"));
+
+        MarketPriceRawEntity loaded = service.ingestLatestPrice("BTCUSDT");
+
+        assertThat(loaded).isSameAs(existingEntity);
+        assertThat(loaded.getSourceEventTime()).isEqualTo(sourceEventTime);
     }
 }

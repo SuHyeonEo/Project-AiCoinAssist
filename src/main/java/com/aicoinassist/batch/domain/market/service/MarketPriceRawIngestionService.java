@@ -10,6 +10,7 @@ import com.aicoinassist.batch.infrastructure.client.binance.validator.BinanceAgg
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,18 +51,17 @@ public class MarketPriceRawIngestionService {
                 )
                 .orElse(null);
         if (existingEntity == null) {
-            return marketPriceRawRepository.save(
-                    MarketPriceRawEntity.builder()
-                            .source(BINANCE_SOURCE)
-                            .symbol(symbol)
-                            .sourceEventTime(sourceEventTime)
-                            .collectedTime(collectedTime)
-                            .validationStatus(validation.status())
-                            .validationDetails(validation.details())
-                            .price(price)
-                            .rawPayload(rawPayload)
-                            .build()
-            );
+            MarketPriceRawEntity newEntity = MarketPriceRawEntity.builder()
+                    .source(BINANCE_SOURCE)
+                    .symbol(symbol)
+                    .sourceEventTime(sourceEventTime)
+                    .collectedTime(collectedTime)
+                    .validationStatus(validation.status())
+                    .validationDetails(validation.details())
+                    .price(price)
+                    .rawPayload(rawPayload)
+                    .build();
+            return saveOrLoadExisting(symbol, sourceEventTime, newEntity);
         }
 
         existingEntity.refreshFromIngestion(
@@ -72,6 +72,24 @@ public class MarketPriceRawIngestionService {
                 rawPayload
         );
         return existingEntity;
+    }
+
+    private MarketPriceRawEntity saveOrLoadExisting(
+            String symbol,
+            Instant sourceEventTime,
+            MarketPriceRawEntity newEntity
+    ) {
+        try {
+            return marketPriceRawRepository.saveAndFlush(newEntity);
+        } catch (DataIntegrityViolationException exception) {
+            return marketPriceRawRepository
+                    .findTopBySourceAndSymbolAndSourceEventTimeOrderByCollectedTimeDescIdDesc(
+                            BINANCE_SOURCE,
+                            symbol,
+                            sourceEventTime
+                    )
+                    .orElseThrow(() -> exception);
+        }
     }
 
     private BigDecimal parseDecimal(String value) {
