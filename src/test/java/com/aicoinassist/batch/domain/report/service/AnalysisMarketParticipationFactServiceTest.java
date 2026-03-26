@@ -47,9 +47,32 @@ class AnalysisMarketParticipationFactServiceTest {
         List<String> facts = service.buildFacts(snapshot, AnalysisReportType.SHORT_TERM);
 
         assertThat(facts).hasSize(3);
-        assertThat(facts).anySatisfy(fact -> assertThat(fact).contains("최근 3h 기준", "거래대금은 직전 동일 구간 대비", "체결 수는 직전 동일 구간 대비", "taker buy 비중은"));
+        assertThat(facts).anySatisfy(fact -> assertThat(fact).contains("최근 3h 기준", "거래대금은 직전 동일 구간 대비", "체결 수는 직전 동일 구간 대비", "시장가 매수 비중은"));
         assertThat(facts).anySatisfy(fact -> assertThat(fact).contains("최근 6h 기준"));
         assertThat(facts).anySatisfy(fact -> assertThat(fact).contains("최근 24h 기준"));
+    }
+
+    @Test
+    void buildSummariesBuildsStructuredParticipationSummariesForApiUse() {
+        MarketIndicatorSnapshotEntity snapshot = snapshot("BTCUSDT", "1h", Instant.parse("2026-03-09T23:00:00Z"));
+        when(marketCandleRawRepository
+                .findAllBySymbolAndIntervalValueAndOpenTimeGreaterThanEqualAndOpenTimeLessThanEqualAndValidationStatusOrderByOpenTimeAsc(
+                        eq("BTCUSDT"),
+                        eq("1h"),
+                        any(),
+                        eq(snapshot.getLatestCandleOpenTime()),
+                        eq(RawDataValidationStatus.VALID)
+                ))
+                .thenReturn(candles(snapshot.getLatestCandleOpenTime(), CandleInterval.ONE_HOUR, 48));
+
+        var summaries = service.buildSummaries(snapshot, AnalysisReportType.SHORT_TERM);
+
+        assertThat(summaries).hasSize(3);
+        assertThat(summaries.get(0).windowLabel()).isEqualTo("최근 3h");
+        assertThat(summaries.get(0).priceChangeRate()).isNotNull();
+        assertThat(summaries.get(0).quoteVolumeChangeRate()).isNotNull();
+        assertThat(summaries.get(0).tradeCountChangeRate()).isNotNull();
+        assertThat(summaries.get(0).takerBuyQuoteRatio()).isNotNull();
     }
 
     @Test

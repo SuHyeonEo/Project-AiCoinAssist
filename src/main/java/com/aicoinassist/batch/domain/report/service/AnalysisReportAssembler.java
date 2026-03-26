@@ -9,6 +9,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisExternalContextComposite
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMarketContextPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMarketParticipationSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
@@ -91,6 +92,7 @@ public class AnalysisReportAssembler {
             AnalysisExternalContextCompositePayload externalContextComposite,
             AnalysisLevelContextPayload levelContext,
             List<String> marketParticipationFacts,
+            List<AnalysisMarketParticipationSummary> marketParticipationSummaries,
             List<AnalysisPriceLevel> supportLevels,
             List<AnalysisPriceLevel> resistanceLevels,
             List<AnalysisPriceZone> supportZones,
@@ -193,6 +195,7 @@ public class AnalysisReportAssembler {
                 localizedContinuityNotes,
                 windowSummaries,
                 marketParticipationFacts,
+                marketParticipationSummaries,
                 enrichedDerivativeContext,
                 enrichedMacroContext,
                 enrichedSentimentContext,

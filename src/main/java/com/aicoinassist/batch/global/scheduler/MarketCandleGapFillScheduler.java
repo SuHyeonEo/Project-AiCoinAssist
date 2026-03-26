@@ -30,7 +30,7 @@ public class MarketCandleGapFillScheduler {
 
     @Scheduled(
             fixedDelayString = "${batch.scheduler.external-raw-ingestion.market-candle-fixed-delay-ms:300000}",
-            initialDelayString = "${batch.scheduler.external-raw-ingestion.market-candle-initial-delay-ms:0}"
+            initialDelayString = "${batch.scheduler.external-raw-ingestion.market-candle-initial-delay-ms:60000}"
     )
     public void gapFillMarketCandles() {
         if (!externalRawIngestionProperties.marketCandleEnabled()) {

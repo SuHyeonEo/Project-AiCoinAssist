@@ -1,0 +1,11 @@
+.git
+.gradle
+.idea
+build
+out
+node_modules
+*.log
+tmp_*
+btc_short_*.log
+.codex-local
+.codex-local-*

@@ -14,6 +14,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimePersistenc
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeStatePayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisExternalRegimeTransition;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMarketParticipationSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisOnchainContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceLevel;
 import com.aicoinassist.batch.domain.report.dto.AnalysisPriceZone;
@@ -126,6 +127,7 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
         java.util.List<AnalysisPriceZone> supportZones = supportZones();
         java.util.List<AnalysisPriceZone> resistanceZones = resistanceZones();
         java.util.List<String> marketParticipationFacts = marketParticipationFacts();
+        java.util.List<AnalysisMarketParticipationSummary> marketParticipationSummaries = marketParticipationSummaries();
 
         when(marketIndicatorSnapshotPersistenceService.createAndSaveContext("BTCUSDT", com.aicoinassist.batch.domain.market.enumtype.CandleInterval.FOUR_HOUR))
                 .thenReturn(snapshotContext);
@@ -153,7 +155,9 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 .thenReturn(derivativeWindowSummaryEntities());
         when(marketWindowSummarySnapshotPersistenceService.createAndSaveForReportType(snapshot, AnalysisReportType.MID_TERM, snapshotContext.candles()))
                 .thenReturn(windowSummaryEntities(snapshot));
-        when(analysisMarketParticipationFactService.buildFacts(snapshot, AnalysisReportType.MID_TERM))
+        when(analysisMarketParticipationFactService.buildSummaries(snapshot, AnalysisReportType.MID_TERM))
+                .thenReturn(marketParticipationSummaries);
+        when(analysisMarketParticipationFactService.buildFacts(marketParticipationSummaries))
                 .thenReturn(marketParticipationFacts);
         when(marketCandidateLevelSnapshotPersistenceService.createAndSaveAll(snapshot, snapshotContext.candles())).thenReturn(candidateLevelEntities());
         when(marketCandidateLevelZoneSnapshotPersistenceService.createAndSaveAll(anyList(), eq(snapshotContext.candles())))
@@ -245,6 +249,7 @@ class AnalysisReportGenerationServiceSuccessTest extends AnalysisReportGeneratio
                 eq(externalContextComposite),
                 any(),
                 eq(marketParticipationFacts),
+                eq(marketParticipationSummaries),
                 anyList(),
                 anyList(),
                 anyList(),

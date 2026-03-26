@@ -214,7 +214,7 @@ class AnalysisComparisonWindowSupport {
             facts.add("체결 수는 평균 대비 " + formattingSupport.signedRatio(summary.currentTradeCountVsAverage()) + "입니다");
         }
         if (summary.currentTakerBuyQuoteRatio() != null) {
-            facts.add("taker buy 비중은 " + formattingSupport.percentage(summary.currentTakerBuyQuoteRatio()) + "입니다");
+            facts.add("시장가 매수 비중은 " + formattingSupport.percentage(summary.currentTakerBuyQuoteRatio()) + "입니다");
         }
         facts.add("ATR은 평균 대비 " + formattingSupport.signedRatio(summary.currentAtrVsAverage()) + "입니다");
         return String.join(", ", facts);

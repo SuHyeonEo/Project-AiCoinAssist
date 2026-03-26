@@ -1,9 +1,9 @@
 server:
-  port: 8082
+  port: ${SERVER_PORT:8082}
 
 spring:
   application:
-    name: batch
+    name: ${SPRING_APPLICATION_NAME:ai-coin-assist-server}
 
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:coin_analysis}?connectionTimeZone=${DB_CONNECTION_TIMEZONE:UTC}&forceConnectionTimeZoneToSession=true&characterEncoding=${DB_CHARACTER_ENCODING:UTF-8}
@@ -25,6 +25,24 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  api-docs:
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:true}
+    path: /openapi/v3/api-docs
+  swagger-ui:
+    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:true}
+    path: /docs
 
 logging:
   level:
@@ -66,21 +84,17 @@ batch:
     engine-version: report-assembler-v1
     asset-types:
       - BTC
-      - ETH
-      - XRP
     report-types:
       - SHORT_TERM
       - MID_TERM
       - LONG_TERM
     short-term-enabled: true
-    short-term-fixed-delay-ms: 21600000
-    short-term-initial-delay-ms: 60000
+    short-term-cron: "0 0 0/6 * * *"
     mid-term-enabled: true
-    mid-term-fixed-delay-ms: 86400000
-    mid-term-initial-delay-ms: 120000
+    mid-term-cron: "0 0 0 * * *"
     long-term-enabled: true
-    long-term-fixed-delay-ms: 604800000
-    long-term-initial-delay-ms: 180000
+    long-term-cron: "0 0 0 * * MON"
+    zone: Asia/Seoul
     manual-rerun:
       enabled: false
       source-run-id:
@@ -90,22 +104,22 @@ batch:
       enabled: true
       market-price-enabled: true
       market-price-fixed-delay-ms: 60000
-      market-price-initial-delay-ms: 0
+      market-price-initial-delay-ms: 60000
       market-price-max-staleness-ms: 900000
       market-candle-enabled: true
       market-candle-fixed-delay-ms: 300000
-      market-candle-initial-delay-ms: 0
+      market-candle-initial-delay-ms: 60000
       market-candle-startup-backfill-enabled: true
       market-candle-gap-fill-overlap-count: 3
       macro-enabled: true
       macro-fixed-delay-ms: 3600000
-      macro-initial-delay-ms: 0
+      macro-initial-delay-ms: 60000
       sentiment-enabled: true
       sentiment-fixed-delay-ms: 21600000
-      sentiment-initial-delay-ms: 0
+      sentiment-initial-delay-ms: 60000
       onchain-enabled: true
       onchain-fixed-delay-ms: 43200000
-      onchain-initial-delay-ms: 0
+      onchain-initial-delay-ms: 60000
     analysis-report-generation:
       enabled: true
 
@@ -118,7 +132,7 @@ external:
     api-key: ${OPENAI_API_KEY:}
     model: ${OPENAI_MODEL:gpt-5-mini}
     connect-timeout-millis: 5000
-    read-timeout-millis: 30000
+    read-timeout-millis: 120000
   coinmetrics:
     base-url: https://community-api.coinmetrics.io/v4
   fred:
@@ -133,3 +147,22 @@ external:
   binance:
     base-url: https://data-api.binance.vision
     futures-base-url: https://fapi.binance.com
+
+app:
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://127.0.0.1:3000
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - "*"
+    allow-credentials: true
+    max-age: 3600
+  api:
+    enabled: true

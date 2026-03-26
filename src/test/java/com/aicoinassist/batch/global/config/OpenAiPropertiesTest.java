@@ -31,6 +31,7 @@ class OpenAiPropertiesTest {
         assertThat(violations).isEmpty();
         assertThat(properties.baseUrl()).isEqualTo("https://api.openai.com");
         assertThat(properties.model()).isEqualTo("gpt-5.4");
+        assertThat(properties.readTimeoutMillis()).isEqualTo(120000);
     }
 
     @Test
@@ -50,5 +51,26 @@ class OpenAiPropertiesTest {
 
         assertThat(violations).hasSize(1);
         assertThat(violations.iterator().next().getMessage()).contains("apiKey must be provided");
+    }
+
+    @Test
+    void stripsSurroundingQuotesFromApiKeyAndProjectMetadata() {
+        OpenAiProperties properties = new OpenAiProperties(
+                true,
+                null,
+                "\"sk-test-key\"",
+                null,
+                "\"org_test\"",
+                "\"proj_test\"",
+                null,
+                null
+        );
+
+        Set<ConstraintViolation<OpenAiProperties>> violations = validator.validate(properties);
+
+        assertThat(violations).isEmpty();
+        assertThat(properties.apiKey()).isEqualTo("sk-test-key");
+        assertThat(properties.organization()).isEqualTo("org_test");
+        assertThat(properties.project()).isEqualTo("proj_test");
     }
 }

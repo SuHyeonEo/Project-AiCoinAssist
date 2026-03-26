@@ -24,8 +24,11 @@ import com.aicoinassist.batch.domain.report.enumtype.AnalysisTrendLabel;
 import java.util.ArrayList;
 import java.util.List;
 import java.math.BigDecimal;
+import java.util.regex.Pattern;
 
 class AnalysisSummarySectionAssembler {
+
+    private static final Pattern TRAILING_PUNCTUATION = Pattern.compile("[\\s.,;:!?]+$");
 
     private final AnalysisIndicatorStateSupport indicatorStateSupport;
     private final AnalysisComparisonWindowSupport comparisonWindowSupport;
@@ -260,7 +263,15 @@ class AnalysisSummarySectionAssembler {
                     + "입니다");
         }
 
-        return clauses.isEmpty() ? "외부 맥락은 아직 혼조적입니다." : String.join(", ", clauses) + ".";
+        if (clauses.isEmpty()) {
+            return "외부 맥락은 아직 혼조적입니다.";
+        }
+        return clauses.stream()
+                .map(this::normalizeClause)
+                .filter(value -> value != null && !value.isBlank())
+                .reduce((left, right) -> left + ", " + right)
+                .map(value -> value + ".")
+                .orElse("외부 맥락은 아직 혼조적입니다.");
     }
 
     private AnalysisContextHeadlinePayload externalContextHeadline(
@@ -373,5 +384,12 @@ class AnalysisSummarySectionAssembler {
 
     private String localizePhrase(String value) {
         return textLocalizationSupport.localizePhrase(value);
+    }
+
+    private String normalizeClause(String value) {
+        if (value == null) {
+            return null;
+        }
+        return TRAILING_PUNCTUATION.matcher(value.trim()).replaceAll("");
     }
 }

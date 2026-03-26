@@ -247,6 +247,7 @@ public class AnalysisLlmSharedContextGenerationService {
                         sharedOutputSchemaVersion(),
                         sha256(analysisLlmSharedContextPromptComposer.compose(input).inputPayloadJson())
                 )
+                .filter(entity -> !entity.isFallbackUsed())
                 .map(this::toResolution)
                 .orElse(null);
     }

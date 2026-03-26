@@ -35,6 +35,7 @@ class AnalysisReportAssemblerDerivativeLevelTest extends AnalysisReportServiceFi
                 externalContextComposite(),
                 levelContext(),
                 marketParticipationFacts(),
+                marketParticipationSummaries(),
                 supportLevels(),
                 resistanceLevels(),
                 supportZones(),

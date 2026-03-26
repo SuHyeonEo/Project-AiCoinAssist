@@ -43,6 +43,7 @@ class AnalysisReportAssemblerSummaryContextTest extends AnalysisReportServiceFix
                 richExternalContextComposite(),
                 levelContext(),
                 marketParticipationFacts(),
+                marketParticipationSummaries(),
                 supportLevels(),
                 resistanceLevels(),
                 supportZones(),

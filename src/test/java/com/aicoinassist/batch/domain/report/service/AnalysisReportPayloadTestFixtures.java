@@ -23,6 +23,7 @@ import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContext;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroContextSummaryPayload;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisMacroWindowSummary;
+import com.aicoinassist.batch.domain.report.dto.AnalysisMarketParticipationSummary;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextComparisonFact;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextHighlight;
 import com.aicoinassist.batch.domain.report.dto.AnalysisLevelContextPayload;
@@ -81,6 +82,37 @@ import java.time.Instant;
 import java.util.List;
 
 abstract class AnalysisReportPayloadTestFixtures {
+
+    protected List<AnalysisMarketParticipationSummary> marketParticipationSummaries() {
+        return List.of(
+                new AnalysisMarketParticipationSummary(
+                        "최근 6h",
+                        Instant.parse("2026-03-08T18:00:00Z"),
+                        Instant.parse("2026-03-08T23:59:59Z"),
+                        Instant.parse("2026-03-08T12:00:00Z"),
+                        Instant.parse("2026-03-08T17:59:59Z"),
+                        6,
+                        new BigDecimal("0.01240000"),
+                        new BigDecimal("0.18400000"),
+                        new BigDecimal("0.07200000"),
+                        new BigDecimal("0.56670000"),
+                        new BigDecimal("0.03200000")
+                ),
+                new AnalysisMarketParticipationSummary(
+                        "최근 24h",
+                        Instant.parse("2026-03-08T00:00:00Z"),
+                        Instant.parse("2026-03-08T23:59:59Z"),
+                        Instant.parse("2026-03-07T00:00:00Z"),
+                        Instant.parse("2026-03-07T23:59:59Z"),
+                        24,
+                        new BigDecimal("0.02850000"),
+                        new BigDecimal("0.14100000"),
+                        new BigDecimal("0.06450000"),
+                        new BigDecimal("0.54900000"),
+                        new BigDecimal("0.02100000")
+                )
+        );
+    }
 
     protected AnalysisReportDraft shortTermDraft(AnalysisReportPayload reportPayload, Instant storedTime) {
         return new AnalysisReportDraft(
@@ -143,9 +175,9 @@ abstract class AnalysisReportPayloadTestFixtures {
                                 new AnalysisWindowContextSummaryPayload(
                                         "LAST_7D range 82000 to 90000.",
                                         "LAST_7D price is at 68.75% of the range.",
-                                        "Volume vs average +22%, quote volume vs average +15.74%, trade count vs average +9.32%, taker buy ratio 56.67%, ATR vs average +3.45%."
+                                        "Volume vs average +22%, quote volume vs average +15.74%, trade count vs average +9.32%, 시장가 매수 비중 56.67%, ATR vs average +3.45%."
                                 ),
-                                List.of("LAST_7D volume vs average +22%, quote volume vs average +15.74%, trade count vs average +9.32%, taker buy ratio 56.67%, ATR vs average +3.45%, distance from range high 2.78%.")
+                                List.of("LAST_7D volume vs average +22%, quote volume vs average +15.74%, trade count vs average +9.32%, 시장가 매수 비중 56.67%, ATR vs average +3.45%, distance from range high 2.78%.")
                         ),
                         new AnalysisLevelContextPayload(
                                 null,
@@ -327,9 +359,10 @@ abstract class AnalysisReportPayloadTestFixtures {
                         )
                 ),
                 List.of(
-                        "최근 6h 기준 가격은 +1.24%, 거래대금은 직전 동일 구간 대비 +18.40%, 체결 수는 직전 동일 구간 대비 +7.20%, taker buy 비중은 56.67% (직전 대비 +3.20%p)입니다.",
-                        "최근 24h 기준 가격은 +2.85%, 거래대금은 직전 동일 구간 대비 +14.10%, 체결 수는 직전 동일 구간 대비 +6.45%, taker buy 비중은 54.90% (직전 대비 +2.10%p)입니다."
+                        "최근 6h 기준 가격은 +1.24%, 거래대금은 직전 동일 구간 대비 +18.40%, 체결 수는 직전 동일 구간 대비 +7.20%, 시장가 매수 비중은 56.67% (직전 대비 +3.20%p)입니다.",
+                        "최근 24h 기준 가격은 +2.85%, 거래대금은 직전 동일 구간 대비 +14.10%, 체결 수는 직전 동일 구간 대비 +6.45%, 시장가 매수 비중은 54.90% (직전 대비 +2.10%p)입니다."
                 ),
+                marketParticipationSummaries(),
                 new AnalysisDerivativeContext(
                         Instant.parse("2026-03-09T00:59:30Z"),
                         Instant.parse("2026-03-09T00:59:00Z"),

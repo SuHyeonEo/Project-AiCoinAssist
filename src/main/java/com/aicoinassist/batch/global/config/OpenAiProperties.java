@@ -18,6 +18,9 @@ public record OpenAiProperties(
 ) {
 
     public OpenAiProperties {
+        apiKey = stripSurroundingQuotes(apiKey);
+        organization = stripSurroundingQuotes(organization);
+        project = stripSurroundingQuotes(project);
         baseUrl = baseUrl == null || baseUrl.isBlank()
                 ? "https://api.openai.com"
                 : baseUrl;
@@ -28,12 +31,27 @@ public record OpenAiProperties(
                 ? 5000
                 : connectTimeoutMillis;
         readTimeoutMillis = readTimeoutMillis == null || readTimeoutMillis < 1000
-                ? 30000
+                ? 120000
                 : readTimeoutMillis;
     }
 
     @AssertTrue(message = "apiKey must be provided when OpenAI narrative gateway is enabled.")
     public boolean hasApiKeyWhenEnabled() {
         return !enabled || (apiKey != null && !apiKey.isBlank());
+    }
+
+    private static String stripSurroundingQuotes(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.strip();
+        if (trimmed.length() >= 2) {
+            char first = trimmed.charAt(0);
+            char last = trimmed.charAt(trimmed.length() - 1);
+            if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+                return trimmed.substring(1, trimmed.length() - 1).strip();
+            }
+        }
+        return trimmed;
     }
 }
