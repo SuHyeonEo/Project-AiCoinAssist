@@ -33,8 +33,10 @@
 중요:
 - `DB_HOST`는 Cloud SQL private IP
 - `APP_CORS_ALLOWED_ORIGINS`는 실제 프론트 도메인
+- `NEXT_PUBLIC_SERVER_BASE_URL`는 실제 프론트가 접근할 공개 도메인
 - 첫 배포에서는 `EXTERNAL_OPENAI_ENABLED=false`
 - 첫 배포에서는 `ADMIN_API_ENABLED=false`
+- Nginx 뒤에서 실행되므로 Spring은 `forward-headers-strategy=framework`를 사용합니다.
 
 ## 실행
 
