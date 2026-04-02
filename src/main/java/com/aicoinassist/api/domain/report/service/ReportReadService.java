@@ -1094,9 +1094,12 @@ public class ReportReadService {
 	}
 
 	private Instant priceSourceEventTime(ReportAssemblySource source) {
-		return source.indicatorSnapshot()
-			.map(MarketIndicatorSnapshotEntity::getPriceSourceEventTime)
-			.orElse(source.report().getRawReferenceTime());
+		return firstNonNull(
+			source.report().getRawReferenceTime(),
+			source.indicatorSnapshot()
+				.map(MarketIndicatorSnapshotEntity::getPriceSourceEventTime)
+				.orElse(null)
+		);
 	}
 
 	private Instant latestCandleOpenTime(ReportAssemblySource source) {
