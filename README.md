@@ -487,11 +487,9 @@ GPT가 생성하는 핵심 결과물은 **narrative**입니다.
 - `/openapi/v3/api-docs`
 - `/docs`
 
-추가 운영 문서:
+프론트엔드 저장소:
 
-- [Single Server Runtime](C:/Users/tngus/batch/docs/single-server-runtime.md)
-- [Deployment Checklist](C:/Users/tngus/batch/docs/deployment-checklist.md)
-- [GCP Docker Deploy](C:/Users/tngus/batch/docs/gcp-docker-deploy.md)
+- [AI Coin Assist Frontend](https://github.com/SuHyeonEo/ai-coin-assist-frontend)
 
 ## One-line Summary
 
