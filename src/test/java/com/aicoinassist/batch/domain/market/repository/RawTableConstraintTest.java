@@ -1,0 +1,474 @@
+package com.aicoinassist.batch.domain.market.repository;
+
+import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketCandidateLevelZoneSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketCandleRawEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketContextSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketExternalContextSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketExternalContextWindowSummarySnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketIndicatorSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketLevelContextSnapshotEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketOpenInterestRawEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketPremiumIndexRawEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketPriceRawEntity;
+import com.aicoinassist.batch.domain.market.entity.MarketWindowSummarySnapshotEntity;
+import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelLabel;
+import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelSourceType;
+import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelType;
+import com.aicoinassist.batch.domain.market.enumtype.MarketCandidateLevelZoneInteractionType;
+import com.aicoinassist.batch.domain.market.enumtype.MarketWindowType;
+import com.aicoinassist.batch.domain.market.enumtype.RawDataValidationStatus;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.dao.DataIntegrityViolationException;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+@DataJpaTest
+class RawTableConstraintTest {
+
+    @Autowired
+    private MarketIndicatorSnapshotRepository marketIndicatorSnapshotRepository;
+
+    @Autowired
+    private MarketOpenInterestRawRepository marketOpenInterestRawRepository;
+
+    @Autowired
+    private MarketPremiumIndexRawRepository marketPremiumIndexRawRepository;
+
+    @Autowired
+    private MarketCandleRawRepository marketCandleRawRepository;
+
+    @Autowired
+    private MarketPriceRawRepository marketPriceRawRepository;
+
+    @Autowired
+    private MarketContextSnapshotRepository marketContextSnapshotRepository;
+
+    @Autowired
+    private MarketExternalContextSnapshotRepository marketExternalContextSnapshotRepository;
+
+    @Autowired
+    private MarketWindowSummarySnapshotRepository marketWindowSummarySnapshotRepository;
+
+    @Autowired
+    private MarketExternalContextWindowSummarySnapshotRepository marketExternalContextWindowSummarySnapshotRepository;
+
+    @Autowired
+    private MarketCandidateLevelSnapshotRepository marketCandidateLevelSnapshotRepository;
+
+    @Autowired
+    private MarketCandidateLevelZoneSnapshotRepository marketCandidateLevelZoneSnapshotRepository;
+
+    @Autowired
+    private MarketLevelContextSnapshotRepository marketLevelContextSnapshotRepository;
+
+    @Test
+    void marketIndicatorSnapshotRejectsDuplicateSymbolIntervalAndSnapshotTime() {
+        Instant snapshotTime = Instant.parse("2026-03-09T00:59:59Z");
+
+        marketIndicatorSnapshotRepository.saveAndFlush(indicatorSnapshot(snapshotTime, "87500.12"));
+
+        assertThatThrownBy(() -> marketIndicatorSnapshotRepository.saveAndFlush(
+                indicatorSnapshot(snapshotTime, "87510.12")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketOpenInterestRawRejectsDuplicateSourceSymbolAndSourceEventTime() {
+        Instant sourceEventTime = Instant.parse("2026-03-10T00:59:00Z");
+
+        marketOpenInterestRawRepository.saveAndFlush(openInterestRaw(sourceEventTime, "12345.67"));
+
+        assertThatThrownBy(() -> marketOpenInterestRawRepository.saveAndFlush(
+                openInterestRaw(sourceEventTime, "12346.67")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketPremiumIndexRawRejectsDuplicateSourceSymbolAndSourceEventTime() {
+        Instant sourceEventTime = Instant.parse("2026-03-10T00:59:30Z");
+
+        marketPremiumIndexRawRepository.saveAndFlush(premiumIndexRaw(sourceEventTime, "87500.12"));
+
+        assertThatThrownBy(() -> marketPremiumIndexRawRepository.saveAndFlush(
+                premiumIndexRaw(sourceEventTime, "87510.12")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketCandleRawRejectsDuplicateSourceSymbolIntervalAndOpenTime() {
+        Instant openTime = Instant.parse("2026-03-10T00:00:00Z");
+
+        marketCandleRawRepository.saveAndFlush(candleRaw(openTime, "87500.12"));
+
+        assertThatThrownBy(() -> marketCandleRawRepository.saveAndFlush(
+                candleRaw(openTime, "87510.12")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketPriceRawRejectsDuplicateSourceSymbolAndSourceEventTime() {
+        Instant sourceEventTime = Instant.parse("2026-03-10T00:59:45Z");
+
+        marketPriceRawRepository.saveAndFlush(priceRaw(sourceEventTime, "87500.12"));
+
+        assertThatThrownBy(() -> marketPriceRawRepository.saveAndFlush(
+                priceRaw(sourceEventTime, "87510.12")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketContextSnapshotRejectsDuplicateSymbolAndSnapshotTime() {
+        Instant snapshotTime = Instant.parse("2026-03-10T00:59:30Z");
+
+        marketContextSnapshotRepository.saveAndFlush(contextSnapshot(snapshotTime, "12345.67"));
+
+        assertThatThrownBy(() -> marketContextSnapshotRepository.saveAndFlush(
+                contextSnapshot(snapshotTime, "12346.67")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketExternalContextSnapshotRejectsDuplicateSymbolAndSnapshotTime() {
+        Instant snapshotTime = Instant.parse("2026-03-10T00:59:30Z");
+
+        marketExternalContextSnapshotRepository.saveAndFlush(externalContextSnapshot(snapshotTime, "0.66666667"));
+
+        assertThatThrownBy(() -> marketExternalContextSnapshotRepository.saveAndFlush(
+                externalContextSnapshot(snapshotTime, "1.33333333")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketWindowSummarySnapshotRejectsDuplicateSymbolIntervalWindowTypeAndWindowEndTime() {
+        Instant windowEndTime = Instant.parse("2026-03-10T00:59:59Z");
+
+        marketWindowSummarySnapshotRepository.saveAndFlush(windowSummary(windowEndTime, "87500.12"));
+
+        assertThatThrownBy(() -> marketWindowSummarySnapshotRepository.saveAndFlush(
+                windowSummary(windowEndTime, "87510.12")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketExternalContextWindowSummarySnapshotRejectsDuplicateSymbolWindowTypeAndWindowEndTime() {
+        Instant windowEndTime = Instant.parse("2026-03-10T00:59:30Z");
+
+        marketExternalContextWindowSummarySnapshotRepository.saveAndFlush(externalContextWindowSummary(windowEndTime, "1.20000000"));
+
+        assertThatThrownBy(() -> marketExternalContextWindowSummarySnapshotRepository.saveAndFlush(
+                externalContextWindowSummary(windowEndTime, "1.35000000")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketCandidateLevelSnapshotRejectsDuplicateSymbolIntervalSnapshotLevelTypeAndLabel() {
+        Instant snapshotTime = Instant.parse("2026-03-10T00:59:59Z");
+
+        marketCandidateLevelSnapshotRepository.saveAndFlush(candidateLevelSnapshot(snapshotTime, "87000.00"));
+
+        assertThatThrownBy(() -> marketCandidateLevelSnapshotRepository.saveAndFlush(
+                candidateLevelSnapshot(snapshotTime, "86900.00")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketCandidateLevelZoneSnapshotRejectsDuplicateSymbolIntervalSnapshotZoneTypeAndRank() {
+        Instant snapshotTime = Instant.parse("2026-03-10T00:59:59Z");
+
+        marketCandidateLevelZoneSnapshotRepository.saveAndFlush(candidateLevelZoneSnapshot(snapshotTime, 1, "86500.00"));
+
+        assertThatThrownBy(() -> marketCandidateLevelZoneSnapshotRepository.saveAndFlush(
+                candidateLevelZoneSnapshot(snapshotTime, 1, "86700.00")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void marketLevelContextSnapshotRejectsDuplicateSymbolIntervalAndSnapshotTime() {
+        Instant snapshotTime = Instant.parse("2026-03-10T00:59:59Z");
+
+        marketLevelContextSnapshotRepository.saveAndFlush(levelContextSnapshot(snapshotTime, "0.18000000"));
+
+        assertThatThrownBy(() -> marketLevelContextSnapshotRepository.saveAndFlush(
+                levelContextSnapshot(snapshotTime, "0.22000000")
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    private MarketIndicatorSnapshotEntity indicatorSnapshot(
+            Instant snapshotTime,
+            String currentPrice
+    ) {
+        return MarketIndicatorSnapshotEntity.builder()
+                                            .symbol("BTCUSDT")
+                                            .intervalValue("1h")
+                                            .snapshotTime(snapshotTime)
+                                            .latestCandleOpenTime(snapshotTime.minusSeconds(3600))
+                                            .priceSourceEventTime(snapshotTime.minusSeconds(30))
+                                            .sourceDataVersion(
+                                                    "snapshotTime=" + snapshotTime
+                                                            + ";latestCandleOpenTime=" + snapshotTime.minusSeconds(3600)
+                                                            + ";priceSourceEventTime=" + snapshotTime.minusSeconds(30)
+                                            )
+                                            .currentPrice(new BigDecimal(currentPrice))
+                                            .ma20(new BigDecimal("10"))
+                                            .ma60(new BigDecimal("11"))
+                                            .ma120(new BigDecimal("12"))
+                                            .rsi14(new BigDecimal("50"))
+                                            .macdLine(new BigDecimal("1"))
+                                            .macdSignalLine(new BigDecimal("0.5"))
+                                            .macdHistogram(new BigDecimal("0.5"))
+                                            .atr14(new BigDecimal("2"))
+                                            .bollingerUpperBand(new BigDecimal("15"))
+                                            .bollingerMiddleBand(new BigDecimal("10"))
+                                            .bollingerLowerBand(new BigDecimal("5"))
+                                            .build();
+    }
+
+    private MarketOpenInterestRawEntity openInterestRaw(Instant sourceEventTime, String openInterest) {
+        return MarketOpenInterestRawEntity.builder()
+                                          .source("BINANCE")
+                                          .symbol("BTCUSDT")
+                                          .sourceEventTime(sourceEventTime)
+                                          .collectedTime(sourceEventTime.plusSeconds(10))
+                                          .validationStatus(RawDataValidationStatus.VALID)
+                                          .openInterest(new BigDecimal(openInterest))
+                                          .rawPayload("{\"openInterest\":\"" + openInterest + "\"}")
+                                          .build();
+    }
+
+    private MarketPremiumIndexRawEntity premiumIndexRaw(Instant sourceEventTime, String markPrice) {
+        return MarketPremiumIndexRawEntity.builder()
+                                          .source("BINANCE")
+                                          .symbol("BTCUSDT")
+                                          .sourceEventTime(sourceEventTime)
+                                          .collectedTime(sourceEventTime.plusSeconds(10))
+                                          .validationStatus(RawDataValidationStatus.VALID)
+                                          .markPrice(new BigDecimal(markPrice))
+                                          .indexPrice(new BigDecimal("87480.02"))
+                                          .lastFundingRate(new BigDecimal("0.00025"))
+                                          .nextFundingTime(Instant.parse("2026-03-10T08:00:00Z"))
+                                          .rawPayload("{\"markPrice\":\"" + markPrice + "\"}")
+                                          .build();
+    }
+
+    private MarketCandleRawEntity candleRaw(Instant openTime, String closePrice) {
+        return MarketCandleRawEntity.builder()
+                                    .source("BINANCE")
+                                    .symbol("BTCUSDT")
+                                    .intervalValue("1h")
+                                    .openTime(openTime)
+                                    .closeTime(openTime.plusSeconds(3600))
+                                    .openPrice(new BigDecimal("87400.00"))
+                                    .highPrice(new BigDecimal("87600.00"))
+                                    .lowPrice(new BigDecimal("87300.00"))
+                                    .closePrice(new BigDecimal(closePrice))
+                                    .volume(new BigDecimal("123.45000000"))
+                                    .quoteAssetVolume(new BigDecimal("10800000.00000000"))
+                                    .numberOfTrades(12345L)
+                                    .takerBuyBaseAssetVolume(new BigDecimal("70.00000000"))
+                                    .takerBuyQuoteAssetVolume(new BigDecimal("6120000.00000000"))
+                                    .collectedTime(openTime.plusSeconds(3610))
+                                    .validationStatus(RawDataValidationStatus.VALID)
+                                    .rawPayload("[\"raw\"]")
+                                    .build();
+    }
+
+    private MarketPriceRawEntity priceRaw(Instant sourceEventTime, String price) {
+        return MarketPriceRawEntity.builder()
+                .source("BINANCE")
+                .symbol("BTCUSDT")
+                .sourceEventTime(sourceEventTime)
+                .collectedTime(sourceEventTime.plusSeconds(2))
+                .validationStatus(RawDataValidationStatus.VALID)
+                .price(new BigDecimal(price))
+                .rawPayload("{\"price\":\"" + price + "\"}")
+                .build();
+    }
+
+    private MarketContextSnapshotEntity contextSnapshot(Instant snapshotTime, String openInterest) {
+        return MarketContextSnapshotEntity.builder()
+                                          .symbol("BTCUSDT")
+                                          .snapshotTime(snapshotTime)
+                                          .openInterestSourceEventTime(snapshotTime.minusSeconds(30))
+                                          .premiumIndexSourceEventTime(snapshotTime)
+                                          .sourceDataVersion(
+                                                  "openInterestSourceEventTime=" + snapshotTime.minusSeconds(30)
+                                                          + ";premiumIndexSourceEventTime=" + snapshotTime
+                                                          + ";nextFundingTime=2026-03-10T08:00:00Z"
+                                          )
+                                          .openInterest(new BigDecimal(openInterest))
+                                          .markPrice(new BigDecimal("87500.12"))
+                                          .indexPrice(new BigDecimal("87480.02"))
+                                          .lastFundingRate(new BigDecimal("0.00025"))
+                                          .nextFundingTime(Instant.parse("2026-03-10T08:00:00Z"))
+                                          .markIndexBasisRate(new BigDecimal("0.02297893"))
+                                          .build();
+    }
+
+    private MarketWindowSummarySnapshotEntity windowSummary(Instant windowEndTime, String currentPrice) {
+        return MarketWindowSummarySnapshotEntity.builder()
+                                                .symbol("BTCUSDT")
+                                                .intervalValue("1h")
+                                                .windowType(MarketWindowType.LAST_7D.name())
+                                                .windowStartTime(windowEndTime.minusSeconds(7L * 24L * 3600L))
+                                                .windowEndTime(windowEndTime)
+                                                .sampleCount(168)
+                                                .currentPrice(new BigDecimal(currentPrice))
+                                                .windowHigh(new BigDecimal("91000.00"))
+                                                .windowLow(new BigDecimal("83000.00"))
+                                                .windowRange(new BigDecimal("8000.00"))
+                                                .currentPositionInRange(new BigDecimal("0.68750000"))
+                                                .distanceFromWindowHigh(new BigDecimal("0.03846154"))
+                                                .reboundFromWindowLow(new BigDecimal("0.05421687"))
+                                                .averageVolume(new BigDecimal("100.00000000"))
+                                                .averageQuoteAssetVolume(new BigDecimal("10800000.00000000"))
+                                                .averageTradeCount(new BigDecimal("12345.00000000"))
+                                                .averageAtr(new BigDecimal("1450.00000000"))
+                                                .currentVolume(new BigDecimal("122.00000000"))
+                                                .currentQuoteAssetVolume(new BigDecimal("11500000.00000000"))
+                                                .currentTradeCount(new BigDecimal("13500.00000000"))
+                                                .currentAtr(new BigDecimal("1500.00000000"))
+                                                .currentVolumeVsAverage(new BigDecimal("0.22000000"))
+                                                .currentQuoteAssetVolumeVsAverage(new BigDecimal("0.06481481"))
+                                                .currentTradeCountVsAverage(new BigDecimal("0.09315512"))
+                                                .currentTakerBuyQuoteRatio(new BigDecimal("0.56666667"))
+                                                .currentAtrVsAverage(new BigDecimal("0.03448276"))
+                                                .sourceDataVersion("basis-key;windowType=LAST_7D")
+                                                .build();
+    }
+
+    private MarketExternalContextSnapshotEntity externalContextSnapshot(Instant snapshotTime, String compositeRiskScore) {
+        return MarketExternalContextSnapshotEntity.builder()
+                                                  .symbol("BTCUSDT")
+                                                  .snapshotTime(snapshotTime)
+                                                  .derivativeSnapshotTime(snapshotTime.minusSeconds(30))
+                                                  .macroSnapshotTime(snapshotTime.minusSeconds(60))
+                                                  .sentimentSnapshotTime(snapshotTime.minusSeconds(90))
+                                                  .onchainSnapshotTime(snapshotTime.minusSeconds(120))
+                                                  .sourceDataVersion("derivative=v1;macro=v1;sentiment=v1;onchain=v1")
+                                                  .compositeRiskScore(new BigDecimal(compositeRiskScore))
+                                                  .dominantDirection("HEADWIND")
+                                                  .highestSeverity("HIGH")
+                                                  .supportiveSignalCount(1)
+                                                  .cautionarySignalCount(1)
+                                                  .headwindSignalCount(2)
+                                                  .primarySignalCategory("MACRO")
+                                                  .primarySignalTitle("Dollar strength regime")
+                                                  .primarySignalDetail("DXY and yields are firm.")
+                                                  .regimeSignalsPayload("""
+                                                          [{"category":"MACRO","title":"Dollar strength regime","detail":"DXY is above average.","direction":"HEADWIND","severity":"HIGH","basisLabel":"LAST_30D"}]
+                                                          """)
+                                                  .build();
+    }
+
+    private MarketExternalContextWindowSummarySnapshotEntity externalContextWindowSummary(
+            Instant windowEndTime,
+            String currentCompositeRiskScore
+    ) {
+        return MarketExternalContextWindowSummarySnapshotEntity.builder()
+                .symbol("BTCUSDT")
+                .windowType(MarketWindowType.LAST_30D.name())
+                .windowStartTime(windowEndTime.minusSeconds(30L * 24L * 3600L))
+                .windowEndTime(windowEndTime)
+                .sampleCount(30)
+                .currentCompositeRiskScore(new BigDecimal(currentCompositeRiskScore))
+                .averageCompositeRiskScore(new BigDecimal("0.95000000"))
+                .currentCompositeRiskVsAverage(new BigDecimal("0.40350877"))
+                .supportiveDominanceSampleCount(4)
+                .cautionaryDominanceSampleCount(10)
+                .headwindDominanceSampleCount(16)
+                .highSeveritySampleCount(8)
+                .sourceDataVersion("external-window-basis;windowType=LAST_30D")
+                .build();
+    }
+
+    private MarketCandidateLevelSnapshotEntity candidateLevelSnapshot(Instant snapshotTime, String levelPrice) {
+        return MarketCandidateLevelSnapshotEntity.builder()
+                                                 .symbol("BTCUSDT")
+                                                 .intervalValue("1h")
+                                                 .snapshotTime(snapshotTime)
+                                                 .referenceTime(snapshotTime.minusSeconds(3600))
+                                                 .levelType(MarketCandidateLevelType.SUPPORT.name())
+                                                 .levelLabel(MarketCandidateLevelLabel.MA20.name())
+                                                 .sourceType(MarketCandidateLevelSourceType.MOVING_AVERAGE.name())
+                                                 .currentPrice(new BigDecimal("87500.00"))
+                                                 .levelPrice(new BigDecimal(levelPrice))
+                                                 .distanceFromCurrent(new BigDecimal("0.00571429"))
+                                                 .strengthScore(new BigDecimal("0.64428571"))
+                                                 .reactionCount(2)
+                                                 .clusterSize(1)
+                                                 .rationale("Short-term average support")
+                                                 .triggerFactsPayload("[\"Current price 87500 vs MA20 87000\"]")
+                                                 .sourceDataVersion("basis-key;levelType=SUPPORT;levelLabel=MA20")
+                                                 .build();
+    }
+
+    private MarketCandidateLevelZoneSnapshotEntity candidateLevelZoneSnapshot(
+            Instant snapshotTime,
+            Integer zoneRank,
+            String representativePrice
+    ) {
+        return MarketCandidateLevelZoneSnapshotEntity.builder()
+                                                     .symbol("BTCUSDT")
+                                                     .intervalValue("1h")
+                                                     .snapshotTime(snapshotTime)
+                                                     .zoneType(MarketCandidateLevelType.SUPPORT.name())
+                                                     .zoneRank(zoneRank)
+                                                     .currentPrice(new BigDecimal("87500.00"))
+                                                     .representativePrice(new BigDecimal(representativePrice))
+                                                     .zoneLow(new BigDecimal("86000.00"))
+                                                     .zoneHigh(new BigDecimal("87000.00"))
+                                                     .distanceFromCurrent(new BigDecimal("0.01142857"))
+                                                     .distanceToZone(new BigDecimal("0.00571429"))
+                                                     .zoneStrengthScore(new BigDecimal("0.84428571"))
+                                                     .interactionType(MarketCandidateLevelZoneInteractionType.ABOVE_ZONE.name())
+                                                     .strongestLevelLabel(MarketCandidateLevelLabel.MA20.name())
+                                                     .strongestSourceType(MarketCandidateLevelSourceType.MOVING_AVERAGE.name())
+                                                     .levelCount(2)
+                                                     .recentTestCount(4)
+                                                     .recentRejectionCount(3)
+                                                     .recentBreakCount(1)
+                                                     .includedLevelLabelsPayload("[\"MA20\",\"PIVOT_LOW\"]")
+                                                     .includedSourceTypesPayload("[\"MOVING_AVERAGE\",\"PIVOT_LEVEL\"]")
+                                                     .triggerFactsPayload("[\"SUPPORT zone spans 86000 to 87000 with 2 candidate levels.\"]")
+                                                     .sourceDataVersion("basis-key;zoneType=SUPPORT;zoneRank=1")
+                                                     .build();
+    }
+
+    private MarketLevelContextSnapshotEntity levelContextSnapshot(Instant snapshotTime, String supportBreakRisk) {
+        return MarketLevelContextSnapshotEntity.builder()
+                                               .symbol("BTCUSDT")
+                                               .intervalValue("1h")
+                                               .snapshotTime(snapshotTime)
+                                               .currentPrice(new BigDecimal("87500.00"))
+                                               .supportZoneRank(1)
+                                               .supportRepresentativePrice(new BigDecimal("86500.00"))
+                                               .supportZoneLow(new BigDecimal("86000.00"))
+                                               .supportZoneHigh(new BigDecimal("87000.00"))
+                                               .supportDistanceToZone(new BigDecimal("0.00571429"))
+                                               .supportZoneStrength(new BigDecimal("0.84428571"))
+                                               .supportInteractionType(MarketCandidateLevelZoneInteractionType.ABOVE_ZONE.name())
+                                               .supportRecentTestCount(4)
+                                               .supportRecentRejectionCount(3)
+                                               .supportRecentBreakCount(1)
+                                               .supportBreakRisk(new BigDecimal(supportBreakRisk))
+                                               .resistanceZoneRank(1)
+                                               .resistanceRepresentativePrice(new BigDecimal("88550.00"))
+                                               .resistanceZoneLow(new BigDecimal("88400.00"))
+                                               .resistanceZoneHigh(new BigDecimal("88600.00"))
+                                               .resistanceDistanceToZone(new BigDecimal("0.01000000"))
+                                               .resistanceZoneStrength(new BigDecimal("0.82285714"))
+                                               .resistanceInteractionType(MarketCandidateLevelZoneInteractionType.BELOW_ZONE.name())
+                                               .resistanceRecentTestCount(3)
+                                               .resistanceRecentRejectionCount(2)
+                                               .resistanceRecentBreakCount(0)
+                                               .resistanceBreakRisk(new BigDecimal("0.05000000"))
+                                               .sourceDataVersion("indicator=basis-key;supportZone=support-v1;resistanceZone=resistance-v1")
+                                               .build();
+    }
+}

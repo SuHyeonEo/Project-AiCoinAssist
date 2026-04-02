@@ -1,3 +1,167 @@
+server:
+  port: ${SERVER_PORT:8082}
+  forward-headers-strategy: framework
+
 spring:
   application:
-    name: batch
+    name: ${SPRING_APPLICATION_NAME:ai-coin-assist-server}
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:coin_analysis}?connectionTimeZone=${DB_CONNECTION_TIMEZONE:UTC}&forceConnectionTimeZoneToSession=true&characterEncoding=${DB_CHARACTER_ENCODING:UTF-8}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  api-docs:
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:true}
+    path: /openapi/v3/api-docs
+  swagger-ui:
+    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:true}
+    path: /docs
+
+logging:
+  level:
+    root: info
+    org.hibernate.SQL: warn
+    org.hibernate.orm.jdbc.bind: warn
+
+batch:
+  admin-api:
+    enabled: ${ADMIN_API_ENABLED:false}
+    token: ${ADMIN_API_TOKEN:}
+    header-name: X-Admin-Token
+  llm-narrative:
+    enabled: false
+    provider: openai
+    prompt-template-version: llm-prompt-v1
+    input-schema-version: llm-input-v1
+    output-schema-version: llm-output-v1
+    max-transport-attempts: 1
+    manual-generate:
+      enabled: false
+      symbol:
+      report-type:
+      shutdown-after-run: true
+  reference-news:
+    enabled: false
+    provider: openai
+    scope: GLOBAL_CRYPTO
+    prompt-template-version: reference-news-prompt-v1
+    input-schema-version: reference-news-input-v1
+    output-schema-version: reference-news-output-v1
+    max-transport-attempts: 1
+    daily-fixed-delay-ms: 86400000
+    daily-initial-delay-ms: 240000
+    manual-generate:
+      enabled: false
+      shutdown-after-run: true
+  analysis-report:
+    engine-version: report-assembler-v1
+    asset-types:
+      - BTC
+    report-types:
+      - SHORT_TERM
+      - MID_TERM
+      - LONG_TERM
+    short-term-enabled: true
+    short-term-cron: "0 0 0/6 * * *"
+    mid-term-enabled: true
+    mid-term-cron: "0 0 0 * * *"
+    long-term-enabled: true
+    long-term-cron: "0 0 0 * * MON"
+    zone: Asia/Seoul
+    manual-rerun:
+      enabled: false
+      source-run-id:
+      shutdown-after-run: true
+  scheduler:
+    external-raw-ingestion:
+      enabled: true
+      market-price-enabled: true
+      market-price-fixed-delay-ms: 60000
+      market-price-initial-delay-ms: 60000
+      market-price-max-staleness-ms: 900000
+      market-candle-enabled: true
+      market-candle-fixed-delay-ms: 300000
+      market-candle-initial-delay-ms: 60000
+      market-candle-startup-backfill-enabled: true
+      market-candle-gap-fill-overlap-count: 3
+      macro-enabled: true
+      macro-fixed-delay-ms: 3600000
+      macro-initial-delay-ms: 60000
+      sentiment-enabled: true
+      sentiment-fixed-delay-ms: 21600000
+      sentiment-initial-delay-ms: 60000
+      onchain-enabled: true
+      onchain-fixed-delay-ms: 43200000
+      onchain-initial-delay-ms: 60000
+    analysis-report-generation:
+      enabled: true
+
+external:
+  alternative-me:
+    base-url: https://api.alternative.me
+  openai:
+    enabled: false
+    base-url: https://api.openai.com
+    api-key: ${OPENAI_API_KEY:}
+    model: ${OPENAI_MODEL:gpt-5-mini}
+    connect-timeout-millis: 5000
+    read-timeout-millis: 120000
+  coinmetrics:
+    base-url: https://community-api.coinmetrics.io/v4
+  fred:
+    base-url: https://api.stlouisfed.org
+    api-key: ${FRED_API_KEY:}
+    max-attempts: 3
+    retry-backoff-millis: 2000
+    series:
+      dxy-proxy: DTWEXBGS
+      us10y-yield: DGS10
+      usd-krw: DEXKOUS
+  binance:
+    base-url: https://data-api.binance.vision
+    futures-base-url: https://fapi.binance.com
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - "*"
+    allow-credentials: true
+    max-age: 3600
+  api:
+    enabled: true

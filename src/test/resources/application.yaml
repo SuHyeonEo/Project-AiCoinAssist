@@ -1,0 +1,87 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:batch-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  flyway:
+    enabled: true
+
+  task:
+    scheduling:
+      enabled: false
+
+batch:
+  admin-api:
+    enabled: true
+    token: test-admin-token
+    header-name: X-Admin-Token
+  llm-narrative:
+    enabled: false
+    provider: openai
+    prompt-template-version: llm-prompt-v1
+    input-schema-version: llm-input-v1
+    output-schema-version: llm-output-v1
+  analysis-report:
+    engine-version: test-report-assembler
+    asset-types:
+      - BTC
+    report-types:
+      - SHORT_TERM
+      - MID_TERM
+      - LONG_TERM
+    short-term-enabled: true
+    short-term-fixed-delay-ms: 21600000
+    short-term-initial-delay-ms: 60000
+    mid-term-enabled: true
+    mid-term-fixed-delay-ms: 86400000
+    mid-term-initial-delay-ms: 120000
+    long-term-enabled: true
+    long-term-fixed-delay-ms: 604800000
+    long-term-initial-delay-ms: 180000
+    manual-rerun:
+      enabled: false
+      source-run-id:
+      shutdown-after-run: true
+  scheduler:
+    analysis-report-generation:
+      enabled: false
+
+logging:
+  level:
+    root: warn
+
+external:
+  alternative-me:
+    base-url: https://api.alternative.me
+  openai:
+    enabled: false
+    base-url: https://api.openai.com
+    api-key:
+    model: gpt-5.4
+    connect-timeout-millis: 5000
+    read-timeout-millis: 30000
+  coinmetrics:
+    base-url: https://community-api.coinmetrics.io/v4
+  gdelt:
+    base-url: https://api.gdeltproject.org/api/v2/doc/doc
+    max-records: 10
+    time-span: 3days
+  fred:
+    base-url: https://api.stlouisfed.org
+    api-key: test-fred-api-key
+    max-attempts: 3
+    retry-backoff-millis: 2000
+    series:
+      dxy-proxy: DTWEXBGS
+      us10y-yield: DGS10
+      usd-krw: DEXKOUS
