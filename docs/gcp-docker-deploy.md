@@ -28,7 +28,35 @@
 
 ## 환경 파일
 
-`batch/.env.example`를 복사해 `.env`로 만들고 실제 값으로 채웁니다.
+`batch/.env` 파일을 직접 만들고 실제 값으로 채웁니다.
+
+예:
+
+```env
+DB_HOST=<Cloud SQL private IP>
+DB_PORT=3306
+DB_NAME=coin_analysis
+DB_USERNAME=app_user
+DB_PASSWORD=<db password>
+
+FRED_API_KEY=<fred api key>
+
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-5-mini
+EXTERNAL_OPENAI_ENABLED=false
+
+APP_CORS_ALLOWED_ORIGINS=https://your-domain.example
+NEXT_PUBLIC_SERVER_BASE_URL=https://your-domain.example
+
+SERVER_PORT=8082
+SPRING_APPLICATION_NAME=ai-coin-assist-server
+
+SPRINGDOC_API_DOCS_ENABLED=false
+SPRINGDOC_SWAGGER_UI_ENABLED=false
+
+ADMIN_API_ENABLED=false
+ADMIN_API_TOKEN=
+```
 
 중요:
 - `DB_HOST`는 Cloud SQL private IP
